@@ -1,0 +1,14 @@
+name: cartography
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - blast
+  - foldseek
+  - jupyter
+  - jupyterlab
+  - ca-certificates
+  - openssl
+prefix: /Users/dennis/miniconda3/envs/cartography
