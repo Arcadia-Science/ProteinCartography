@@ -4,11 +4,28 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python
+  - python=3.10
   - blast
   - foldseek
   - jupyter
   - jupyterlab
   - ca-certificates
   - openssl
+  - tqdm
+  - certifi
+  - pandas
+  - scikit-learn
+  - umap-learn
+  - matplotlib
+  - plotly
+  - jupyter-dash
+  - wordcloud
+  - leidenalg
+  - pycairo
+  - scanpy
+  - nodejs
+  - biopython
+  - py3dmol
+  - snakemake
+  - bioservices
 prefix: /Users/dennis/miniconda3/envs/cartography
