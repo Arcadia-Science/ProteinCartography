@@ -2,3 +2,4 @@
 **/output/
 .ipynb_checkpoints/
 .DS_Store
+.snakemake/
