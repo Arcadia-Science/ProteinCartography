@@ -1,7 +1,23 @@
 # gene-family-cartography
-a pipeline to embed gene families into distance spaces for exploration
+embedding proteins into feature spaces for computational exploration
 
-## Overview
+## Purpose
+The relationship between protein sequence, structure, and function has only been thoroughly investigated for a handful of gene families.  
+This repo takes an agnostic approach to characterizing groups of similar proteins using feature embedding spaces.  
+
+Our pipeline starts with user-provided protein(s) of interest and searches the available sequence and structure databases for matches.  
+Using the full list of matches, we can build a "map" of all the similar proteins and look for clusters of proteins with similar features.  
+Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
+
+## Directory Structure
+- [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
+- [cartography.yml](cartography.yml): the conda environment for this repo.  
+
+- [utils/](utils/): helper scripts that are called by the Snakemake pipeline, along with a few other bits and bobs
+- [notebooks/](notebooks/): Jupyter notebook examples of manually running this data. These are messy and will be tidied up in the final repo.
+- [examples/](examples/): example output files.
+
+## Pipeline Overview
 This repo builds a Snakemake pipeline that takes input `.fasta` and `.pdb` files and does the following operations:
 
 ### Protein Search
