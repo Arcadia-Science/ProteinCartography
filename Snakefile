@@ -18,6 +18,9 @@ rule all:
 ## make .pdb files using gget alphafold
 ###########################################
 
+# Ignore this for now, I'm having hardware problems getting gget to work
+# It seems to be an Apple M1-specific problem
+
 rule make_pdb:
     '''
     Use gget alphafold to generate a pdb from a fasta file.
