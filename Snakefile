@@ -15,6 +15,23 @@ rule all:
         "output/foldseekclustering/alphafold_querylist.txt"
 
 ###########################################
+## make .pdb files using gget alphafold
+###########################################
+
+rule make_pdb:
+    '''
+    Use gget alphafold to generate a pdb from a fasta file.
+    '''
+    input:
+        cds = "input/{protid}.fasta"
+    output:
+        pdb = "input/{protid}.pdb"
+    shell:
+        '''
+        gget alphafold {input.cds} > {output.pdb}
+        '''
+
+###########################################
 ## perform blastp to full database using nr
 ###########################################
 
