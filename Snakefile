@@ -214,4 +214,3 @@ rule aggregate_lists:
 #     Should have means to set a palette for each individual plot type, maybe as JSON?
 #     '''
 #     ### I am unwritten... ###
-    
