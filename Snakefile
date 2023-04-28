@@ -21,14 +21,6 @@ PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) 
 
 ######################################
 
-def checkpoint_create_alphafold_wildcard(wildcards):
-    # expand checkpoint to get grp values, and place them in the final file name that uses that wildcard
-    # checkpoint_output encodes the output dir from the checkpoint rule. 
-    checkpoint_output = checkpoints.create_alphafold_wildcard.get(**wildcards).output[0]    
-    file_names = expand(os.path.join(output_dir + foldseekclustering_dir, "{acc}.pdb"),
-                        acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc)
-    return file_names
-
 rule all:
     input:
         output_dir + foldseekclustering_dir + "alphafold_querylist.txt",
