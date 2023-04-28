@@ -31,10 +31,9 @@ def checkpoint_create_alphafold_wildcard(wildcards):
 
 rule all:
     input:
-        expand(output_dir + blastresults_dir + "{protid}.blasthits.uniprot.txt", protid = PROTID),
-        expand(output_dir + foldseekresults_dir + "{protid}.foldseekhits.txt", protid = PROTID),
         output_dir + foldseekclustering_dir + "alphafold_querylist.txt",
-        checkpoint_create_alphafold_wildcard
+        output_dir + 'dummy.txt'
+        
 
 ###########################################
 ## make .pdb files using gget alphafold
@@ -198,9 +197,11 @@ rule download_pdbs:
         '''
         
 def checkpoint_create_alphafold_wildcard(wildcards):
-    # expand checkpoint to get grp values, and place them in the final file name that uses that wildcard
-    # checkpoint_output encodes the output dir from the checkpoint rule. 
-    checkpoint_output = checkpoints.create_alphafold_wildcard.get(**wildcards).output[0]    
+    # expand checkpoint to get acc values
+    checkpoint_output = checkpoints.create_alphafold_wildcard.get(**wildcards).output[0]
+    
+    # trawls the checkpoint_output file for .txt files
+    # and generates expected .pdb file names for foldseekclustering_dir
     file_names = expand(os.path.join(output_dir + foldseekclustering_dir, "{acc}.pdb"),
                         acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc)
     return file_names
@@ -208,8 +209,10 @@ def checkpoint_create_alphafold_wildcard(wildcards):
 rule dummy:
     '''
     Temporary rule for testing, touches empty file and stops.
+    Used to make sure that the checkpoint function above is evaluated and to make rule all tidier.
+    This will be changed in the future to a rule that actually does something.
     '''
-    input: expand(output_dir + foldseekclustering_dir + "{acc}.pdb", acc = wildcards.acc)
+    input: checkpoint_create_alphafold_wildcard
     output: output_dir + 'dummy.txt'
     shell:
         '''
