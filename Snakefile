@@ -25,7 +25,8 @@ rule all:
     input:
         output_dir + foldseekclustering_dir + "alphafold_querylist.txt",
         output_dir + 'dummy.txt'
-        
+# technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
+# but it needs to be there in order for us to build a more complete visual of the rule graph
 
 ###########################################
 ## make .pdb files using gget alphafold
