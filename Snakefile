@@ -21,11 +21,20 @@ PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) 
 
 ######################################
 
+def checkpoint_create_alphafold_wildcard(wildcards):
+    # expand checkpoint to get grp values, and place them in the final file name that uses that wildcard
+    # checkpoint_output encodes the output dir from the checkpoint rule. 
+    checkpoint_output = checkpoints.create_alphafold_wildcard.get(**wildcards).output[0]    
+    file_names = expand(os.path.join(output_dir + foldseekclustering_dir, "{acc}.pdb"),
+                        acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc)
+    return file_names
+
 rule all:
     input:
         expand(output_dir + blastresults_dir + "{protid}.blasthits.uniprot.txt", protid = PROTID),
         expand(output_dir + foldseekresults_dir + "{protid}.foldseekhits.txt", protid = PROTID),
-        output_dir + foldseekclustering_dir + "alphafold_querylist.txt"
+        output_dir + foldseekclustering_dir + "alphafold_querylist.txt",
+        checkpoint_create_alphafold_wildcard
 
 ###########################################
 ## make .pdb files using gget alphafold
@@ -148,29 +157,65 @@ rule aggregate_lists:
     Take all Uniprot ID lists and make them one big ID list, removing duplicates.
     '''
     input:
-        foldseekresults = output_dir + foldseekresults_dir, 
-        blastresults = output_dir + blastresults_dir
-    params:
-        foldseekresults_suffix = ".foldseekhits.txt",
-        blastresults_suffix = ".blasthits.uniprot.txt"
+        expand(output_dir + foldseekresults_dir + "{protid}.foldseekhits.txt", protid = PROTID), 
+        expand(output_dir + blastresults_dir + "{protid}.blasthits.uniprot.txt", protid = PROTID)
     output:
         jointlist = output_dir + foldseekclustering_dir + "alphafold_querylist.txt"
     shell:
         '''
-        python utils/aggregate_lists.py -i {input.foldseekresults} {input.blastresults} \
-        -s {params.foldseekresults_suffix} {params.blastresults_suffix} \
-        -o {output.jointlist}
+        python utils/aggregate_lists.py -i {input} -o {output.jointlist}
         '''
 
 '''TO BE WRITTEN'''
-        
-# rule download_pdbs:
-#     '''
-#     Use a checkpoint to parse all of the items in the output.jointlist file from aggregate lists and download all the PDBs.
-#     Make sure to copy the user-input PDBs into the downloads directory
-#     '''
-#     ### I am unwritten... ###
 
+checkpoint create_alphafold_wildcard:
+    '''
+    Create dummy files to make Snakemake detect a wildcard
+    '''
+    input:
+        jointlist = output_dir + foldseekclustering_dir + "alphafold_querylist.txt"
+    output: directory(os.path.join(output_dir, "alphafold_dummy/"))
+    shell:
+        '''
+        python utils/make_dummies.py -i {input.jointlist} -o {output}
+        '''
+    
+rule download_pdbs:
+    '''
+    Use a checkpoint to parse all of the items in the output.jointlist file from aggregate lists and download all the PDBs.
+    Make sure to copy the user-input PDBs into the downloads directory
+    '''
+    ### I am unwritten... ###
+    input:
+        output_dir + "alphafold_dummy/{acc}.txt"
+    output:
+        output_dir + foldseekclustering_dir + "{acc}.pdb"
+    params:
+        outdir = output_dir + foldseekclustering_dir
+    shell:
+        '''
+        python utils/fetch_accession.py -a {wildcards.acc} -o {params.outdir} -f pdb
+        '''
+        
+def checkpoint_create_alphafold_wildcard(wildcards):
+    # expand checkpoint to get grp values, and place them in the final file name that uses that wildcard
+    # checkpoint_output encodes the output dir from the checkpoint rule. 
+    checkpoint_output = checkpoints.create_alphafold_wildcard.get(**wildcards).output[0]    
+    file_names = expand(os.path.join(output_dir + foldseekclustering_dir, "{acc}.pdb"),
+                        acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc)
+    return file_names
+
+rule dummy:
+    '''
+    Temporary rule for testing, touches empty file and stops.
+    '''
+    input: expand(output_dir + foldseekclustering_dir + "{acc}.pdb", acc = wildcards.acc)
+    output: output_dir + 'dummy.txt'
+    shell:
+        '''
+        touch {output}
+        '''
+    
 # rule get_uniprot_metadata:
 #     '''
 #     Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
