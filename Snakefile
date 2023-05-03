@@ -1,21 +1,18 @@
 import os
+from pathlib import Path
 
 # Get protein IDs from fasta files in input directory
 # In the future, have this specified by command line argument or config file
 # In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
-input_dir = 'input/'
+input_dir = Path('input_minitest/')
 
 # put most things into the output directory
-output_dir = 'output/'
+output_dir = Path('output_minitest/')
 
 # these directories fall within the output directory
-blastresults_dir = 'blastresults/'
-foldseekresults_dir = 'foldseekresults/'
-foldseekclustering_dir = 'foldseekclustering/'
-
-for d in [input_dir, output_dir] + [output_dir + d for d in [blastresults_dir, foldseekresults_dir, foldseekclustering_dir]]:
-    if not os.path.exists(d):
-        os.mkdir(d)
+blastresults_dir = Path('blastresults/')
+foldseekresults_dir = Path('foldseekresults/')
+foldseekclustering_dir = Path('foldseekclustering/')
 
 PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) if '.fasta' in i]
 
@@ -23,8 +20,8 @@ PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) 
 
 rule all:
     input:
-        output_dir + foldseekclustering_dir + "alphafold_querylist.txt",
-        output_dir + 'dummy.txt'
+        output_dir / foldseekclustering_dir / "alphafold_querylist.txt",
+        output_dir / 'dummy.txt'
 # technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
 # but it needs to be there in order for us to build a more complete visual of the rule graph
 
@@ -35,18 +32,18 @@ rule all:
 # Ignore this for now, I'm having hardware problems getting gget to work
 # It seems to be an Apple M1-specific problem
 
-#rule make_pdb:
-#    '''
-#    Use gget alphafold to generate a pdb from a fasta file.
-#    '''
-#    input:
-#        cds = input_dir + "{protid}.fasta"
-#    output:
-#        pdb = input_dir + "{protid}.pdb"
-#    shell:
-#        '''
-#        gget alphafold {input.cds} > {output.pdb}
-#        '''
+rule make_pdb:
+    '''
+    Use gget alphafold to generate a pdb from a fasta file.
+    '''
+    input:
+        cds = input_dir / "{protid}.fasta"
+    output:
+        pdb = input_dir / "{protid}.pdb"
+    shell:
+        '''
+        python utils/esmfold_apiquery.py -i {input.cds}
+        '''
 
 ###########################################
 ## perform blastp to full database using nr
@@ -57,9 +54,9 @@ rule run_blast:
     Using files located in the "inputs/" folder, perform BLAST using the web API.
     '''
     input:
-        cds = input_dir + "{protid}.fasta"
+        cds = input_dir / "{protid}.fasta"
     output:
-        results = output_dir + blastresults_dir + "{protid}.blastresults.tsv"
+        results = output_dir / blastresults_dir / "{protid}.blastresults.tsv"
     shell:
         '''
         blastp -db nr -query {input.cds} -out {output.results} -remote -max_target_seqs 50000 -outfmt 6
@@ -70,9 +67,9 @@ rule extract_blasthits:
     Using blast results files, generate lists of RefSeq ids for ID mapping.
     '''
     input:
-        blastresults = output_dir + blastresults_dir + "{protid}.blastresults.tsv"
+        blastresults = output_dir / blastresults_dir / "{protid}.blastresults.tsv"
     output:
-        refseqhits = output_dir + blastresults_dir + "{protid}.blasthits.refseq.txt"
+        refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     shell:
         '''
         python utils/extract_blasthits.py -i {input.blastresults} -o {output.refseqhits}
@@ -84,9 +81,9 @@ rule map_refseqids:
     Returns a list of UniProt IDs.
     '''
     input:
-        refseqhits = output_dir + blastresults_dir + "{protid}.blasthits.refseq.txt"
+        refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     output:
-        uniprothits = output_dir + blastresults_dir + "{protid}.blasthits.uniprot.txt"
+        uniprothits = output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt"
     shell:
         '''
         python utils/map_refseqids.py -i {input.refseqhits} -o {output.uniprothits}
@@ -105,9 +102,9 @@ rule run_foldseek:
     The script also accepts a `--mode` flag of either '3diaa' (default) or 'tmalign' and choice of databases.
     '''
     input:
-        cds = input_dir + "{protid}.pdb"
+        cds = input_dir / "{protid}.pdb"
     output:
-        results = output_dir + foldseekresults_dir + "{protid}.fsresults.tar.gz"
+        results = output_dir / foldseekresults_dir / "{protid}.fsresults.tar.gz"
     shell:
         '''
         python utils/foldseek_apiquery.py -i {input.cds} -o {output.results}
@@ -118,9 +115,9 @@ rule unpack_fsresults:
     Untars and unzips files into a directory for each protid.
     '''
     input:
-        targz = output_dir + foldseekresults_dir + "{protid}.fsresults.tar.gz"
+        targz = output_dir / foldseekresults_dir / "{protid}.fsresults.tar.gz"
     output:
-        unpacked = directory(output_dir + foldseekresults_dir + "{protid}/")
+        unpacked = directory(output_dir / foldseekresults_dir / "{protid}/")
     shell:
         '''
         mkdir {output.unpacked}
@@ -132,9 +129,9 @@ rule extract_foldseekhits:
     Using Foldseek results directory, generate lists of Uniprot ids for mapping to Uniprot and pulling down PDB files.
     '''
     input:
-        foldseekresults = output_dir + foldseekresults_dir + "{protid}/"
+        foldseekresults = output_dir / foldseekresults_dir / "{protid}/"
     output:
-        foldseekhits = output_dir + foldseekresults_dir + "{protid}.foldseekhits.txt"
+        foldseekhits = output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt"
     shell:
         '''
         python utils/extract_foldseekhits.py -i {input.foldseekresults} -o {output.foldseekhits}
@@ -149,10 +146,10 @@ rule aggregate_lists:
     Take all Uniprot ID lists and make them one big ID list, removing duplicates.
     '''
     input:
-        expand(output_dir + foldseekresults_dir + "{protid}.foldseekhits.txt", protid = PROTID), 
-        expand(output_dir + blastresults_dir + "{protid}.blasthits.uniprot.txt", protid = PROTID)
+        expand(output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid = PROTID), 
+        expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid = PROTID)
     output:
-        jointlist = output_dir + foldseekclustering_dir + "alphafold_querylist.txt"
+        jointlist = output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
     shell:
         '''
         python utils/aggregate_lists.py -i {input} -o {output.jointlist}
@@ -165,7 +162,7 @@ checkpoint create_alphafold_wildcard:
     Create dummy files to make Snakemake detect a wildcard
     '''
     input:
-        jointlist = output_dir + foldseekclustering_dir + "alphafold_querylist.txt"
+        jointlist = output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
     output: directory(os.path.join(output_dir, "alphafold_dummy/"))
     shell:
         '''
@@ -179,11 +176,11 @@ rule download_pdbs:
     '''
     ### I am unwritten... ###
     input:
-        output_dir + "alphafold_dummy/{acc}.txt"
+        output_dir / "alphafold_dummy/{acc}.txt"
     output:
-        output_dir + foldseekclustering_dir + "{acc}.pdb"
+        output_dir / foldseekclustering_dir / "{acc}.pdb"
     params:
-        outdir = output_dir + foldseekclustering_dir
+        outdir = output_dir / foldseekclustering_dir
     shell:
         '''
         python utils/fetch_accession.py -a {wildcards.acc} -o {params.outdir} -f pdb
@@ -195,7 +192,7 @@ def checkpoint_create_alphafold_wildcard(wildcards):
     
     # trawls the checkpoint_output file for .txt files
     # and generates expected .pdb file names for foldseekclustering_dir
-    file_names = expand(os.path.join(output_dir + foldseekclustering_dir, "{acc}.pdb"),
+    file_names = expand(output_dir / foldseekclustering_dir / "{acc}.pdb",
                         acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc)
     return file_names
 
@@ -206,7 +203,7 @@ rule dummy:
     This will be changed in the future to a rule that actually does something.
     '''
     input: checkpoint_create_alphafold_wildcard
-    output: output_dir + 'dummy.txt'
+    output: output_dir / 'dummy.txt'
     shell:
         '''
         touch {output}
