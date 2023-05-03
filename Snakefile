@@ -155,8 +155,6 @@ rule aggregate_lists:
         python utils/aggregate_lists.py -i {input} -o {output.jointlist}
         '''
 
-'''TO BE WRITTEN'''
-
 checkpoint create_alphafold_wildcard:
     '''
     Create dummy files to make Snakemake detect a wildcard
@@ -174,7 +172,6 @@ rule download_pdbs:
     Use a checkpoint to parse all of the items in the output.jointlist file from aggregate lists and download all the PDBs.
     Make sure to copy the user-input PDBs into the downloads directory
     '''
-    ### I am unwritten... ###
     input:
         output_dir / "alphafold_dummy/{acc}.txt"
     output:
