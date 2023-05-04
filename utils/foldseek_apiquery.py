@@ -5,6 +5,15 @@ import argparse
 from requests import get, post
 from time import sleep
 
+### NOTES
+#FoldSeek API example from website:
+"""
+curl -X POST -F q=@PATH_TO_FILE -F 'mode=3diaa' \
+-F 'database[]=afdb50' -F 'database[]=afdb-swissprot' -F 'database[]=afdb-proteome' \
+-F 'database[]=mgnify_esm30' -F 'database[]=pdb100' -F 'database[]=gmgcl_id' \
+https://search.foldseek.com/api/ticket
+"""
+
 # Possible align mode options from API
 SET_MODES = ['3diaa', 'tmalign']
 
@@ -35,8 +44,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
         sys.exit(f'File {input_file} not found.')
 
     # Append '.tar.gz' to file if it's not included
-    if '.tar.gz' not in output_file:
-        print('appending ".tar.gz" to output name')
+    if not output_file.endswith('.tar.gz'):
         output_file = output_file + '.tar.gz'
 
     # Checks for correct mode input
@@ -74,7 +82,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
         pdb = ''.join(text)
     
     ### Code below is mostly based on:
-    ### 
+    ### <https://github.com/soedinglab/MMseqs2-App/blob/master/docs/api_example.py>
     # submit a new job via the API
     post_successful = False
     
@@ -85,7 +93,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
             }).json()
         
     # check to see if the ticket failed to be posted
-    # tickets can fail to be posted because 
+    # tickets can fail to be posted because of ratelimits
     try:
         testid = ticket['id']
     except KeyError:
@@ -98,15 +106,22 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
     # poll until the job was successful or failed
     repeat = True
-    while repeat:
+    tries = 0
+    limit = 10
+    sleep_time = 30
+    while repeat and tries < limit:
         status = get('https://search.foldseek.com/api/ticket/' + ticket['id']).json()
         if status['status'] == "ERROR":
         # handle error
-            sys.exit(0)
+            sys.exit('The ticket returned with status ERROR.')
 
         # wait a short time between poll requests
-        sleep(1)
+        sleep(sleep_time)
+        tries += 1
         repeat = status['status'] != "COMPLETE"
+    
+    if tries == 10:
+        sys.exit(f'The ticket failed to complete after {tries * sleep_time} seconds.')
 
     # download blast compatible result archive
     download = get('https://search.foldseek.com/api/result/download/' + ticket['id'], stream=True)
@@ -129,12 +144,3 @@ def main():
 # check if called from interpreter
 if __name__ == '__main__':
     main()
-            
-### NOTES
-#FoldSeek API example from website:
-"""
-curl -X POST -F q=@PATH_TO_FILE -F 'mode=3diaa' \
--F 'database[]=afdb50' -F 'database[]=afdb-swissprot' -F 'database[]=afdb-proteome' \
--F 'database[]=mgnify_esm30' -F 'database[]=pdb100' -F 'database[]=gmgcl_id' \
-https://search.foldseek.com/api/ticket
-"""

@@ -2,19 +2,34 @@
 import sys
 import os
 import argparse
-from requests import get, post
+from requests import post
 from time import sleep
+
+### NOTES
+#ESMFold API example from website:
+"""
+curl -X POST --data "KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL" https://api.esmatlas.com/foldSequence/v1/pdb/
+"""
 
 FASTA_FORMATS = ['fa', 'fna', 'fasta']
 
 def parse_args():
     # Set command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required = True, help = 'Name of input file. Must be a FASTA file.')
+    parser.add_argument("-i", "--input", required = True, help = 'Name of input file. Must be a single-entry peptide FASTA file (ends with .fa, .fna, .fasta).')
     parser.add_argument("-o", "--output", default = '',
                         help = 'Name of output file. If not provided, replaces ".fasta" from input with ".pdb".')
     args = parser.parse_args()
     return args
+
+def post_query(fasta: str):
+    result = post('https://api.esmatlas.com/foldSequence/v1/pdb/',
+                  data = fasta)
+    if result.status_code == 200:
+        return result.text
+    else:
+        print(f"Error: {result.status_code}")
+        return None
 
 def esmfold_apiquery(input_file: str, output_file = ''):
     # Check to make sure input file has a correct FASTA suffix
@@ -31,28 +46,27 @@ def esmfold_apiquery(input_file: str, output_file = ''):
     else:
         output_filepath = output_file
 
-    # Collector for PDB information for requests.post()
-    fasta = ''
-
     # Open input file and collect text as string
-    with open(input_file, 'r') as file:
-        text = file.readlines()
+    with open(input_file, 'r') as f:
+        content = f.read()
         
-        if len([line for line in text if '>' in line]) > 1:
+        entries = content.split(">")[1:]
+        if len(entries) > 1:
             raise Exception('This script expects a single FASTA entry in the input file. Please try again.')
         
-        fasta_lines = [line.replace('\n', '') for line in text if '>' not in line]
-        fasta = ''.join(fasta_lines)
+        lines = entries[0].strip().split("\n")
+        fasta = "".join(lines[1:])
     
     if (prot_len := len(fasta)) > 400:
-        raise Exception(f'The input protein is {prot_len} AA long.\nESMFold API query only allows proteins up to 400 AA long.\nTry using ColabFold instead.')
+        print(f'The input protein is {prot_len} AA long.\nESMFold API query only allows proteins up to 400 AA long.\nTry using ColabFold instead.\nSkipping...')
+        return
     
     # submit a new job via the API
-    result = post('https://api.esmatlas.com/foldSequence/v1/pdb/',
-                  data = fasta)
+    result = post_query(fasta)
     
-    with open(output_filepath, 'w+') as file:
-        file.write(result._content.decode())
+    if result is not None:
+        with open(output_filepath, 'w+') as file:
+            file.write(result)
 
 # run this if called from the interpreter
 def main():
@@ -67,9 +81,3 @@ def main():
 # check if called from interpreter
 if __name__ == '__main__':
     main()
-            
-### NOTES
-#ESMFold API example from website:
-"""
-curl -X POST --data "KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL" https://api.esmatlas.com/foldSequence/v1/pdb/
-"""
