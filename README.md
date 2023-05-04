@@ -11,31 +11,40 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
 
 ## Directory Structure
 - [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
-- [cartography.yml](cartography.yml): the conda environment for this repo.  
-
+- [cartography.yml](cartography.yml): the conda environment for this repo.
 - [utils/](utils/): helper scripts that are called by the Snakemake pipeline, along with a few other bits and bobs
 - [notebooks/](notebooks/): Jupyter notebook examples of manually running this data. These are messy and will be tidied up in the final repo.
 - [examples/](examples/): example output files.
 
 ## Pipeline Overview
-This repo builds a Snakemake pipeline that takes input `.fasta` and `.pdb` files and does the following operations:
+This repo builds a Snakemake pipeline that takes input `.fasta` and `.pdb` files.
+The rulegraph for this pipeline is as follows:  
+![rulegraph](rulegraph.png)
+
+The steps of the pipeline have the following functionality:
+
+### Protein Folding
+0. Fold input FASTA files using ESMFold.
+    - The workflow starts with input FASTA files, one entry per file, with a unique ID.
+    - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB.
 
 ### Protein Search
 1. Search the Alphafold databases using queries to the FoldSeek webserver API for each provided `.pdb` file.  
     - Currently, we're limited to a maximum of 1000 hits per protein.  
-    - We should look for ways to increase this number of hits, potentially by hosting the full AlphaFold database ourselves and building a simple API to query it.  
+    - We should look for ways to increase this number of hits, potentially by hosting the full AlphaFold database ourselves and building a simple API to query it.
+    - This fails more often than we'd like because Foldseek rate limits our requests after a certain threshold. The actual threshold is unknown.  
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.  
-    - Takes the resulting output hits and maps each GenBank/RefSeq hit to a Uniprot ID using [**`bioservices UniProt`**](https://bioservices.readthedocs.io/en/latest/references.html#module-bioservices.uniprot)  
+    - Takes the resulting output hits and maps each GenBank/RefSeq hit to a Uniprot ID using [**`bioservices UniProt`**](https://bioservices.readthedocs.io/en/latest/references.html#module-bioservices.uniprot)
+    - This also fails more often than we'd like if multiple queries are made in a short time period.
 
 ### Download Data
 3. Aggregate the list of Foldseek and BLAST hits into a single list of Uniprot IDs.  
 
+4. Download a `.pdb` file from each protein from AlphaFold.  
+    - This part is a bit slow, as it's currently limited to the number of cores provided to Snakemake.
+
 ---
 == TODO ==
-> Processes below are tractable but haven't yet been built into the Snakemake pipeline.  
-
-4. Download a `.pdb` file from each protein from AlphaFold.  
-    - Need to figure out a way to do this that's highly parallelized to be as fast as possible.  
 
 5. Download annotation and feature information for each protein from Uniprot.  
     - This pretty easy using **`bioservices UniProt`**.  
