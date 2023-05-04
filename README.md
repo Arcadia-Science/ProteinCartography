@@ -13,7 +13,7 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
 - [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
 - [cartography.yml](cartography.yml): the conda environment for this repo.
 - [utils/](utils/): helper scripts that are called by the Snakemake pipeline, along with a few other bits and bobs
-- [notebooks/](notebooks/): Jupyter notebook examples of manually running this data. These are messy and will be tidied up in the final repo.
+- [notebooks/](notebooks/): Jupyter notebook examples of manually running this data. These are messy and will be tidied up in the final repo. Currently a development playground - don't look too deeply here yet.
 - [examples/](examples/): example output files.
 
 ## Pipeline Overview
