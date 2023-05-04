@@ -22,7 +22,13 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def post_query(fasta: str):
+def post_esmfold_apiquery(fasta: str):
+    '''
+    Posts a query to the ESMfold API.
+    
+    Args:
+        fasta (str): string of valid amino acids for query.
+    '''
     result = post('https://api.esmatlas.com/foldSequence/v1/pdb/',
                   data = fasta)
     if result.status_code == 200:
@@ -32,6 +38,14 @@ def post_query(fasta: str):
         return None
 
 def esmfold_apiquery(input_file: str, output_file = ''):
+    '''
+    Takes an input peptide FASTA file with one entry and submits it for folding using the ESMfold API.
+    Creates a PDB file with the resulting output.
+    
+    Args:
+        input_file (str): path to input FASTA file (must end with .fa, .fna, or .fasta; not case-sensitive).
+        output_file (str): path to the destination PDB file.
+    '''
     # Check to make sure input file has a correct FASTA suffix
     if not any([fmt in input_file.rsplit('.', 1)[1].lower() for fmt in FASTA_FORMATS]):
         sys.exit(f'Input expects a FASTA file ({FASTA_FORMATS})')
@@ -62,7 +76,7 @@ def esmfold_apiquery(input_file: str, output_file = ''):
         return
     
     # submit a new job via the API
-    result = post_query(fasta)
+    result = post_esmfold_apiquery(fasta)
     
     if result is not None:
         with open(output_filepath, 'w+') as file:
