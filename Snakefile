@@ -15,6 +15,7 @@ foldseekresults_dir = Path('foldseekresults/')
 foldseekclustering_dir = Path('foldseekclustering/')
 
 PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) if '.fasta' in i]
+FS_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome']
 
 ######################################
 
@@ -26,15 +27,12 @@ rule all:
 # but it needs to be there in order for us to build a more complete visual of the rule graph
 
 ###########################################
-## make .pdb files using gget alphafold
+## make .pdb files using esmfold API query
 ###########################################
-
-# Ignore this for now, I'm having hardware problems getting gget to work
-# It seems to be an Apple M1-specific problem
 
 rule make_pdb:
     '''
-    Use gget alphafold to generate a pdb from a fasta file.
+    Use the ESMFold API query to generate a pdb from a fasta file.
     '''
     input:
         cds = input_dir / "{protid}.fasta"
@@ -43,6 +41,17 @@ rule make_pdb:
     shell:
         '''
         python utils/esmfold_apiquery.py -i {input.cds}
+        '''
+
+rule copy_pdb:
+    '''
+    Copies existing or generated PDBs to the Foldseek clustering folder.
+    '''
+    input: input_dir / "{protid}.pdb"
+    output: input_dir / foldseekclustering_dir / "{protid}.pdb"
+    shell:
+        '''
+        cp {output.pdb} {output.pdb_copy}
         '''
 
 ###########################################
@@ -56,23 +65,11 @@ rule run_blast:
     input:
         cds = input_dir / "{protid}.fasta"
     output:
-        results = output_dir / blastresults_dir / "{protid}.blastresults.tsv"
-    shell:
-        '''
-        blastp -db nr -query {input.cds} -out {output.results} -remote -max_target_seqs 50000 -outfmt 6
-        '''
-
-rule extract_blasthits:
-    '''
-    Using blast results files, generate lists of RefSeq ids for ID mapping.
-    '''
-    input:
-        blastresults = output_dir / blastresults_dir / "{protid}.blastresults.tsv"
-    output:
+        blastresults = output_dir / blastresults_dir / "{protid}.blastresults.tsv",
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     shell:
         '''
-        python utils/extract_blasthits.py -i {input.blastresults} -o {output.refseqhits}
+        python utils/run_blast.py -i {input.cds} -b {output.blastresults} -o {output.refseqhits}
         '''
 
 rule map_refseqids:
@@ -100,41 +97,22 @@ rule run_foldseek:
     Runs Foldseek using a query to the web API using a custom Python script.
     The script accepts an input file ending in '.pdb' and returns an output file ending in '.tar.gz'.
     The script also accepts a `--mode` flag of either '3diaa' (default) or 'tmalign' and choice of databases.
+    After running, untars the files and extracts hits.
     '''
     input:
         cds = input_dir / "{protid}.pdb"
     output:
-        results = output_dir / foldseekresults_dir / "{protid}.fsresults.tar.gz"
-    shell:
-        '''
-        python utils/foldseek_apiquery.py -i {input.cds} -o {output.results}
-        '''
-
-rule unpack_fsresults:
-    '''
-    Untars and unzips files into a directory for each protid.
-    '''
-    input:
-        targz = output_dir / foldseekresults_dir / "{protid}.fsresults.tar.gz"
-    output:
-        unpacked = directory(output_dir / foldseekresults_dir / "{protid}/")
-    shell:
-        '''
-        mkdir {output.unpacked}
-        tar -xvf {input.targz} -C {output.unpacked}
-        '''
-
-rule extract_foldseekhits:
-    '''
-    Using Foldseek results directory, generate lists of Uniprot ids for mapping to Uniprot and pulling down PDB files.
-    '''
-    input:
-        foldseekresults = output_dir / foldseekresults_dir / "{protid}/"
-    output:
+        targz = output_dir / foldseekresults_dir / "{protid}.fsresults.tar.gz",
+        unpacked = directory(output_dir / foldseekresults_dir / "{protid}"),
+        m8files = expand(output_dir / foldseekresults_dir / "{{protid}}" / "alis_{db}.m8", db = FS_DATABASES),
         foldseekhits = output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt"
+    params:
+        fs_databases = expand("{fs_databases}", fs_databases = FS_DATABASES)
     shell:
         '''
-        python utils/extract_foldseekhits.py -i {input.foldseekresults} -o {output.foldseekhits}
+        python utils/foldseek_apiquery.py -i {input.cds} -o {output.targz} -d {params.fs_databases}
+        tar -xvf {output.targz} -C {output.unpacked}
+        python utils/extract_foldseekhits.py -i {output.m8files} -o {output.foldseekhits}
         '''
 
 #####################################################################
@@ -164,13 +142,12 @@ checkpoint create_alphafold_wildcard:
     output: directory(os.path.join(output_dir, "alphafold_dummy/"))
     shell:
         '''
-        python utils/make_dummies.py -i {input.jointlist} -o {output}
+        python utils/make_dummies.py -i {input.jointlist} -o {output} -M 10
         '''
     
 rule download_pdbs:
     '''
     Use a checkpoint to parse all of the items in the output.jointlist file from aggregate lists and download all the PDBs.
-    Make sure to copy the user-input PDBs into the downloads directory
     '''
     input:
         output_dir / "alphafold_dummy/{acc}.txt"
@@ -190,7 +167,8 @@ def checkpoint_create_alphafold_wildcard(wildcards):
     # trawls the checkpoint_output file for .txt files
     # and generates expected .pdb file names for foldseekclustering_dir
     file_names = expand(output_dir / foldseekclustering_dir / "{acc}.pdb",
-                        acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc)
+                        acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc) + \
+                 expand(output_dir / foldseekclustering_dir / "{protid}.pdb", protid = PROTID)
     return file_names
 
 rule dummy:
