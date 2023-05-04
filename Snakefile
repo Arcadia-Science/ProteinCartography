@@ -48,7 +48,7 @@ rule copy_pdb:
     Copies existing or generated PDBs to the Foldseek clustering folder.
     '''
     input: input_dir / "{protid}.pdb"
-    output: input_dir / foldseekclustering_dir / "{protid}.pdb"
+    output: output_dir / foldseekclustering_dir / "{protid}.pdb"
     shell:
         '''
         cp {output.pdb} {output.pdb_copy}

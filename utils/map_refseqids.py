@@ -26,6 +26,8 @@ def map_refseqids(input_file: str, output_file: str, query_dbs: list):
     with open(input_file, 'r') as f:
         ids = f.read().splitlines()
         
+    if len(ids) > 100000:
+        ids = ids[0:100000]
         
     # make an empty collector dataframe for mapping
     dummy_df = pd.DataFrame()
@@ -37,6 +39,10 @@ def map_refseqids(input_file: str, output_file: str, query_dbs: list):
         
         # pandas can normalize the json and make it more tractable
         results_df = pd.json_normalize(results['results'])
+        
+        # if there are no results, move on
+        if len(results_df) == 0:
+            continue
         
         # if it's the first database, replace it with the dummy dataframe
         if i == 0:

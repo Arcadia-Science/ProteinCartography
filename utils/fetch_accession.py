@@ -3,7 +3,6 @@ from bioservices import UniProt
 import argparse
 import os
 import subprocess
-u = UniProt()
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -14,6 +13,7 @@ def parse_args():
     return args
 
 def fetch_fasta(accession: str, output_dir: str):
+    u = UniProt()
     output_path = output_dir + accession + '.fasta'
         
     if not os.path.exists(output_path):
