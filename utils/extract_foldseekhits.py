@@ -10,19 +10,13 @@ FOLDSEEK_NAMES = ['query', 'target', 'fident', 'alnlen', 'mismatch', 'gapopen', 
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input")
+    parser.add_argument("-i", "--input", nargs = '+')
     parser.add_argument("-o", "--output")
     args = parser.parse_args()
     
     return args
 
-def extract_foldseekhits(input_directory: str, output_file: str):
-    # make a Path object from the directory
-    input_Path = Path(input_directory)
-    
-    # get list of files with .m8 prefix, which are results files
-    input_files = [input_Path / i for i in os.listdir(input_directory) if '.m8' in i]
-    
+def extract_foldseekhits(input_files: str, output_file: str):
     # empty df for collecting results
     dummy_df = pd.DataFrame()
     
@@ -57,11 +51,11 @@ def main():
     args = parse_args()
     
     # collect arguments individually
-    input_directory = args.input
+    input_files = args.input
     output_file = args.output
     
     # send to map_refseqids
-    extract_foldseekhits(input_directory, output_file)
+    extract_foldseekhits(input_files, output_file)
 
 # check if called from interpreter
 if __name__ == '__main__':

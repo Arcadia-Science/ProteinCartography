@@ -76,11 +76,25 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     ### Code below is mostly based on:
     ### 
     # submit a new job via the API
+    post_successful = False
+    
     ticket = post('https://search.foldseek.com/api/ticket', {
-            'q' : pdb,
-            'database[]' : query_databases,
-            'mode' : mode
-        }).json()
+                'q' : pdb,
+                'database[]' : query_databases,
+                'mode' : mode
+            }).json()
+        
+    # check to see if the ticket failed to be posted
+    # tickets can fail to be posted because 
+    try:
+        testid = ticket['id']
+    except KeyError:
+        if 'status' in ticket.keys() and 'reason' in ticket.keys():
+            print('===============')
+            print(ticket['status'])
+            print(ticket['reason'])
+            print('===============')
+        sys.exit('Foldseek may be rate-limiting your requests. Try again later.')
 
     # poll until the job was successful or failed
     repeat = True
