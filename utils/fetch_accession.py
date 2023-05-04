@@ -6,13 +6,20 @@ import subprocess
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--accession", required = True, nargs = '+')
-    parser.add_argument("-o", "--output", required = True)
-    parser.add_argument("-f", "--format", nargs = '+', default = ['fasta', 'pdb'])
+    parser.add_argument("-a", "--accession", required = True, nargs = '+', help = 'UniprotKB accession of target.')
+    parser.add_argument("-o", "--output", required = True, help = 'Output directory for resulting files.')
+    parser.add_argument("-f", "--format", nargs = '+', default = ['fasta', 'pdb'], help = 'Formats to acquire.\nIf "fasta", requests the FASTA sequence using bioservices UniProt.\nIf "pdb", downloads the pdb from AlphaFold.\nCan accept multiple arguments.')
     args = parser.parse_args()
     return args
 
 def fetch_fasta(accession: str, output_dir: str):
+    '''
+    Fetches a FASTA file from Uniprot, given an accession. Places the file in the output_dir.
+    
+    Args:
+        accession (str): a valid UniprotKB accession.
+        output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.fasta".
+    '''
     u = UniProt()
     output_path = output_dir + accession + '.fasta'
         
@@ -22,6 +29,13 @@ def fetch_fasta(accession: str, output_dir: str):
             f.write(res)
     
 def fetch_pdb(accession: str, output_dir: str):
+    '''
+    Fetches a PDB file from AlphaFold, given an accession. Places the file in the output_dir.
+    
+    Args:
+        accession (str): a valid UniprotKB accession.
+        output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.pdb".
+    '''
     output_path = output_dir + accession + '.pdb'
     source = 'https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v4.pdb'.format(accession)
 

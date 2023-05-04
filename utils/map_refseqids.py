@@ -9,15 +9,25 @@ DEFAULT_DBS = ['EMBL-GenBank-DDBJ_CDS', 'RefSeq_Protein']
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input")
-    parser.add_argument("-o", "--output")
-    parser.add_argument("-d", "--databases", nargs = '+', default = DEFAULT_DBS)
+    parser.add_argument("-i", "--input", required = True, help = 'path to input .txt file containing one accession per line.')
+    parser.add_argument("-o", "--output", required = True, help = 'path to destination .txt file where uniquely-mapped Uniprot accessions will be printed.')
+    parser.add_argument("-d", "--databases", nargs = '+', default = DEFAULT_DBS, help = f'which databases to use for mapping. defaults to {DEFAULT_DBS}')
     args = parser.parse_args()
     return args
 
 # takes a list of IDs and maps them to Uniprot using bioservices
 # might make a more generalizable version of this and put it somewhere else
 def map_refseqids(input_file: str, output_file: str, query_dbs: list):
+    '''
+    Takes an input .txt file of accessions and maps to UniprotKB.
+    
+    Args:
+        input_file (str): path to input .txt file containing one accession per line.
+        output_file (str): path to destination .txt file.
+        query_dbs (list): list of valid databases to query using the Uniprot ID mapping API.
+            Each database will be queried individually. 
+            The results are compiled and unique results are printed to output_file.
+    '''
     
     # make object that references UniProt database
     u = UniProt()

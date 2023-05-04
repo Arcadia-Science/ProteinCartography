@@ -35,6 +35,16 @@ def parse_args():
     return args
 
 def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: list):
+    '''
+    Queries the Foldseek web API with a PDB file and retrieves the results.
+    
+    Args:
+        input_file (str): path to the query PDB file.
+        output_file (str): path to a compressed '.tar.gz' results file. If suffix is missing, adds it.
+        mode (str): whether to run in '3diaa' or 'tmalign' mode.
+        database (list): list of run databases. 
+            Valid databases include 'afdb50', 'afdb-swissprot', 'afdb-proteome', 'mgnify_esm30', 'pdb100', and 'gmgcl_id'.
+    '''
     # Check to make sure input file has '.pdb' suffix
     if '.pdb' not in input_file:
         sys.exit('Input expects a .pdb file.')

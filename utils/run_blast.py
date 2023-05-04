@@ -8,17 +8,26 @@ BLAST_DEFAULT_STRING = ' '.join(['6'] + BLAST_DEFAULTS)
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required = True)
-    parser.add_argument("-b", "--blastresults_output", required = True)
-    parser.add_argument("-o", "--output", required = True)
-    parser.add_argument("-M", "--max-target-seqs", default = '50000')
-    parser.add_argument("-B", "--blast-format-string", default = BLAST_DEFAULT_STRING)
+    parser.add_argument("-i", "--input", required = True, help = 'path of input peptide FASTA file.')
+    parser.add_argument("-b", "--blastresults_output", required = True, help = 'path of destination blastresults.tsv file.')
+    parser.add_argument("-o", "--output", required = True, help = 'path of destination blasthits.txt file, where blast hit accessions will be printed, one per line.')
+    parser.add_argument("-M", "--max-target-seqs", default = '50000', help = 'maximum number of return hits. Default 50000')
+    parser.add_argument("-B", "--blast-format-string", default = BLAST_DEFAULT_STRING, help = f'BLAST query format string.\n Default {BLAST_DEFAULT_STRING}')
     args = parser.parse_args()
     
     return args
 
 def run_blast(input_file: str, output_file: str, 
               max_target_seqs = '50000', blast_format_string = BLAST_DEFAULT_STRING):
+    '''
+    Runs blastp using an input FASTA file and saves results to output.
+    
+    Args:
+        input_file (str): path of input peptide FASTA file.
+        output_file (str): path of destination blastresults.tsv file.
+        max_target_seqs (str): maximum number of hits to return. Default '50000'.
+        blast_format_string (str): passed to blastp '-outfmt'.
+    '''
     subprocess.run([
         'blastp', 
         '-db', 'nr', 
@@ -32,6 +41,14 @@ def run_blast(input_file: str, output_file: str,
 # take an input blastresults file and create a .txt file from that
 def extract_blasthits(input_file: str, output_file: str, 
                       names = BLAST_DEFAULTS):
+    '''
+    Takes an input blastresults.tsv file, reads the accessions, and prints unique hits to a .txt file, one per line.
+    
+    Args:
+        input_file (str): path of input blastresults.tsv file.
+        output_file (str): path of destination blasthits.txt file.
+        names (str): names of columns of blast results.
+    '''
     df = pd.read_csv(input_file, sep = '\t', names = names)
 
     hits = df['sacc'].unique()

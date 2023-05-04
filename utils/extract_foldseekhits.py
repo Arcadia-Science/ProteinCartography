@@ -10,13 +10,22 @@ FOLDSEEK_NAMES = ['query', 'target', 'fident', 'alnlen', 'mismatch', 'gapopen', 
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", nargs = '+', description = 'Takes .m8 file paths as input.')
-    parser.add_argument("-o", "--output", description = 'Returns a .txt file as output.')
+    parser.add_argument("-i", "--input", nargs = '+', required = True, description = 'Takes .m8 file paths as input.')
+    parser.add_argument("-o", "--output", required = True, description = 'Returns a .txt file as output.')
     args = parser.parse_args()
     
     return args
 
-def extract_foldseekhits(input_files: str, output_file: str):
+def extract_foldseekhits(input_files: list, output_file: str):
+    '''
+    Takes a list of input tabular Foldseek results files from the API query (ending in .m8).
+    Generates a .txt file containing a list of unique accessions across all the .m8 files.
+    
+    Args:
+        input_files (list): list of string paths to input files.
+        output_file (str): path of destination file.
+    '''
+    
     # empty df for collecting results
     dummy_df = pd.DataFrame()
     
