@@ -47,7 +47,7 @@ The steps of the pipeline have the following functionality:
 == TODO ==
 
 5. Download annotation and feature information for each protein from Uniprot.  
-    - This pretty easy using **`bioservices UniProt`**.  
+    - This is pretty easy using **`bioservices UniProt`**.  
 
 ### Clustering
 
