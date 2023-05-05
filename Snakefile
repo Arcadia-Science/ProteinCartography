@@ -13,6 +13,7 @@ output_dir = Path('output_minitest/')
 blastresults_dir = Path('blastresults/')
 foldseekresults_dir = Path('foldseekresults/')
 foldseekclustering_dir = Path('foldseekclustering/')
+clusteringresults_dir = Path('clusteringresults/')
 
 PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) if '.fasta' in i]
 FS_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome']
@@ -178,10 +179,15 @@ rule dummy:
     This will be changed in the future to a rule that actually does something.
     '''
     input: checkpoint_create_alphafold_wildcard
-    output: output_dir / 'dummy.txt'
+    output: 
+        allvall_pivot = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
+        struclusters_features = output_dir / clusteringresults_dir / 'struclusters_features.tsv'
+    params:
+        querydir = output_dir / foldseekclustering_dir
+        resultsdir = output_dir / clusteringresults_dir
     shell:
         '''
-        touch {output}
+        python ProteinCartography/foldseek_clustering.py -q {params.querydir} -r {params.resultsdir}
         '''
     
 # rule get_uniprot_metadata:

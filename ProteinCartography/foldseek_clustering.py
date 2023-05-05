@@ -20,13 +20,12 @@ def run_foldseek_clustering(query_folder: str, results_folder: str,
                             cluster_mode = '0', similarity_type = '2'):
     
     query_Path = Path(query_folder)
+    results_Path = Path(results_folder)
     
     if temp_folder == '':
-        temp_Path = query_Path / 'temp'
+        temp_Path = results_Path / 'temp'
     else:
         temp_Path = Path(temp_folder)
-    
-    results_Path = Path(results_folder)
     
     for path in [temp_Path, results_Path]:
         if not os.path.exists(path):
