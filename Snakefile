@@ -51,7 +51,7 @@ rule copy_pdb:
     output: output_dir / foldseekclustering_dir / "{protid}.pdb"
     shell:
         '''
-        cp {output.pdb} {output.pdb_copy}
+        cp {input} {output}
         '''
 
 ###########################################
