@@ -40,7 +40,7 @@ rule make_pdb:
         pdb = input_dir / "{protid}.pdb"
     shell:
         '''
-        python utils/esmfold_apiquery.py -i {input.cds}
+        python ProteinCartography/esmfold_apiquery.py -i {input.cds}
         '''
 
 rule copy_pdb:
@@ -69,7 +69,7 @@ rule run_blast:
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     shell:
         '''
-        python utils/run_blast.py -i {input.cds} -b {output.blastresults} -o {output.refseqhits}
+        python ProteinCartography/run_blast.py -i {input.cds} -b {output.blastresults} -o {output.refseqhits}
         '''
 
 rule map_refseqids:
@@ -83,7 +83,7 @@ rule map_refseqids:
         uniprothits = output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt"
     shell:
         '''
-        python utils/map_refseqids.py -i {input.refseqhits} -o {output.uniprothits}
+        python ProteinCartography/map_refseqids.py -i {input.refseqhits} -o {output.uniprothits}
         '''
 
 ######################################
@@ -110,9 +110,9 @@ rule run_foldseek:
         fs_databases = expand("{fs_databases}", fs_databases = FS_DATABASES)
     shell:
         '''
-        python utils/foldseek_apiquery.py -i {input.cds} -o {output.targz} -d {params.fs_databases}
+        python ProteinCartography/foldseek_apiquery.py -i {input.cds} -o {output.targz} -d {params.fs_databases}
         tar -xvf {output.targz} -C {output.unpacked}
-        python utils/extract_foldseekhits.py -i {output.m8files} -o {output.foldseekhits}
+        python ProteinCartography/extract_foldseekhits.py -i {output.m8files} -o {output.foldseekhits}
         '''
 
 #####################################################################
@@ -130,7 +130,7 @@ rule aggregate_lists:
         jointlist = output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
     shell:
         '''
-        python utils/aggregate_lists.py -i {input} -o {output.jointlist}
+        python ProteinCartography/aggregate_lists.py -i {input} -o {output.jointlist}
         '''
 
 checkpoint create_alphafold_wildcard:
@@ -142,7 +142,7 @@ checkpoint create_alphafold_wildcard:
     output: directory(os.path.join(output_dir, "alphafold_dummy/"))
     shell:
         '''
-        python utils/make_dummies.py -i {input.jointlist} -o {output} -M 10
+        python ProteinCartography/make_dummies.py -i {input.jointlist} -o {output} -M 10
         '''
     
 rule download_pdbs:
@@ -157,7 +157,7 @@ rule download_pdbs:
         outdir = output_dir / foldseekclustering_dir
     shell:
         '''
-        python utils/fetch_accession.py -a {wildcards.acc} -o {params.outdir} -f pdb
+        python ProteinCartography/fetch_accession.py -a {wildcards.acc} -o {params.outdir} -f pdb
         '''
         
 def checkpoint_create_alphafold_wildcard(wildcards):
