@@ -23,7 +23,9 @@ FS_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome']
 rule all:
     input:
         output_dir / foldseekclustering_dir / "alphafold_querylist.txt",
-        output_dir / 'dummy.txt'
+        output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
+        output_dir / clusteringresults_dir / 'struclusters_features.tsv',
+        output_dir / clusteringresults_dir / "uniprot_features.tsv"
 # technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
 # but it needs to be there in order for us to build a more complete visual of the rule graph
 
@@ -172,7 +174,22 @@ def checkpoint_create_alphafold_wildcard(wildcards):
                  expand(output_dir / foldseekclustering_dir / "{protid}.pdb", protid = PROTID)
     return file_names
 
-rule dummy:
+rule get_uniprot_metadata:
+    '''
+    Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
+    '''
+    input: output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
+    output: output_dir / clusteringresults_dir / "uniprot_features.tsv"
+    shell:
+        '''
+        python ProteinCartography/query_uniprot.py -i {input} -o {output}
+        '''
+
+#####################################################################
+## clustering and dimensionality reduction
+#####################################################################
+
+rule foldseek_clustering:
     '''
     Temporary rule for testing, touches empty file and stops.
     Used to make sure that the checkpoint function above is evaluated and to make rule all tidier.
@@ -183,28 +200,12 @@ rule dummy:
         allvall_pivot = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
         struclusters_features = output_dir / clusteringresults_dir / 'struclusters_features.tsv'
     params:
-        querydir = output_dir / foldseekclustering_dir
+        querydir = output_dir / foldseekclustering_dir,
         resultsdir = output_dir / clusteringresults_dir
     shell:
         '''
         python ProteinCartography/foldseek_clustering.py -q {params.querydir} -r {params.resultsdir}
         '''
-    
-# rule get_uniprot_metadata:
-#     '''
-#     Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
-#     '''
-#     ### I am unwritten... ###
-
-# #####################################################################
-# ## clustering and dimensionality reduction
-# #####################################################################
-    
-# rule foldseek_cluster:
-#     '''
-#     Run Foldseek clustering on all the PDBs
-#     '''
-#     ### I am unwritten... ###
 
 # rule dim_reduction:
 #     '''
