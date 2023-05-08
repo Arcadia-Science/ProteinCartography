@@ -88,6 +88,8 @@ def pivot_results(input_file: str, output_file: str):
     
     foldseek_df = pd.read_csv(input_file, sep = '\t', names = ['protid', 'target', 'tmscore'])
     pivoted_table = pd.pivot(foldseek_df, index = 'protid', columns = 'target', values = 'tmscore').fillna(0)
+    pivoted_table.columns = pivoted_table.columns.str.removesuffix('.pdb')
+    pivoted_table.index = pivoted_table.index.str.removesuffix('.pdb')
     
     pivoted_table.to_csv(output_file, sep = '\t')
 
@@ -109,4 +111,3 @@ def main():
     
 if __name__ == '__main__':
     main()
-    
