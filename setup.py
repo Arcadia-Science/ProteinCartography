@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ProteinCartography',
-    url='https://github.com/Arcadia-Science/GeneFinder',
+    url='https://github.com/Arcadia-Science/gene-family-cartography',
     author='Dennis Sun',
     author_email='dennis.sun@arcadiascience.com',
     packages=['ProteinCartography'],
