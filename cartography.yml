@@ -1,0 +1,31 @@
+name: cartography
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - blast=2.12.0
+  - foldseek=5.53465f0
+  - jupyter=1.0.0
+  - jupyterlab=3.6.3
+  - ca-certificates=2022.12.7
+  - openssl=3.1.0
+  - tqdm=4.65.0
+  - certifi=2022.12.7
+  - pandas=2.0.1
+  - scanpy=1.9.3
+  - scikit-learn=1.2.2
+  - umap-learn=0.5.3
+  - leidenalg=0.9.1
+  - matplotlib=3.7.1
+  - plotly=5.14.1
+  - jupyter-dash=0.4.2
+  - wordcloud=1.8.2.2
+  - pycairo=1.23.0
+  - nodejs=16.19.0
+  - biopython=1.81
+  - bioservices=1.10.0
+  - py3dmol=2.0.1.post1
+  - snakemake=7.25.0
+  - graphviz=8.0.4
