@@ -17,15 +17,16 @@ clusteringresults_dir = Path('clusteringresults/')
 
 PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) if '.fasta' in i]
 FS_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome']
+MODES = ['pca', 'tsne', 'umap', 'pca_tsne', 'pca_umap']
 
 ######################################
 
 rule all:
     input:
         output_dir / foldseekclustering_dir / "alphafold_querylist.txt",
-        output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
-        output_dir / clusteringresults_dir / 'struclusters_features.tsv',
-        output_dir / clusteringresults_dir / "uniprot_features.tsv"
+        output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
+        output_dir / clusteringresults_dir / "aggregated_features.tsv",
+        expand(output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted_{modes}.tsv", modes = MODES)
 # technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
 # but it needs to be there in order for us to build a more complete visual of the rule graph
 
@@ -207,24 +208,39 @@ rule foldseek_clustering:
         python ProteinCartography/foldseek_clustering.py -q {params.querydir} -r {params.resultsdir}
         '''
 
-# rule dim_reduction:
-#     '''
-#     Perform dimensionality reduction, saving as an embedding matrix and a TSV
-#     Write a set of functions to return Dataframes for interactive compute
-#     Write helper functions to save the dataframes only called by main()
-#     '''
-#     ### I am unwritten... ###
+rule dim_reduction:
+    '''
+    Perform dimensionality reduction, saving as an embedding matrix and a TSV
+    Write a set of functions to return Dataframes for interactive compute
+    Write helper functions to save the dataframes only called by main()
+    '''
+    input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
+    output: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted_{modes}.tsv'
+    params:
+        modes = '{modes}'
+    shell:
+        '''
+        python ProteinCartography/dim_reduction.py -i {input} -m {params.modes}
+        '''
 
-# #####################################################################
-# ## aggregate features into a big TSV and make a nice plot
-# #####################################################################    
+#####################################################################
+## aggregate features into a big TSV and make a nice plot
+#####################################################################    
 
-# rule aggregate_features:
-#     '''
-#     Aggregate all TSV features provided by user in some specific directory, making one big TSV
-#     Will need to handle filling NAs properly for each column
-#     '''
-#     ### I am unwritten... ###
+rule aggregate_features:
+    '''
+    Aggregate all TSV features provided by user in some specific directory, making one big TSV
+    '''
+    input:
+        output_dir / clusteringresults_dir / "struclusters_features.tsv",
+        output_dir / clusteringresults_dir / "uniprot_features.tsv"
+    output: output_dir / clusteringresults_dir / "aggregated_features.tsv"
+    params:
+        override = input_dir / "features_override.tsv"
+    shell:
+        '''
+        python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
+        '''
     
 # rule make_scatter:
 #     '''
