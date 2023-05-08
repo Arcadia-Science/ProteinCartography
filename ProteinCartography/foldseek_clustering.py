@@ -16,7 +16,7 @@ def parse_args():
 def run_foldseek_clustering(query_folder: str, results_folder: str,
                             temp_folder = '', 
                             distances_filename = 'all_by_all_tmscore.tsv',
-                            cluster_filename = 'clusters.tsv',
+                            cluster_filename = 'struclusters.tsv',
                             cluster_mode = '0', similarity_type = '2'):
     
     query_Path = Path(query_folder)
