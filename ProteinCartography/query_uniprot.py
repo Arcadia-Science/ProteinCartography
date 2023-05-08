@@ -19,7 +19,8 @@ def query_uniprot(input_file: str, output_file: str, save = True):
     results = u.mapping("UniProtKB_AC-ID", "UniProtKB", query = ' '.join(id_list))
     
     results_df = pd.json_normalize(results['results'])
-    results_df.insert(0, 'protid', results_df['to.primaryAccession'])
+    results_df.columns = results_df.columns.str.removeprefix('to.')
+    results_df.insert(0, 'protid', results_df['primaryAccession'])
     
     if save:
         results_df.to_csv(output_file, index = None, sep = '\t')
