@@ -26,7 +26,7 @@ rule all:
         output_dir / foldseekclustering_dir / "alphafold_querylist.txt",
         output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
         output_dir / clusteringresults_dir / "aggregated_features.tsv",
-        expand(output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted_{modes}.tsv", modes = MODES)
+        expand(output_dir / clusteringresults_dir / "aggregated_features_{modes}.html", modes = MODES)
 # technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
 # but it needs to be there in order for us to build a more complete visual of the rule graph
 
@@ -242,11 +242,19 @@ rule aggregate_features:
         python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
         '''
     
-# rule make_scatter:
-#     '''
-#     Generate interactive scatter plot HTML programmatically based on user-input parameters
-#     Takes the TSV from rule aggregate_features and select default columns
-#     User should be able to call this module and pass their own functions to parse particular TSV columns
-#     Should have means to set a palette for each individual plot type, maybe as JSON?
-#     '''
-#     ### I am unwritten... ###
+rule plot_interactive:
+    '''
+    Generate interactive scatter plot HTML programmatically based on user-input parameters
+    Takes the TSV from rule aggregate_features and select default columns
+    User should be able to call this module and pass their own functions to parse particular TSV columns
+    Should have means to set a palette for each individual plot type, maybe as JSON?
+    '''
+    input:
+        dimensions = output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted_{modes}.tsv",
+        features = output_dir / clusteringresults_dir / "aggregated_features.tsv"
+    output:
+        output_dir / clusteringresults_dir / "aggregated_features_{modes}.html"
+    shell:
+        '''
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output}
+        '''
