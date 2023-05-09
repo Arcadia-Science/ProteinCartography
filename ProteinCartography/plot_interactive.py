@@ -10,13 +10,17 @@ def parse_args():
     parser.add_argument("-d", "--dimensions", required = True)
     parser.add_argument("-f", "--features", required = True)
     parser.add_argument("-o", "--output", required = True)
+    parser.add_argument("-t", "--dimensions-type", default = '')
     args = parser.parse_args()
     
     return args
 
-def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = '', save = False, prep_step = False):
+def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = '', dimtype = '', save = False, prep_step = False):
     reduced_dim_df = pd.read_csv(dimensions_file, sep = '\t')
-    dimtype = ''.join([i for i in reduced_dim_df.columns[1] if not i.isdigit()])
+    if dimtype == '':
+        outdimtype = ''.join([i for i in reduced_dim_df.columns[1] if not i.isdigit()])
+    else:
+        outdimtype = dimtype
     agg_features_df = pd.read_csv(features_file, sep = '\t')
     
     if '.tsv' not in features_file:
@@ -25,9 +29,9 @@ def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = '',
     plot_features_df = reduced_dim_df.merge(agg_features_df, on = 'protid')
     
     if saveprefix != '':
-        savefile = '_'.join([saveprefix, dimtype + '.tsv'])
+        savefile = '_'.join([saveprefix, outdimtype + '.tsv'])
     else:        
-        savefile = features_file.replace('.tsv', '_' + dimtype + '.tsv')
+        savefile = features_file.replace('.tsv', '_' + outdimtype + '.tsv')
     
     if save:
         plot_features_df.to_csv(savefile, sep = '\t', index = None)
@@ -204,7 +208,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         
         scatter_counter[col] = 0        
         for scatter in plot.data:
-            fig.add_trace(go.Scatter(scatter, visible = vis))
+            fig.add_trace(go.Scattergl(scatter, visible = vis))
             scatter_counter[col] += 1
     
     def visibility_list(col):
@@ -268,6 +272,7 @@ def main():
     dimensions_file = args.dimensions
     features_file = args.features
     output_file = args.output
+    dimensions_type = args.dimensions_type
 
     annotationScore_colors = [
         apc.arcadia_all['arcadia:crow'], 
@@ -332,7 +337,8 @@ def main():
         }
     }
     
-    coordinates_file = apply_coordinates(dimensions_file, features_file, save = True, prep_step = True)
+    coordinates_file = apply_coordinates(dimensions_file, features_file, save = True, prep_step = True, 
+                                         dimtype = dimensions_type)
     plot_interactive(coordinates_file, plotting_rules, output_file = output_file)
     
 if __name__ == '__main__':
