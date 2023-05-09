@@ -25,7 +25,7 @@ def calculate_PCA(pivot_file: str, n_components = 2,
     pca = PCA(n_components=n_components, **kwargs)
     pca_results = pca.fit_transform(pivoted_df)
     
-    pca_results_df = pd.DataFrame(pca_results, columns = [f'PC{i}' for i in range(pca_results.ndim)], index = pivoted_df.index)
+    pca_results_df = pd.DataFrame(pca_results, columns = [f'PC{i}' for i in range(pca_results.shape[1])], index = pivoted_df.index)
     
     if saveprefix != '':
         savefile = '_'.join([saveprefix, dimtype + '.tsv'])
@@ -118,14 +118,18 @@ def main():
         calculate_UMAP(pivot_file, random_state, saveprefix = saveprefix, save = True)
         
     elif mode == 'pca_tsne':
-        pca_results_file = calculate_PCA(pivot_file, saveprefix = 
-                                         saveprefix, save = True, prep_step = True)
-        calculate_TSNE(pca_results_file, random_state, saveprefix = saveprefix, save = True)
+        saveprefix1 = pivot_file.replace('.tsv', 'temp1')
+        pca_results_file = calculate_PCA(pivot_file, saveprefix = saveprefix1,
+                                         n_components = 30, save = True, prep_step = True)
+        saveprefix2 = pca_results_file.replace('temp1', '').replace('.tsv', '')
+        calculate_TSNE(pca_results_file, random_state, saveprefix = saveprefix2, save = True)
         
     elif mode == 'pca_umap':
-        pca_results_file = calculate_PCA(pivot_file, saveprefix = 
-                                         saveprefix, save = True, prep_step = True)
-        calculate_UMAP(pca_results_file, random_state, saveprefix = saveprefix, save = True)
+        saveprefix1 = pivot_file.replace('.tsv', 'temp2')
+        pca_results_file = calculate_PCA(pivot_file, saveprefix = saveprefix1,
+                                         n_components = 30, save = True, prep_step = True)
+        saveprefix2 = pca_results_file.replace('temp2', '').replace('.tsv', '')
+        calculate_UMAP(pca_results_file, random_state, saveprefix = saveprefix2, save = True)
 
 if __name__ == '__main__':
     main()
