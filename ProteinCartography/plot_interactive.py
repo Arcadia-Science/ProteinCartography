@@ -275,7 +275,7 @@ def main():
     dimensions_type = args.dimensions_type
 
     annotationScore_colors = [
-        apc.arcadia_all['arcadia:crow'], 
+        '#eaeaea', 
         apc.arcadia_all['arcadia:aster'],
         apc.arcadia_all['arcadia:aegean'],
         apc.arcadia_all['arcadia:seaweed'],

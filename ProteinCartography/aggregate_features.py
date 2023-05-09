@@ -34,7 +34,7 @@ def aggregate_features(input_files: list, output_file = '', features_override = 
                     if col not in agg_df.columns:
                         continue
                     
-                    agg_df.loc[agg_df['protid'] == entry, col] = entry_row[col][0]
+                    agg_df.loc[agg_df['protid'] == entry, col] = entry_row[col].values[0]
     
     if output_file != '':
         agg_df.to_csv(output_file, sep = '\t', index = None)
