@@ -7,7 +7,7 @@ from pathlib import Path
 input_dir = Path('input_minitest/')
 
 # put most things into the output directory
-output_dir = Path('output_minitest/')
+output_dir = Path('output_fulltest/')
 
 # these directories fall within the output directory
 blastresults_dir = Path('blastresults/')
@@ -17,7 +17,10 @@ clusteringresults_dir = Path('clusteringresults/')
 
 PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) if '.fasta' in i]
 FS_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome']
-MODES = ['pca', 'tsne', 'umap', 'pca_tsne', 'pca_umap']
+MODES = ['pca_tsne', 'pca_umap']
+
+MAX_STRUCTURES = 5000
+MAX_BLASTHITS = 3000
 
 ######################################
 
@@ -68,9 +71,11 @@ rule run_blast:
     output:
         blastresults = output_dir / blastresults_dir / "{protid}.blastresults.tsv",
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
+    params:
+        max_blasthits = MAX_BLASTHITS
     shell:
         '''
-        python ProteinCartography/run_blast.py -i {input.cds} -b {output.blastresults} -o {output.refseqhits}
+        python ProteinCartography/run_blast.py -i {input.cds} -b {output.blastresults} -o {output.refseqhits} -M {params.max_blasthits}
         '''
 
 rule map_refseqids:
@@ -141,9 +146,11 @@ checkpoint create_alphafold_wildcard:
     input:
         jointlist = output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
     output: directory(os.path.join(output_dir, "alphafold_dummy/"))
+    params:
+        max_structures = MAX_STRUCTURES
     shell:
         '''
-        python ProteinCartography/make_dummies.py -i {input.jointlist} -o {output} -M 10
+        python ProteinCartography/make_dummies.py -i {input.jointlist} -o {output} -M {params.max_structures}
         '''
     
 rule download_pdbs:
@@ -251,7 +258,9 @@ rule plot_interactive:
         features = output_dir / clusteringresults_dir / "aggregated_features.tsv"
     output:
         output_dir / clusteringresults_dir / "aggregated_features_{modes}.html"
+    params:
+        modes = "{modes}"
     shell:
         '''
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output}
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes}
         '''
