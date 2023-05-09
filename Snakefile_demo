@@ -4,10 +4,10 @@ from pathlib import Path
 # Get protein IDs from fasta files in input directory
 # In the future, have this specified by command line argument or config file
 # In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
-input_dir = Path('input/')
+input_dir = Path('input_demo/')
 
 # put most things into the output directory
-output_dir = Path('output_fulltest/')
+output_dir = Path('output_demo/')
 
 # these directories fall within the output directory
 blastresults_dir = Path('blastresults/')
