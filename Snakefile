@@ -23,9 +23,6 @@ MODES = ['pca', 'tsne', 'umap', 'pca_tsne', 'pca_umap']
 
 rule all:
     input:
-        output_dir / foldseekclustering_dir / "alphafold_querylist.txt",
-        output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
-        output_dir / clusteringresults_dir / "aggregated_features.tsv",
         expand(output_dir / clusteringresults_dir / "aggregated_features_{modes}.html", modes = MODES)
 # technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
 # but it needs to be there in order for us to build a more complete visual of the rule graph
