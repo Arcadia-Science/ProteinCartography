@@ -37,6 +37,8 @@ def extract_foldseekhits(input_files: list, output_file: str):
         # extract the model ID from the results target column
         file_df['modelid'] = file_df['target'].str.split(' ', expand = True)[0]
         
+        file_df = file_df[file_df['modelid'].str.contains('-F1-model_v4')]
+        
         # get the uniprot ID out from that target
         file_df['uniprotid'] = file_df['modelid'].apply(lambda x: re.findall('AF-(.*)-F1-model_v4', x)[0])
         

@@ -45,7 +45,7 @@ def map_refseqids(input_file: str, output_file: str, query_dbs: list):
     # for each query database, map
     for i, db in enumerate(query_dbs):
         # u.mapping returns a gross json file
-        results = u.mapping(db, "UniProtKB", query = ' '.join(ids))
+        results = u.mapping(db, "UniProtKB", query = ','.join(ids))
         
         # pandas can normalize the json and make it more tractable
         results_df = pd.json_normalize(results['results'])

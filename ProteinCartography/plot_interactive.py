@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 import pandas as pd
 import arcadia_pycolor as apc
 import numpy as np
+import matplotlib.colors as mc
+import colorsys
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -11,9 +13,19 @@ def parse_args():
     parser.add_argument("-f", "--features", required = True)
     parser.add_argument("-o", "--output", required = True)
     parser.add_argument("-t", "--dimensions-type", default = '')
+    parser.add_argument("-k", "--keyids", nargs = "+", default = [])
     args = parser.parse_args()
     
     return args
+
+def adjust_lightness(color, amount=0.5):
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    c2 = colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
+    return mc.to_hex(c2)
 
 def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = '', dimtype = '', save = False, prep_step = False):
     reduced_dim_df = pd.read_csv(dimensions_file, sep = '\t')
@@ -57,7 +69,7 @@ def assign_taxon(taxon_list: list, rank_list: list, hierarchical = False, sep = 
         return sep.join(output)
 
 def plot_interactive(coordinates_file: str, plotting_rules: dict,
-                    marker_size = 5, marker_opacity = 0.8, output_file = '', show = False):
+                    marker_size = 4, marker_opacity = 0.8, output_file = '', keyids = [], show = False):
     
     # make a copy of the starting data
     df = pd.read_csv(coordinates_file, sep = '\t')
@@ -126,12 +138,25 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             
             # if a color dict is not provided, but a color order is, use that to make a color dict
             elif 'color_order' in plotting_rules[col].keys():
-                color_order = plotting_rules[col]['color_order']
+                color_order = list(plotting_rules[col]['color_order'])
                 
                 # make sure there's enough colors to make a dict with
                 # in the future, should automatically add extra colors
                 if len(color_order) < len(color_keys):
-                    raise Exception(f'color_order expects an equal or greater number of colors for unique values.\nProvided {len(color_order)} colors for {len(color_keys)} values.')
+                    num_cycles = int(np.round(len(color_keys) / len(color_order)))
+                    
+                    more_colors = []
+                    steps = [0.7, 0.5, 0.3]
+                    
+                    if num_cycles > len(steps):
+                        raise Exception(f'Can create up to {len(steps) * len(color_order)} colors to use.\nNeeded {len(color_keys)} colors.')
+                    
+                    for n in range(num_cycles - 1):
+                        color_order_duplicated = [adjust_lightness(color) for color in color_order]
+                        more_colors.extend(color_order_duplicated)
+                    
+                    color_order.extend(more_colors)
+                    
                 colors_dict = dict(zip(color_keys, color_order))
             
             else:
@@ -145,6 +170,9 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             # add the hovertemplate text and other aspects to the traces for that column
             plots[col].update_traces(marker = dict(size = marker_size, opacity = marker_opacity),
                                     hovertemplate = hovertemplate)
+            
+            if len(colors_dict.keys()) > 20:
+                plots[col].layout.update(showlegend = False)
         
         # Plotting rules for continuous plots
         elif plotting_rules[col]['type'] == 'continuous':
@@ -206,10 +234,34 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             
         fig_order.append(col)
         
-        scatter_counter[col] = 0        
+        scatter_counter[col] = len(plot.data)
+        if scatter_counter[col] > 15:
+            showlegend = False
+        else:
+            showlegend = True
+        
         for scatter in plot.data:
-            fig.add_trace(go.Scattergl(scatter, visible = vis))
-            scatter_counter[col] += 1
+            fig.add_trace(go.Scattergl(scatter, visible = vis, showlegend = showlegend))
+        
+    if keyids != []:
+        keypoints = df[df['protid'].isin(keyids)]
+        
+        fig.add_trace(
+            go.Scatter(
+                mode='markers',
+                x=keypoints[dim1],
+                y=keypoints[dim2],
+                marker=dict(
+                    color='rgba(0,0,0,1)',
+                    size=10,
+                    symbol='star-diamond'
+                ),
+                showlegend=False,
+                hoverinfo='skip',
+                hoverlabel=None,
+                name = 'keyids'
+            )
+        )
     
     def visibility_list(col):
         entries = []
@@ -230,27 +282,45 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             button_label = col
         
         button_item = dict(
-                        args = ["visible", visibility_list(col)],
+                        args = ["visible", visibility_list(col) + [True]],
                         label = button_label,
                         method = "restyle"
                     )
         buttons.append(button_item)
-
-    fig.update_layout(
-        updatemenus=[
-            dict(
+        
+    dropdown_menu = dict(
                 buttons = list(buttons),
                 showactive = True,
                 x = 0.1,
                 xanchor = "left",
                 y = 1.1,
                 yanchor = "top"
-            ),
-        ]
+    )
+    
+    if keyids != []:
+        keyids_button = dict(
+            buttons = [dict(
+                args = ['visible', [i.visible if i.name != 'keyids' else True for i in fig.select_traces()]],
+                args2 = ['visible', [i.visible if i.name != 'keyids' else False for i in fig.select_traces()]],
+                label = 'Input Proteins'
+            )],
+            type = 'buttons',
+            showactive = True,
+            x = 0.5,
+            xanchor = "left",
+            y = 1.1,
+            yanchor = "top" 
+        )
+        updatemenu = [dropdown_menu, keyids_button]
+    else:
+        updatemenu = [dropdown_menu]
+
+    fig.update_layout(
+        updatemenus = updatemenu
     )
 
     fig.update_layout(
-        width = 600, height = 600,
+        width = 700, height = 700,
         annotations=[
             dict(text="color", x=0.01, xref="paper", y=1.08, yref="paper",
              align="left", showarrow=False),
@@ -259,13 +329,16 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     )
     fig.update_layout(xaxis = dict(showticklabels = False), yaxis = dict(showticklabels = False))
     fig.update_yaxes(scaleanchor = "x", scaleratio = 1)
-    fig.update_layout(legend=dict(orientation = "h", yanchor="top", y = 0, xanchor="left", x = 0))
+    fig.update_layout(legend=dict(orientation = "h", yanchor="top", y = 0, xanchor="left", x = 0, font = dict(size = 10)))
     fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=0, x=0.5,
                                           ticks="outside", orientation = 'h'))
     if output_file != '':
         fig.write_html(output_file)
+    
     if show:
         fig.show()
+    
+    return fig
 
 def main():
     args = parse_args()
@@ -273,6 +346,7 @@ def main():
     features_file = args.features
     output_file = args.output
     dimensions_type = args.dimensions_type
+    keyids = args.keyids
 
     annotationScore_colors = [
         '#eaeaea', 
@@ -289,15 +363,24 @@ def main():
         'Vertebrata': apc.arcadia_all['arcadia:canary'],
         'Arthropoda': apc.arcadia_all['arcadia:seaweed'],
         'Ecdysozoa': apc.arcadia_all['arcadia:mint'],
-        'Lophotrocozoa': apc.arcadia_all['arcadia:aegean'],
+        'Lophotrochozoa': apc.arcadia_all['arcadia:aegean'],
         'Metazoa': apc.arcadia_all['arcadia:amber'],
-        'Fungi': apc.arcadia_all['arcadia:periwinkle'], 
+        'Fungi': apc.arcadia_all['arcadia:chateau'],
+        'Viridiplantae': apc.arcadia_all['arcadia:lime'],
+        'Sar': apc.arcadia_all['arcadia:rose'],
+        'Excavata': apc.arcadia_all['arcadia:wish'],
+        'Amoebazoa': apc.arcadia_all['arcadia:periwinkle'],
         'Eukaryota': apc.arcadia_all['arcadia:aster'], 
         'Bacteria': apc.arcadia_all['arcadia:slate'], 
         'Archaea': apc.arcadia_all['arcadia:dragon']
     }
 
     plotting_rules = {
+        'proteinDescription.recommendedName.fullName.value': {
+            'type': 'hovertext',
+            'fillna': '',
+            'textlabel': 'Description'
+        },
         'organism.scientificName': {
             'type': 'hovertext',
             'fillna': '',
@@ -307,6 +390,13 @@ def main():
             'type': 'hovertext',
             'fillna': '',
             'textlabel': 'Common name'
+        },
+        'LeidenCluster': {
+            'type': 'categorical',
+            'fillna': 'None',
+            'apply': lambda x: str(x),
+            'color_order': apc.arcadia_All_ordered.values(),
+            'textlabel': 'Leiden Cluster'
         },
         'StruCluster': {
             'type': 'categorical',
@@ -339,7 +429,7 @@ def main():
     
     coordinates_file = apply_coordinates(dimensions_file, features_file, save = True, prep_step = True, 
                                          dimtype = dimensions_type)
-    plot_interactive(coordinates_file, plotting_rules, output_file = output_file)
+    plot_interactive(coordinates_file, plotting_rules, output_file = output_file, keyids = keyids)
     
 if __name__ == '__main__':
     main()
