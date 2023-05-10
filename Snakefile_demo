@@ -34,6 +34,8 @@ rule all:
 ## make .pdb files using esmfold API query
 ###########################################
 
+ruleorder: copy_pdb > download_pdbs
+
 rule make_pdb:
     '''
     Use the ESMFold API query to generate a pdb from a fasta file.
@@ -227,6 +229,16 @@ rule dim_reduction:
         python ProteinCartography/dim_reduction.py -i {input} -m {params.modes}
         '''
 
+rule leiden_clustering:
+    '''
+    '''
+    input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
+    output: output_dir / clusteringresults_dir / 'leiden_features.tsv'
+    shell:
+        '''
+        python ProteinCartography/leiden_clustering.py -i {input} -o {output}
+        '''
+
 #####################################################################
 ## aggregate features into a big TSV and make a nice plot
 #####################################################################    
@@ -237,13 +249,12 @@ rule aggregate_features:
     '''
     input:
         output_dir / clusteringresults_dir / "struclusters_features.tsv",
-        output_dir / clusteringresults_dir / "uniprot_features.tsv"
+        output_dir / clusteringresults_dir / "uniprot_features.tsv",
+        output_dir / clusteringresults_dir / "leiden_features.tsv"
     output: output_dir / clusteringresults_dir / "aggregated_features.tsv"
-    params:
-        override = input_dir / "features_override.tsv"
     shell:
         '''
-        python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
+        python ProteinCartography/aggregate_features.py -i {input} -o {output}
         '''
     
 rule plot_interactive:
@@ -259,8 +270,9 @@ rule plot_interactive:
     output:
         output_dir / clusteringresults_dir / "aggregated_features_{modes}.html"
     params:
-        modes = "{modes}"
+        modes = "{modes}",
+        protid = expand("{protid}", protid = PROTID)
     shell:
         '''
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes}
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid}
         '''
