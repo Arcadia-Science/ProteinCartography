@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument("-o", "--output", required = True)
     parser.add_argument("-t", "--dimensions-type", default = '')
     parser.add_argument("-k", "--keyids", nargs = "+", default = [])
+    parser.add_argument("-x", "--taxon_focus", default = "euk")
     args = parser.parse_args()
     
     return args
@@ -347,6 +348,7 @@ def main():
     output_file = args.output
     dimensions_type = args.dimensions_type
     keyids = args.keyids
+    taxon_focus = args.taxon_focus
 
     annotationScore_colors = [
         '#eaeaea', 
@@ -358,23 +360,44 @@ def main():
     ]
 
     annotationScore_color_dict = dict(zip([str(i) for i in range(6)], annotationScore_colors))
-    taxon_color_dict = {
-        'Mammalia': apc.arcadia_all['arcadia:oat'],
-        'Vertebrata': apc.arcadia_all['arcadia:canary'],
-        'Arthropoda': apc.arcadia_all['arcadia:seaweed'],
-        'Ecdysozoa': apc.arcadia_all['arcadia:mint'],
-        'Lophotrochozoa': apc.arcadia_all['arcadia:aegean'],
-        'Metazoa': apc.arcadia_all['arcadia:amber'],
-        'Fungi': apc.arcadia_all['arcadia:chateau'],
-        'Viridiplantae': apc.arcadia_all['arcadia:lime'],
-        'Sar': apc.arcadia_all['arcadia:rose'],
-        'Excavata': apc.arcadia_all['arcadia:wish'],
-        'Amoebazoa': apc.arcadia_all['arcadia:periwinkle'],
-        'Eukaryota': apc.arcadia_all['arcadia:aster'], 
-        'Bacteria': apc.arcadia_all['arcadia:slate'], 
-        'Archaea': apc.arcadia_all['arcadia:dragon']
-    }
-
+    
+    if taxon_focus == 'euk':
+        taxon_color_dict = {
+            'Mammalia': apc.arcadia_all['arcadia:oat'],
+            'Vertebrata': apc.arcadia_all['arcadia:canary'],
+            'Arthropoda': apc.arcadia_all['arcadia:seaweed'],
+            'Ecdysozoa': apc.arcadia_all['arcadia:mint'],
+            'Lophotrochozoa': apc.arcadia_all['arcadia:aegean'],
+            'Metazoa': apc.arcadia_all['arcadia:amber'],
+            'Fungi': apc.arcadia_all['arcadia:chateau'],
+            'Viridiplantae': apc.arcadia_all['arcadia:lime'],
+            'Sar': apc.arcadia_all['arcadia:rose'],
+            'Excavata': apc.arcadia_all['arcadia:wish'],
+            'Amoebazoa': apc.arcadia_all['arcadia:periwinkle'],
+            'Eukaryota': apc.arcadia_all['arcadia:aster'], 
+            'Bacteria': apc.arcadia_all['arcadia:slate'], 
+            'Archaea': apc.arcadia_all['arcadia:dragon'],
+            'Viruses': apc.arcadia_all['arcadia:orange']
+        }
+    elif taxon_focus == 'bac':
+        taxon_color_dict = {
+            'Pseudomonadota': apc.arcadia_all['arcadia:periwinkle'],
+            'Nitrospirae': apc.arcadia_all['arcadia:vitalblue'],
+            'Acidobacteria': apc.arcadia_all['arcadia:mars'],
+            'Bacillota': apc.arcadia_all['arcadia:mint'],
+            'Spirochaetes': apc.arcadia_all['arcadia:aegean'],
+            'Cyanobacteria': apc.arcadia_all['arcadia:seaweed'],
+            'Actinomycetota': apc.arcadia_all['arcadia:canary'],
+            'Deinococcota': apc.arcadia_all['arcadia:rose'],
+            'Bacteria': apc.arcadia_all['arcadia:slate'],
+            'Archaea': apc.arcadia_all['arcadia:dragon'],
+            'Viruses': apc.arcadia_all['arcadia:orange'],
+            'Metazoa': apc.arcadia_all['arcadia:amber'],
+            'Fungi': apc.arcadia_all['arcadia:chateau'],
+            'Viridiplantae': apc.arcadia_all['arcadia:lime'],
+            'Eukaryota': apc.arcadia_all['arcadia:wish'],
+        }
+    
     plotting_rules = {
         'proteinDescription.recommendedName.fullName.value': {
             'type': 'hovertext',
@@ -426,6 +449,9 @@ def main():
             'textlabel': 'Length'
         }
     }
+    
+    for keyid in keyids:
+        plotting_rules[f'TMscore_v_{keyid}'] = {'type': 'continuous', 'fillna': 0, 'textlabel': f'TMscore vs. {keyid}'}
     
     coordinates_file = apply_coordinates(dimensions_file, features_file, save = True, prep_step = True, 
                                          dimtype = dimensions_type)
