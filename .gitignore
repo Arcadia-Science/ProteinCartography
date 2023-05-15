@@ -5,3 +5,4 @@
 .snakemake/
 output*/
 input*/
+**__pycache__/
