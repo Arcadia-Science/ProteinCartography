@@ -35,7 +35,14 @@ foldseekresults_dir = Path('foldseekresults/')
 foldseekclustering_dir = Path('foldseekclustering/')
 clusteringresults_dir = Path('clusteringresults/')
 
-PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) if '.fasta' in i]
+# gets the protein ID based on FASTA file name
+# flexibly checks if fasta file is correct suffix
+FASTA_FORMATS = ['.fa', '.fasta', '.fna']
+PROTID = []
+for file in os.listdir(input_dir):
+    if any(file.lower().endswith(suffix) for suffix in FASTA_FORMATS):
+        file_id = os.path.splitext(file)[0]
+        PROTID.append(file_id)
 
 ######################################
 
@@ -126,6 +133,8 @@ rule run_foldseek:
     The script accepts an input file ending in '.pdb' and returns an output file ending in '.tar.gz'.
     The script also accepts a `--mode` flag of either '3diaa' (default) or 'tmalign' and choice of databases.
     After running, untars the files and extracts hits.
+    
+    This fails on the first try every time for some `requests`-related reason.
     '''
     input:
         cds = input_dir / "{protid}.pdb"
@@ -218,9 +227,7 @@ rule get_uniprot_metadata:
 
 rule foldseek_clustering:
     '''
-    Temporary rule for testing, touches empty file and stops.
-    Used to make sure that the checkpoint function above is evaluated and to make rule all tidier.
-    This will be changed in the future to a rule that actually does something.
+    Runs foldseek all-v-all tmscore comparison and foldseek clustering.
     '''
     input: checkpoint_create_alphafold_wildcard
     output: 
