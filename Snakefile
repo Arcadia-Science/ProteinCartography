@@ -1,15 +1,33 @@
 import os
 from pathlib import Path
 
-# Get protein IDs from fasta files in input directory
-# In the future, have this specified by command line argument or config file
-# In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
-input_dir = Path('input_test7/')
+###########################################
+## Parse config information
+###########################################
 
+# Default pipeline configuration parameters are in this file
+# If you create a new yml file and use the --configfile flag, 
+# options in that new file overwrite the defaults.
+configfile: './config.yml'
+
+# Set the input directory
+#### In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
+input_dir = Path(config["input_dir"])
 # put most things into the output directory
-output_dir = Path('output_test7/')
+output_dir = Path(config["output_dir"])
 
-analysis_prefix = "testing"
+# Set the prefix of the output file of the analysis
+analysis_prefix = config["analysis_prefix"]
+
+MAX_BLASTHITS = int(config["max_blasthits"])
+MAX_STRUCTURES = int(config["max_structures"])
+
+FS_DATABASES = config["foldseek_databases"]
+MODES = config["plotting_modes"]
+
+###########################################
+## Setup directory structure
+###########################################
 
 # these directories fall within the output directory
 blastresults_dir = Path('blastresults/')
@@ -18,29 +36,21 @@ foldseekclustering_dir = Path('foldseekclustering/')
 clusteringresults_dir = Path('clusteringresults/')
 
 PROTID = [os.path.basename(i).split('.fasta')[0] for i in os.listdir(input_dir) if '.fasta' in i]
-FS_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome']
-MODES = ['pca_tsne', 'pca_umap']
-
-MAX_STRUCTURES = 5000
-MAX_BLASTHITS = 3000
 
 ######################################
 
 rule all:
     input:
         expand(output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features_{modes}.html"), modes = MODES)
-# technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
-# but it needs to be there in order for us to build a more complete visual of the rule graph
 
 ###########################################
 ## make .pdb files using esmfold API query
 ###########################################
 
-ruleorder: copy_pdb > download_pdbs
-
 rule make_pdb:
     '''
     Use the ESMFold API query to generate a pdb from a fasta file.
+    This rule is only touched if a .pdb file doesn't already exist.
     '''
     input:
         cds = input_dir / "{protid}.fasta"
@@ -51,6 +61,9 @@ rule make_pdb:
         python ProteinCartography/esmfold_apiquery.py -i {input.cds}
         '''
 
+# Prioritize copying an existing PDB to the folder if the ID is also a blast/foldseek hit.
+ruleorder: copy_pdb > download_pdbs
+        
 rule copy_pdb:
     '''
     Copies existing or generated PDBs to the Foldseek clustering folder.
@@ -68,7 +81,9 @@ rule copy_pdb:
 
 rule run_blast:
     '''
-    Using files located in the "inputs/" folder, perform BLAST using the web API.
+    Using files located in the input directory, perform BLAST using the web API.
+    
+    This can die if too many queries are made. Will shift to using a local database.
     '''
     input:
         cds = input_dir / "{protid}.fasta"
@@ -86,6 +101,9 @@ rule map_refseqids:
     '''
     Using List of RefSeq IDs, query the Uniprot ID mapping tool using bioservices UniProt.
     Returns a list of UniProt IDs.
+    This script is quite brittle; something is wrong with bioservices UniProt.
+    Need to refactor the API calls manually to use `requests.post()` etc.
+    Need to also make a local version of the databases for querying.
     '''
     input:
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
@@ -233,6 +251,7 @@ rule dim_reduction:
 
 rule leiden_clustering:
     '''
+    Performs Leiden clustering on the data using scanpy's implementation.
     '''
     input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
     output: output_dir / clusteringresults_dir / 'leiden_features.tsv'
@@ -243,6 +262,8 @@ rule leiden_clustering:
 
 rule input_distances:
     '''
+    Extracts the distances from input proteins to other proteins in the dataset.
+    Adds them as options for the visualization plot.
     '''
     input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
     params:
@@ -255,6 +276,8 @@ rule input_distances:
         
 rule get_source:
     '''
+    Checks the blasthits and foldseekhits files to determine the source of each protein.
+    Adds this info to the visualization plot.
     '''
     input: 
         pivoted = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
