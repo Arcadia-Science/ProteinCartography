@@ -13,7 +13,7 @@ setup(
     description='Builds maps of protein space from structures.',
     scripts=['ProteinCartography/aggregate_features.py',
              'ProteinCartography/aggregate_lists.py',
-             'ProteinCartography/dim_reduction.py
+             'ProteinCartography/dim_reduction.py',
              'ProteinCartography/esmfold_apiquery.py',
              'ProteinCartography/extract_blasthits.py',
              'ProteinCartography/extract_foldseekhits.py',
