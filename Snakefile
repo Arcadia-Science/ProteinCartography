@@ -19,8 +19,13 @@ output_dir = Path(config["output_dir"])
 # Set the prefix of the output file of the analysis
 analysis_prefix = config["analysis_prefix"]
 
+# Check for an override file, setting a variable if it exists
 if "override_file" in config:
     OVERRIDE_FILE = input_dir / config["override_file"]
+    
+    # If it isn't a real file, ignore it
+    if not os.path.exists(OVERRIDE_FILE):
+        OVERRIDE_FILE = ''
 else:
     OVERRIDE_FILE = ''
 
@@ -107,9 +112,11 @@ rule run_blast:
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     params:
         max_blasthits = MAX_BLASTHITS
+        blast_string = BLAST_DEFAULT_STRING
     shell:
         '''
-        python ProteinCartography/run_blast.py -i {input.cds} -b {output.blastresults} -o {output.refseqhits} -M {params.max_blasthits}
+        blastp -db nr -query {input.cds} -out {output.blastresults} -remote -max_target_seqs {params.max_blasthits} -outfmt {params.blast_string}
+        python ProteinCartography/extract_blasthits.py -i {output.blastresults} -o {output.refseqhits} -B {params.blast_string}
         '''
 
 rule map_refseqids:
