@@ -111,7 +111,7 @@ rule run_blast:
         blastresults = output_dir / blastresults_dir / "{protid}.blastresults.tsv",
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     params:
-        max_blasthits = MAX_BLASTHITS
+        max_blasthits = MAX_BLASTHITS,
         blast_string = BLAST_DEFAULT_STRING
     shell:
         '''
