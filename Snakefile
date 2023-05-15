@@ -4,10 +4,12 @@ from pathlib import Path
 # Get protein IDs from fasta files in input directory
 # In the future, have this specified by command line argument or config file
 # In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
-input_dir = Path('input/')
+input_dir = Path('input_test7/')
 
 # put most things into the output directory
-output_dir = Path('output_fulltest/')
+output_dir = Path('output_test7/')
+
+analysis_prefix = "testing"
 
 # these directories fall within the output directory
 blastresults_dir = Path('blastresults/')
@@ -26,7 +28,7 @@ MAX_BLASTHITS = 3000
 
 rule all:
     input:
-        expand(output_dir / clusteringresults_dir / "aggregated_features_{modes}.html", modes = MODES)
+        expand(output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features_{modes}.html"), modes = MODES)
 # technically the alphafold_querylist.txt file doesn't need to be in rule all to be generated
 # but it needs to be there in order for us to build a more complete visual of the rule graph
 
@@ -238,7 +240,34 @@ rule leiden_clustering:
         '''
         python ProteinCartography/leiden_clustering.py -i {input} -o {output}
         '''
+
+rule input_distances:
+    '''
+    '''
+    input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
+    params:
+        protid = "{protid}"
+    output: output_dir / clusteringresults_dir / '{protid}_distance_features.tsv'
+    shell:
+        '''
+        python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
+        '''
         
+rule get_source:
+    '''
+    '''
+    input: 
+        pivoted = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
+        hitfiles = expand(output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid = PROTID) + expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid = PROTID)
+    output:
+        pivot = output_dir / clusteringresults_dir / 'source_features.tsv'
+    params:
+        protid = PROTID
+    shell:
+        '''
+        python ProteinCartography/get_source.py -i {input.pivoted} -f {input.hitfiles} -o {output.pivot} -k {params.protid}
+        '''
+
 #####################################################################
 ## aggregate features into a big TSV and make a nice plot
 #####################################################################    
@@ -250,13 +279,15 @@ rule aggregate_features:
     input:
         output_dir / clusteringresults_dir / "struclusters_features.tsv",
         output_dir / clusteringresults_dir / "uniprot_features.tsv",
-        output_dir / clusteringresults_dir / "leiden_features.tsv"
-    output: output_dir / clusteringresults_dir / "aggregated_features.tsv"
+        output_dir / clusteringresults_dir / "leiden_features.tsv",
+        expand(output_dir / clusteringresults_dir / '{protid}_distance_features.tsv', protid = PROTID),
+        output_dir / clusteringresults_dir / 'source_features.tsv'
+    output: output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features.tsv")
     params:
         override = input_dir / "features_override.tsv"
     shell:
         '''
-        python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
+        python ProteinCartography/aggregate_features.py -i {input} -o {output}
         '''
     
 rule plot_interactive:
@@ -268,13 +299,13 @@ rule plot_interactive:
     '''
     input:
         dimensions = output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted_{modes}.tsv",
-        features = output_dir / clusteringresults_dir / "aggregated_features.tsv"
+        features = output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features.tsv")
     output:
-        output_dir / clusteringresults_dir / "aggregated_features_{modes}.html"
+        output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features_{modes}.html")
     params:
         modes = "{modes}",
         protid = expand("{protid}", protid = PROTID)
     shell:
         '''
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid}
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid} -x bac
         '''
