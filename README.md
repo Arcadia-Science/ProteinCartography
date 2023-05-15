@@ -80,7 +80,8 @@ The steps of the pipeline have the following functionality:
         
     - Power users can customize the plots using a variety of rules, described below.
 
-#### Plotting Rules for `plot_interactive()`
+---
+## Plotting Rules for `plot_interactive()`
 
 The `plot_interactive()` function has two require arguments:
 - a path to the aggregated features file with coordinates that you'd like to plot
