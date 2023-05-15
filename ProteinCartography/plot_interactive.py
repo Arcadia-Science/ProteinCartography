@@ -398,6 +398,11 @@ def main():
             'Eukaryota': apc.arcadia_all['arcadia:wish'],
         }
     
+    source_color_dict = {'blast': apc.arcadia_all['arcadia:canary'], 
+                         'foldseek': apc.arcadia_all['arcadia:aegean'], 
+                         'blast+foldseek': apc.arcadia_all['arcadia:amber'], 
+                         'None': '#eaeaea'}
+    
     plotting_rules = {
         'proteinDescription.recommendedName.fullName.value': {
             'type': 'hovertext',
@@ -421,12 +426,12 @@ def main():
             'color_order': apc.arcadia_All_ordered.values(),
             'textlabel': 'Leiden Cluster'
         },
-        'StruCluster': {
-            'type': 'categorical',
-            'fillna': 'None',
-            'color_order': apc.arcadia_All_ordered.values(),
-            'textlabel': 'Structural Cluster'
-        },
+        # 'StruCluster': {
+        #     'type': 'categorical',
+        #     'fillna': 'None',
+        #     'color_order': apc.arcadia_All_ordered.values(),
+        #     'textlabel': 'Structural Cluster'
+        # },
         'annotationScore': {
             'type': 'categorical',
             'fillna': 0,
@@ -447,11 +452,18 @@ def main():
             'type': 'continuous',
             'fillna': 0,
             'textlabel': 'Length'
-        }
+        },
+        'source.method': {
+            'type': 'categorical',
+            'fillna': 'None',
+            'color_dict': source_color_dict,
+            'textlabel': 'Source'
+        },
     }
     
     for keyid in keyids:
         plotting_rules[f'TMscore_v_{keyid}'] = {'type': 'continuous', 'fillna': 0, 'textlabel': f'TMscore vs. {keyid}'}
+        plotting_rules[f'{keyid}.hit'] = {'type': 'hovertext', 'apply': lambda x: True if x == 1 else False, 'fillna': 'None', 'textlabel': f'Blast/Foldseek Hit to {keyid}'}
     
     coordinates_file = apply_coordinates(dimensions_file, features_file, save = True, prep_step = True, 
                                          dimtype = dimensions_type)
