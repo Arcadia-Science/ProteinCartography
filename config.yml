@@ -2,7 +2,7 @@ input_dir: "input/"
 output_dir: "output_testing/"
 analysis_prefix: "testing"
 
-query_mode: "remote"
+override_file: "features_override.tsv"
 
 foldseek_databases:
 - "afdb50"
