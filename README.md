@@ -104,7 +104,7 @@ Each column is an entry in the dictionary containing a dictionary of rules.
 }
 ```
 The possible rules for each column are as follows:
-##### For any plot type
+### For any plot type
 - **'type'(required):**
     - `'categorical'`, `'continuous'`, `'taxonomic'`, or `'hovertext'`
     - Determines the plotting style of the data.
@@ -126,7 +126,7 @@ The possible rules for each column are as follows:
     - A string that replaces the column name on buttons and in hover text.
     - Useful if the column name is too ugly.
 
-##### For 'categorical' and 'taxonomic' plots
+### For 'categorical' and 'taxonomic' plots
 - **'color_order':**
     - A list of HEX code colors used for coloring categorical variables.
     - If there aren't enough colors for unique values of the data, will generate up to 3x more colors of varying darkness.
@@ -134,7 +134,7 @@ The possible rules for each column are as follows:
     - A dictionary of key: value pairs for coloring categorical variables.
     - The key is the name of the category and the value is a HEX code color.
 
-##### For 'taxonomic' plots
+### For 'taxonomic' plots
 - **'taxon_order':**
     - Exclusively used for 'taxonomic' style plots. A list of ranked-order taxa for categorization.
     - Should start with more-specific taxa and expand to less-specific taxa.
