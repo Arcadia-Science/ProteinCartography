@@ -4,6 +4,10 @@ import argparse
 import os
 import subprocess
 
+# only import these functions when using import *
+__all__ = ["fetch_fasta", "fetch_pdb"]
+
+# parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--accession", required = True, nargs = '+', help = 'UniprotKB accession of target.')
@@ -41,7 +45,8 @@ def fetch_pdb(accession: str, output_dir: str):
 
     if not os.path.exists(output_path):
         subprocess.run(['curl' , '-JLo' , output_path, source], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            
+
+# run this if called from the interpreter
 def main():
     args = parse_args()
     accessions = args.accession
@@ -58,5 +63,6 @@ def main():
         if 'pdb' in formats:
             fetch_pdb(accession, output_dir)
     
+# check if called from interpreter
 if __name__ == '__main__':
     main()
