@@ -1,7 +1,12 @@
+#!/usr/bin/env python
 import argparse
 import scanpy as sc
 import pandas as pd
 
+# only import these functions when using import *
+__all__ = ["scanpy_leiden_cluster"]
+
+# parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", required = True, help = 'Input file path of a similarity matrix.')
@@ -11,13 +16,30 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def scanpy_leiden_cluster(input_file: str, savefile = '', n_neighbors = 10, n_pcs = 30):
+def scanpy_leiden_cluster(input_file: str, savefile = '', n_neighbors = 10, n_pcs = 30, **kwargs):
+    '''
+    Uses Scanpy's Leiden clustering implementation to perform clustering.
+    
+    Args:
+        input_file (str): path of input distances matrix.
+        savefile (str): path of destination file.
+        n_neighbors (int): number of neighbors for clustering. Defaults to 10.
+        n_pcs (int): number of PCs to use for initial PCA.
+        **kwargs are passed to `sc.pp.neighbors()`.
+    '''
+    # Load the data
     adata = sc.read_csv(input_file, delimiter = '\t')
+    
+    # Run intial PCA
     sc.tl.pca(adata, svd_solver='arpack')
-    sc.pp.neighbors(adata, n_neighbors = n_neighbors, n_pcs = n_pcs)
+    
+    # Run nearest neighbors, umap, then leiden
+    # We should probably determine a good empirical default for this
+    sc.pp.neighbors(adata, n_neighbors = n_neighbors, n_pcs = n_pcs, **kwargs)
     sc.tl.umap(adata)
     sc.tl.leiden(adata)
-
+    
+    # Extract leiden cluster assignment
     membership = pd.DataFrame(adata.obs['leiden']).reset_index()
     membership.rename(columns = {'index': 'protid', 'leiden': 'LeidenCluster'}, inplace = True)
     max_chars = len(str(membership['LeidenCluster'].astype(int).max()))
@@ -28,6 +50,7 @@ def scanpy_leiden_cluster(input_file: str, savefile = '', n_neighbors = 10, n_pc
     
     return membership
 
+# run this if called from the interpreter
 def main():
     args = parse_args()
     input_file = args.input
@@ -37,5 +60,6 @@ def main():
     
     scanpy_leiden_cluster(input_file = input_file, savefile = output_file, n_neighbors = neighbors, n_pcs = pcs)
     
+# check if called from interpreter
 if __name__ == '__main__':
     main()

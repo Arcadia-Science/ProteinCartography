@@ -1,14 +1,18 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import argparse
 import pandas as pd
 import subprocess
 import os
 from pathlib import Path
 
+# only import these functions when using import *
+__all__ = ["run_foldseek_clustering", "make_struclusters_file", "clean_foldseek_results", "pivot_results"]
+
+# parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-q", "--query-folder", required = True)
-    parser.add_argument("-r", "--results-folder", required = True)
+    parser.add_argument("-q", "--query-folder", required = True, help = "Path to query folder containing all .pdb files of interest.")
+    parser.add_argument("-r", "--results-folder", required = True, help = "Path to destination folder to save results.")
     args = parser.parse_args()
     
     return args
@@ -18,20 +22,38 @@ def run_foldseek_clustering(query_folder: str, results_folder: str,
                             distances_filename = 'all_by_all_tmscore.tsv',
                             cluster_filename = 'struclusters.tsv',
                             cluster_mode = '0', similarity_type = '2'):
+    '''
+    Runs foldseek all-v-all TMscore comparison and clustering on all PDBs in an input query_folder.
+    Saves results to an output results_folder.
+    Puts temporary files in a temp_folder (called `temp` in the results_folder if not specified explicity.)
     
+    Args:
+        query_folder (str): path to a query folder containing .pdb files.
+        results_folder (str): path to a results folder.
+        temp_folder (str): path to a temporary folder. Defaults to results_folder / temp
+        distances_filename (str): filename for output distances file. Defaults to `all_by_all_tmscore.tsv`.
+        cluster_filename (str): filename for output struclusters file. Defaults to `struclusters.tsv`.
+    Return:
+        a tuple containing the full file paths of the distances file and the clusters file.
+    '''
+    
+    # Generate Path objects for each folder
     query_Path = Path(query_folder)
     results_Path = Path(results_folder)
     
+    # Generate Path object for temp folder
     if temp_folder == '':
         temp_Path = results_Path / 'temp'
     else:
         temp_Path = Path(temp_folder)
     
+    # Make Paths if they don't already exist
     for path in [temp_Path, results_Path]:
         if not os.path.exists(path):
             os.mkdir(path)
     
-    db_prefix = temp_Path / 'temp_afdb'
+    # Run steps of Foldseek
+    db_prefix = temp_Path / 'temp_db'
     subprocess.run(['foldseek', 'createdb', query_Path, db_prefix])
 
     foldseek_out = temp_Path / 'all_by_all'
@@ -52,47 +74,85 @@ def run_foldseek_clustering(query_folder: str, results_folder: str,
     foldseek_clustertsv = results_Path / cluster_filename
     subprocess.run(['foldseek', 'createtsv', db_prefix, db_prefix, foldseek_cluster, foldseek_clustertsv])
     
+    # Return the output filepaths as a tuple
     return str(foldseek_distancestsv), str(foldseek_clustertsv)
     
 def make_struclusters_file(foldseek_clustertsv: str, output_file: str):
+    '''
+    Parses a Foldseek clusters file into a _features.tsv file.
+    
+    Args:
+        foldseek_clustertsv (str): path of input clusters.tsv file.
+        output_file (str): path of destination file.
+    '''
+    # Read the input file
     df = pd.read_csv(foldseek_clustertsv, sep = '\t', names = ['ClusterRep', 'protid'])
+    
+    # Strip the '.pdb' suffix so indices are protid
     df['ClusterRep'] = df['ClusterRep'].str.rstrip('.pdb')
     df['protid'] = df['protid'].str.rstrip('.pdb')
     
+    # Aggregate groupings by ClusterRep
     df_merged = df.groupby('ClusterRep').agg({i: ('first' if i == 'ClusterRep' else lambda x: [i for i in x]) for i in df.columns}).reset_index(drop = True)
+    
+    # Determine max number of characters for padding purposes
     max_chars = len(str(df_merged.index[-1]))
+    
+    # Generate structural cluster IDs and make a new column with those IDs
     SC_ids = 'SC' + pd.Series(df_merged.index).apply(lambda x: str(x).zfill(max_chars))
     df_merged.insert(0, 'StruCluster', SC_ids)
+    
+    # Drop the representative cluster member column
     df_merged.drop(columns = ['ClusterRep'], inplace = True)
-        
+    
+    # Explode the data into a one-protid-per-rown dataframe
     df_exploded = df_merged.explode('protid')
+    
+    # Slice only the relevant columns and save to a tsv file.
     df_exploded = df_exploded[['protid', 'StruCluster']]
     df_exploded.to_csv(output_file, sep = '\t', index = None)
+    
+    return df_exploded
 
 def clean_foldseek_results(input_file: str, output_file: str):
-    """Takes the FoldSeek output file and cleans it to only contain the similarity scores and to/from values.
+    '''
+    Takes the FoldSeek output file and cleans it to only contain the similarity scores and to/from values.
     
     Args:
-        input_file (str): input filepath
-        output_file (str): output filepath
-    """
+        input_file (str): input raw Foldseek all_vs_all_tmscore.tsv filepath
+        output_file (str): output filepath of cleaned data with fewer columns
+    '''
     with open(output_file, 'w+') as file:
         process1 = subprocess.Popen(('sed', "s/ /\t/g", input_file), stdout=subprocess.PIPE)
         process2 = subprocess.call(('awk', '-F', "\t", """{print $1 "\t" $2 "\t" $3}"""), stdin=process1.stdout, stdout=file)
     
 def pivot_results(input_file: str, output_file: str):
-    """Takes a df containing cleaned foldseek results and creates a similarity matrix.
-    """
+    '''
+    Takes a df containing cleaned foldseek results and creates a similarity matrix.
+    
+    Args:
+        input_file (str): input cleaned foldseek results filepath
+        output_file (str): output similarity matrix filepath
+    '''
     import pandas as pd
     import os
     
+    # read the cleaned foldseek output file
     foldseek_df = pd.read_csv(input_file, sep = '\t', names = ['protid', 'target', 'tmscore'])
+    
+    # pivot the data so that it's a square matrix, filling empty comparisons with 0
     pivoted_table = pd.pivot(foldseek_df, index = 'protid', columns = 'target', values = 'tmscore').fillna(0)
+    
+    # remove .pdb from row and column indices
     pivoted_table.columns = pivoted_table.columns.str.removesuffix('.pdb')
     pivoted_table.index = pivoted_table.index.str.removesuffix('.pdb')
     
+    # save to file
     pivoted_table.to_csv(output_file, sep = '\t')
+    
+    return pivoted_table
 
+# run this if called from the interpreter
 def main():
     args = parse_args()
     query_folder = args.query_folder
@@ -109,5 +169,6 @@ def main():
     featurestsv = clusterstsv.replace('.tsv', '_features.tsv')
     make_struclusters_file(clusterstsv, featurestsv)
     
+# check if called from interpreter
 if __name__ == '__main__':
     main()

@@ -3,6 +3,9 @@ from bioservices import UniProt
 import argparse
 import pandas as pd
 
+# only import these functions when using import *
+__all__ = ["map_refseqids"]
+
 # check through these default databases
 DEFAULT_DBS = ['EMBL-GenBank-DDBJ_CDS', 'RefSeq_Protein']
 

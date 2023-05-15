@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import sys
 import os
 import argparse
@@ -11,8 +11,13 @@ from time import sleep
 curl -X POST --data "KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL" https://api.esmatlas.com/foldSequence/v1/pdb/
 """
 
+# only import these functions when using import *
+__all__ = ["post_esmfold_apiquery", "esmfold_apiquery"]
+
+# set acceptable fasta format suffixes
 FASTA_FORMATS = ['fa', 'fna', 'fasta']
 
+# parse command line arguments
 def parse_args():
     # Set command line arguments
     parser = argparse.ArgumentParser()

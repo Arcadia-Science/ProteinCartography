@@ -3,6 +3,9 @@ import os
 import argparse
 from pathlib import Path
 
+# only import these functions when using import *
+__all__ = ["aggregate_lists"]
+
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
