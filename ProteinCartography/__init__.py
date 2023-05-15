@@ -12,6 +12,7 @@ __all__ = ["aggregate_features",
            "make_dummies",
            "map_refseqids",
            "plot_interactive",
+           "plot_structure_pair",
            "query_uniprot",
            "rescue_mapping",
            "run_blast"]
@@ -31,6 +32,7 @@ from .leiden_clustering import *
 from .make_dummies import *
 from .map_refseqids import *
 from .plot_interactive import *
+from .py3dmol_plot import *
 from .query_uniprot import *
 from .rescue_mapping import *
 from .run_blast import *
