@@ -104,4 +104,3 @@ def main():
 # check if called from interpreter
 if __name__ == '__main__':
     main()
-    
