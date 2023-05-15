@@ -19,6 +19,11 @@ output_dir = Path(config["output_dir"])
 # Set the prefix of the output file of the analysis
 analysis_prefix = config["analysis_prefix"]
 
+if "override_file" in config:
+    OVERRIDE_FILE = input_dir / config["override_file"]
+else:
+    OVERRIDE_FILE = ''
+
 MAX_BLASTHITS = int(config["max_blasthits"])
 MAX_STRUCTURES = int(config["max_structures"])
 
@@ -43,6 +48,9 @@ for file in os.listdir(input_dir):
     if any(file.lower().endswith(suffix) for suffix in FASTA_FORMATS):
         file_id = os.path.splitext(file)[0]
         PROTID.append(file_id)
+
+BLAST_DEFAULTS = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'sacc', 'saccver', 'sgi', 'staxids', 'scomnames']
+BLAST_DEFAULT_STRING = ' '.join(['6'] + BLAST_DEFAULTS)
 
 ######################################
 
@@ -314,10 +322,10 @@ rule aggregate_features:
         output_dir / clusteringresults_dir / 'source_features.tsv'
     output: output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features.tsv")
     params:
-        override = input_dir / "features_override.tsv"
+        override = OVERRIDE_FILE
     shell:
         '''
-        python ProteinCartography/aggregate_features.py -i {input} -o {output}
+        python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
         '''
     
 rule plot_interactive:
