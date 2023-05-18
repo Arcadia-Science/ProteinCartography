@@ -28,6 +28,7 @@ dependencies:
   - py3dmol=2.0.1.post1
   - snakemake=7.25.0
   - graphviz=8.0.4
+  - pip
   - pip:
       - bioservices==1.11.2
       - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"
