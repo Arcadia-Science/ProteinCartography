@@ -55,7 +55,7 @@ for file in os.listdir(input_dir):
         PROTID.append(file_id)
 
 BLAST_DEFAULTS = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'sacc', 'saccver', 'sgi', 'staxids', 'scomnames']
-BLAST_DEFAULT_STRING = ' '.join(['6'] + BLAST_DEFAULTS)
+BLAST_DEFAULT_STRING = '"' + ' '.join(['6'] + BLAST_DEFAULTS) + '"'
 
 ######################################
 
