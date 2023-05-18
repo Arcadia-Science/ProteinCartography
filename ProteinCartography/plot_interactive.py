@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -423,9 +424,10 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         
         # finally, add the original plot to the new plot.
         for scatter in plot.data:
-            if type(scatter) == plotly.graph_objs.scattergl:
+            
+            if type(scatter) == plotly.graph_objs._scattergl.Scattergl:
                 fig.add_trace(go.Scattergl(scatter, visible = vis, showlegend = showlegend))
-            elif type(scatter) == plotly.graph_objs.scatter:
+            elif type(scatter) == plotly.graph_objs._scatter.Scatter:
                 fig.add_trace(go.Scatter(scatter, visible = vis, showlegend = showlegend))
     
     # if there are any keyids provided, generate an additional plot
