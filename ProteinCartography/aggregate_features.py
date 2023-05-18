@@ -10,7 +10,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", nargs = '+', required = True, help = 'Paths of input features files.')
     parser.add_argument("-o", "--output", required = True, help = 'Path of output aggregated features file.')
-    parser.add_argument("-v", "--override-file", default = '', help = 'Features override file for manual entries.')
+    parser.add_argument("-v", "--override-file", default = '', help = 'Features override file for manual entries.', nargs = '?')
     args = parser.parse_args()
     
     return args
