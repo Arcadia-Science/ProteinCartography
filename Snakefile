@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from datetime import datetime
 
 ###########################################
 ## Parse config information
@@ -13,11 +14,12 @@ configfile: './config.yml'
 # Set the input directory
 #### In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
 input_dir = Path(config["input_dir"])
-# put most things into the output directory
-output_dir = Path(config["output_dir"])
 
 # Set the prefix of the output file of the analysis
-analysis_prefix = config["analysis_prefix"]
+analysis_name = config["analysis_name"]
+
+# put most things into the output directory
+output_dir = Path(config["output_dir"])
 
 # Check for an override file, setting a variable if it exists
 if "override_file" in config:
@@ -61,7 +63,7 @@ BLAST_DEFAULT_STRING = '"' + ' '.join(['6'] + BLAST_DEFAULTS) + '"'
 
 rule all:
     input:
-        expand(output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features_{modes}.html"), modes = MODES)
+        expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES)
 
 ###########################################
 ## make .pdb files using esmfold API query
@@ -327,7 +329,7 @@ rule aggregate_features:
         output_dir / clusteringresults_dir / "leiden_features.tsv",
         expand(output_dir / clusteringresults_dir / '{protid}_distance_features.tsv', protid = PROTID),
         output_dir / clusteringresults_dir / 'source_features.tsv'
-    output: output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features.tsv")
+    output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
         override = OVERRIDE_FILE
     shell:
@@ -344,9 +346,9 @@ rule plot_interactive:
     '''
     input:
         dimensions = output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted_{modes}.tsv",
-        features = output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features.tsv")
+        features = output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     output:
-        output_dir / clusteringresults_dir / (analysis_prefix + "_aggregated_features_{modes}.html")
+        output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html")
     params:
         modes = "{modes}",
         protid = expand("{protid}", protid = PROTID)

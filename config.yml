@@ -1,6 +1,6 @@
 input_dir: "input/"
-output_dir: "output_testing/"
-analysis_prefix: "testing"
+output_dir: "output/"
+analysis_name: "testing"
 
 override_file: "features_override.tsv"
 
