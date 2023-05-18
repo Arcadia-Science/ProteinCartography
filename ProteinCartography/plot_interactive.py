@@ -423,7 +423,10 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         
         # finally, add the original plot to the new plot.
         for scatter in plot.data:
-            fig.add_trace(go.Scattergl(scatter, visible = vis, showlegend = showlegend))
+            if type(scatter) == plotly.graph_objs.scattergl:
+                fig.add_trace(go.Scattergl(scatter, visible = vis, showlegend = showlegend))
+            elif type(scatter) == plotly.graph_objs.scatter:
+                fig.add_trace(go.Scatter(scatter, visible = vis, showlegend = showlegend))
     
     # if there are any keyids provided, generate an additional plot
     if keyids != []:
