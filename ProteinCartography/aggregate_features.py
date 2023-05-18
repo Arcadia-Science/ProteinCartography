@@ -10,12 +10,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", nargs = '+', required = True, help = 'Paths of input features files.')
     parser.add_argument("-o", "--output", required = True, help = 'Path of output aggregated features file.')
-    parser.add_argument("-v", "--override-file", default = '', help = 'Features override file for manual entries.', nargs = '?')
+    parser.add_argument("-v", "--override-file", default = None, help = 'Features override file for manual entries.', nargs = '?')
     args = parser.parse_args()
     
     return args
     
-def aggregate_features(input_files: list, output_file = '', features_override = '') -> pd.DataFrame:
+def aggregate_features(input_files: list, output_file = '', features_override = None) -> pd.DataFrame:
     '''
     Aggregates features from multiple features files by `protid`.
     
@@ -46,7 +46,7 @@ def aggregate_features(input_files: list, output_file = '', features_override = 
             agg_df = agg_df.merge(df, on = 'protid', how = 'outer')
     
     # If there's a features override file, use it
-    if features_override != '':
+    if features_override is not None:
         # Read the file
         features_override_df = pd.read_csv(features_override, sep = '\t')
         
