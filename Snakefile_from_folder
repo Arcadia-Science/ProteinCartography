@@ -103,20 +103,6 @@ rule leiden_clustering:
         python ProteinCartography/leiden_clustering.py -i {input} -o {output}
         '''
 
-rule input_distances:
-    '''
-    Extracts the distances from input proteins to other proteins in the dataset.
-    Adds them as options for the visualization plot.
-    '''
-    input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
-    params:
-        protid = "{protid}"
-    output: output_dir / clusteringresults_dir / '{protid}_distance_features.tsv'
-    shell:
-        '''
-        python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
-        '''
-
 #####################################################################
 ## aggregate features into a big TSV and make a nice plot
 #####################################################################    
@@ -128,8 +114,7 @@ rule aggregate_features:
     input:
         output_dir / clusteringresults_dir / "struclusters_features.tsv",
         input_dir / "uniprot_features.tsv",
-        output_dir / clusteringresults_dir / "leiden_features.tsv",
-        expand(output_dir / clusteringresults_dir / '{protid}_distance_features.tsv', protid = PROTID),
+        output_dir / clusteringresults_dir / "leiden_features.tsv"
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
         override = OVERRIDE_FILE
@@ -155,5 +140,5 @@ rule plot_interactive:
         protid = expand("{protid}", protid = PROTID)
     shell:
         '''
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid} -x bac
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -x bac
         '''
