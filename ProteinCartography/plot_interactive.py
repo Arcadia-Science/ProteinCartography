@@ -233,10 +233,15 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     # pass in the custom data columns
     # this sets protid as customdata[0]
     # and the rest of the plotting rules in order
-    custom_data = ['protid'] + list(plotting_rules.keys())
+    
+    valid_plotting_rules = [col for col in plotting_rules.keys() if col in df.columns]
+    custom_data = ['protid'] + list(valid_plotting_rules)
     
     # iterate through plotting rules, applying relevant rules
     for col in plotting_rules:
+        if col not in df.columns:
+            continue
+        
         # if the plotting rule 'fillna' is present, fills NAs with that value
         if 'fillna' in plotting_rules[col].keys():
             df[col] = df[col].fillna(plotting_rules[col]['fillna'])
@@ -277,6 +282,9 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     # Then, we transfer the points from the existing plots to a new, single plot
     # This way we can get the toggle system working
     for col in plotting_rules.keys():
+        if col not in df.columns:
+            continue
+        
         # Plotting rules for categorical plots
         if plotting_rules[col]['type'] == 'categorical':
             
