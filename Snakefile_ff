@@ -8,7 +8,7 @@ from pathlib import Path
 # Default pipeline configuration parameters are in this file
 # If you create a new yml file and use the --configfile flag, 
 # options in that new file overwrite the defaults.
-configfile: './config_from_folder.yml'
+configfile: './config_ff.yml'
 
 # Set the input directory
 #### In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
