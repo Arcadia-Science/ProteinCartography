@@ -128,7 +128,7 @@ def pivot_foldseek_results(input_file: str, output_file: str):
     # read the foldseek output with delimited whitespace
     tmscore_df = pd.read_csv(input_file, delim_whitespace = True, header = None)
     tmscore_df = tmscore_df[[0, 1, 2]]
-    foldseek_df = tmscore_df.rename(columns = {0: 'protid', 1: 'target', 2: 'tmscore})
+    foldseek_df = tmscore_df.rename(columns = {0: 'protid', 1: 'target', 2: 'tmscore'})
     foldseek_df.drop_duplicates(['protid', 'target'], inplace = True)
     
     # pivot the data so that it's a square matrix, filling empty comparisons with 0
