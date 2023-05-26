@@ -140,5 +140,5 @@ rule plot_interactive:
         protid = expand("{protid}", protid = PROTID)
     shell:
         '''
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -x bac
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -x euk
         '''

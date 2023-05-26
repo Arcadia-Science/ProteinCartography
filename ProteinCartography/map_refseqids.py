@@ -20,7 +20,7 @@ def parse_args():
 
 # takes a list of IDs and maps them to Uniprot using bioservices
 # might make a more generalizable version of this and put it somewhere else
-def map_refseqids(input_file: str, output_file: str, query_dbs: list):
+def map_refseqids(input_file: str, output_file: str, query_dbs: list, return_full = False):
     '''
     Takes an input .txt file of accessions and maps to UniprotKB.
     
@@ -70,6 +70,9 @@ def map_refseqids(input_file: str, output_file: str, query_dbs: list):
     # save those accessions to a .txt file
     with open(output_file, 'w+') as f:
         f.writelines(hit + '\n' for hit in hits)
+        
+    if return_full:
+        return dummy_df
 
 # run this if called from the interpreter
 def main():

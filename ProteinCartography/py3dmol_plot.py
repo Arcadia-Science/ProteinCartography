@@ -91,5 +91,7 @@ def plot_structure_pair(file1: str, file2: str,
                            'fontColor': 'black', 
                            'useScreen': True, 
                            'position': {'x': 0, 'y': 60, 'z': 0}})
+    # Centers view
     view.zoomTo()
+    # Returns a window with the view
     return view.show()

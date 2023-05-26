@@ -15,7 +15,7 @@ curl -X POST --data "KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQIN
 __all__ = ["post_esmfold_apiquery", "esmfold_apiquery"]
 
 # set acceptable fasta format suffixes
-FASTA_FORMATS = ['fa', 'fna', 'fasta']
+FASTA_FORMATS = ['fa', 'fna', 'fasta', 'faa', 'ffa']
 
 # parse command line arguments
 def parse_args():
@@ -42,7 +42,7 @@ def post_esmfold_apiquery(fasta: str):
         print(f"Error: {result.status_code}")
         return None
 
-def esmfold_apiquery(input_file: str, output_file = ''):
+def esmfold_apiquery(input_file: str, output_file = None):
     '''
     Takes an input peptide FASTA file with one entry and submits it for folding using the ESMfold API.
     Creates a PDB file with the resulting output.
@@ -60,7 +60,7 @@ def esmfold_apiquery(input_file: str, output_file = ''):
         sys.exit(f'File {input_file} not found.')
         
     # if output file is not provided, generate a name for output file
-    if output_file == '':
+    if output_file is None:
         output_filepath = input_file.replace(input_file.rsplit('.', 1)[1], 'pdb')
     else:
         output_filepath = output_file

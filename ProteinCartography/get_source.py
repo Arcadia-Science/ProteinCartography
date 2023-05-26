@@ -19,7 +19,7 @@ def parse_args():
     return args
 
 def get_source(input_file: str, hit_files: list, 
-               savefile = '', groupby = ['method', 'keyid'], 
+               savefile = None, groupby = ['method', 'keyid'], 
                methods = ['blast', 'foldseek'], keyids = []) -> pd.DataFrame:
     '''
     Aggregates a list of hit files to determine the source of each protid for a features matrix.
@@ -86,7 +86,7 @@ def get_source(input_file: str, hit_files: list,
             df_indexes[keyidcol] = df_indexes[keyidcol].apply(lambda x: 1 if x == True else 0)
             
     # Save to file
-    if savefile != '':
+    if savefile is not None:
         df_indexes.to_csv(savefile, sep = '\t', index = None)
     
     return df_indexes

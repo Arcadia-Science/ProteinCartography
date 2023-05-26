@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 # only import these functions when using import *
-__all__ = ["run_foldseek_clustering", "make_struclusters_file", "clean_foldseek_results", "pivot_results"]
+__all__ = ["run_foldseek_clustering", "make_struclusters_file", "pivot_foldseek_results"]
 
 # parse command line arguments
 def parse_args():
@@ -18,7 +18,7 @@ def parse_args():
     return args
 
 def run_foldseek_clustering(query_folder: str, results_folder: str,
-                            temp_folder = '', 
+                            temp_folder = None, 
                             distances_filename = 'all_by_all_tmscore.tsv',
                             cluster_filename = 'struclusters.tsv',
                             cluster_mode = '0', similarity_type = '2'):
@@ -42,7 +42,7 @@ def run_foldseek_clustering(query_folder: str, results_folder: str,
     results_Path = Path(results_folder)
     
     # Generate Path object for temp folder
-    if temp_folder == '':
+    if temp_folder is None:
         temp_Path = results_Path / 'temp'
     else:
         temp_Path = Path(temp_folder)
@@ -114,19 +114,7 @@ def make_struclusters_file(foldseek_clustertsv: str, output_file: str):
     
     return df_exploded
 
-def clean_foldseek_results(input_file: str, output_file: str):
-    '''
-    Takes the FoldSeek output file and cleans it to only contain the similarity scores and to/from values.
-    
-    Args:
-        input_file (str): input raw Foldseek all_vs_all_tmscore.tsv filepath
-        output_file (str): output filepath of cleaned data with fewer columns
-    '''
-    with open(output_file, 'w+') as file:
-        process1 = subprocess.Popen(('sed', "s/ /\t/g", input_file), stdout=subprocess.PIPE)
-        process2 = subprocess.call(('awk', '-F', "\t", """{print $1 "\t" $2 "\t" $3}"""), stdin=process1.stdout, stdout=file)
-    
-def pivot_results(input_file: str, output_file: str):
+def pivot_foldseek_results(input_file: str, output_file: str):
     '''
     Takes a df containing cleaned foldseek results and creates a similarity matrix.
     
@@ -137,8 +125,11 @@ def pivot_results(input_file: str, output_file: str):
     import pandas as pd
     import os
     
-    # read the cleaned foldseek output file
-    foldseek_df = pd.read_csv(input_file, sep = '\t', names = ['protid', 'target', 'tmscore'])
+    # read the foldseek output with delimited whitespace
+    tmscore_df = pd.read_csv(input_file, delim_whitespace = True, header = None)
+    tmscore_df = tmscore_df[[0, 1, 2]]
+    foldseek_df = tmscore_df.rename(columns = {0: 'protid', 1: 'target', 2: 'tmscore})
+    foldseek_df.drop_duplicates(['protid', 'target'], inplace = True)
     
     # pivot the data so that it's a square matrix, filling empty comparisons with 0
     pivoted_table = pd.pivot(foldseek_df, index = 'protid', columns = 'target', values = 'tmscore').fillna(0)
@@ -160,11 +151,8 @@ def main():
     
     distancestsv, clusterstsv = run_foldseek_clustering(query_folder, results_folder)
     
-    cleanedtsv = distancestsv.replace('.tsv', '_cleaned.tsv')
-    clean_foldseek_results(distancestsv, cleanedtsv)
-    
     pivotedtsv = distancestsv.replace('.tsv', '_pivoted.tsv')
-    pivot_results(cleanedtsv, pivotedtsv)
+    pivot_foldseek_results(distancestsv, pivotedtsv)
     
     featurestsv = clusterstsv.replace('.tsv', '_features.tsv')
     make_struclusters_file(clusterstsv, featurestsv)

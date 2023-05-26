@@ -23,9 +23,10 @@ def parse_args():
     return args
 
 def calculate_PCA(pivot_file: str, n_components = 2, 
-                  save = False, saveprefix = '', dimtype = 'pca', prep_step = False, **kwargs):
+                  save = False, saveprefix = None, dimtype = 'pca', prep_step = False, **kwargs):
     '''
-    Calculates the n-component PCA of a matrix.
+    Calculates the n-component PCA of an all-v-all similarity matrix.
+    The matrix should be a square, where rows and columns are identical and each cell is a similarity score.
     
     Args:
         pivot_file (str): path to a matrix of values.
@@ -49,7 +50,7 @@ def calculate_PCA(pivot_file: str, n_components = 2,
     pca_results_df = pd.DataFrame(pca_results, columns = [f'PC{i}' for i in range(pca_results.shape[1])], index = pivoted_df.index)
     
     # Generate savefile name
-    if saveprefix != '':
+    if saveprefix is not None:
         savefile = '_'.join([saveprefix, dimtype + '.tsv'])
     else:        
         savefile = pivot_file.replace('.tsv', '_' + dimtype + '.tsv')
@@ -66,9 +67,10 @@ def calculate_PCA(pivot_file: str, n_components = 2,
     
 def calculate_TSNE(pivot_file: str, random_state: int,
                    n_components = 2, perplexity = 50, n_iter = 2000, 
-                   save = False, saveprefix = '', dimtype = 'tsne', **kwargs):
+                   save = False, saveprefix = None, dimtype = 'tsne', **kwargs):
     '''
-    Calculates the TSNE of a matrix given a random state, perplexity, and number of iterations.
+    Calculates the TSNE of an all-v-all similarity matrix given a random state, perplexity, and number of iterations.
+    The matrix should be a square, where rows and columns are identical and each cell is a similarity score.
     
     Args:
         pivot_file (str): path to a matrix of values.
@@ -102,7 +104,7 @@ def calculate_TSNE(pivot_file: str, random_state: int,
     tsne_results_df = pd.DataFrame(tsne_results, columns = [f'tSNE{i + 1}' for i in range(tsne_results.ndim)], index = pivoted_df.index)
     
     # Generate savefile name
-    if saveprefix != '':
+    if saveprefix is not None:
         savefile = '_'.join([saveprefix, dimtype + '.tsv'])
     else:        
         savefile = pivot_file.replace('.tsv', '_' + dimtype + '.tsv')
@@ -116,9 +118,10 @@ def calculate_TSNE(pivot_file: str, random_state: int,
 
 def calculate_UMAP(pivot_file: str, random_state: int,
                    n_components = 2, n_neighbors= 80, min_dist = 0.5, 
-                   save = False, saveprefix = '', dimtype = 'umap', **kwargs):
+                   save = False, saveprefix = None, dimtype = 'umap', **kwargs):
     '''
-    Calculates the UMAP of a matrix given a random state, number of neighbors, and minimum distance.
+    Calculates the UMAP of an all-v-all similarity matrix given a random state, number of neighbors, and minimum distance.
+    The matrix should be a square, where rows and columns are identical and each cell is a similarity score.
     
     Args:
         pivot_file (str): path to a matrix of values.
@@ -152,7 +155,7 @@ def calculate_UMAP(pivot_file: str, random_state: int,
     umap_results_df = pd.DataFrame(umap_results, columns = [f'UMAP{i + 1}' for i in range(umap_results.ndim)], index = pivoted_df.index)
     
     # Generate savefile name
-    if saveprefix != '':
+    if saveprefix is not None:
         savefile = '_'.join([saveprefix, dimtype + '.tsv'])
     else:        
         savefile = pivot_file.replace('.tsv', '_' + dimtype + '.tsv')
