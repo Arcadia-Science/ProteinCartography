@@ -39,17 +39,17 @@ def adjust_lightness(color: str, amount = 0.5) -> str:
         resulting color as HEX string.
     '''
     try:
-        c = mc.cnames[color]
+        color_string = mc.cnames[color]
     except:
-        c = color
+        color_string = color
     # convert rgb to hls
-    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    color_string = colorsys.rgb_to_hls(*mc.to_rgb(color_string))
     # adjust the lightness in hls space and convert back to rgb
-    c2 = colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
+    color_string2 = colorsys.hls_to_rgb(c[0], max(0, min(1, amount * color_string[1])), color_string[2])
     # return the new rgb as a hex value
-    return mc.to_hex(c2)
+    return mc.to_hex(color_string2)
 
-def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = '', dimtype = '', save = False, prep_step = False):
+def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = None, dimtype = None, save = False, prep_step = False):
     '''
     Adds coordinate information for data from the dimensions file to the aggregated features file.
     
@@ -66,7 +66,7 @@ def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = '',
     reduced_dim_df = pd.read_csv(dimensions_file, sep = '\t')
     
     # If dimtype not provided, infer based on second column of dataframe
-    if dimtype == '':
+    if dimtype is None:
         outdimtype = ''.join([i for i in reduced_dim_df.columns[1] if not i.isdigit()])
     else:
         outdimtype = dimtype
@@ -82,7 +82,7 @@ def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = '',
     plot_features_df = reduced_dim_df.merge(agg_features_df, on = 'protid')
     
     # Generate filepath based on dimensions type and prefix
-    if saveprefix != '':
+    if saveprefix is not None:
         savefile = '_'.join([saveprefix, outdimtype + '.tsv'])
     else:        
         savefile = features_file.replace('.tsv', '_' + outdimtype + '.tsv')
@@ -610,7 +610,7 @@ def main():
             'Eukaryota': apc.arcadia_all['arcadia:aster'], 
             'Bacteria': apc.arcadia_all['arcadia:slate'], 
             'Archaea': apc.arcadia_all['arcadia:dragon'],
-            'Viruses': apc.arcadia_all['arcadia:orange']
+            'Viruses': apc.arcadia_all['arcadia:denim']
         }
         
     # else if the taxonomic focus is bacteria, use these groupings and colors
@@ -626,7 +626,7 @@ def main():
             'Deinococcota': apc.arcadia_all['arcadia:rose'],
             'Bacteria': apc.arcadia_all['arcadia:slate'],
             'Archaea': apc.arcadia_all['arcadia:dragon'],
-            'Viruses': apc.arcadia_all['arcadia:orange'],
+            'Viruses': apc.arcadia_all['arcadia:denim'],
             'Metazoa': apc.arcadia_all['arcadia:amber'],
             'Fungi': apc.arcadia_all['arcadia:chateau'],
             'Viridiplantae': apc.arcadia_all['arcadia:lime'],

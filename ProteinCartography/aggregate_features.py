@@ -15,7 +15,7 @@ def parse_args():
     
     return args
     
-def aggregate_features(input_files: list, output_file = '', features_override = None) -> pd.DataFrame:
+def aggregate_features(input_files: list, output_file = None, features_override = None) -> pd.DataFrame:
     '''
     Aggregates features from multiple features files by `protid`.
     
@@ -72,7 +72,7 @@ def aggregate_features(input_files: list, output_file = '', features_override = 
                     agg_df.loc[agg_df['protid'] == entry, col] = entry_row[col].values[0]
     
     # Save to an output file if a path is provided
-    if output_file != '':
+    if output_file is not None:
         agg_df.to_csv(output_file, sep = '\t', index = None)
     
     return agg_df

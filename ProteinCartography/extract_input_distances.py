@@ -16,9 +16,10 @@ def parse_args():
     
     return args
 
-def extract_tmscore_feature(input_file: str, protid: str, savefile = '') -> pd.DataFrame:
+def extract_tmscore_feature(input_file: str, protid: str, savefile = None) -> pd.DataFrame:
     '''
     Extracts the TMscore column from data for a specific protid and saves to file.
+    This should be identical to the filename of the protein structure without the '.pdb' suffix.
     
     Args:
         input_file (str): path to input distance matrix.
@@ -33,7 +34,7 @@ def extract_tmscore_feature(input_file: str, protid: str, savefile = '') -> pd.D
         columns = {'index': 'protid', protid: f'TMscore_v_{protid}'})
     
     # Save to file if needed
-    if savefile != '':
+    if savefile is not None:
         df_dists.to_csv(savefile, sep = '\t', index = None)
     
     # Return results
