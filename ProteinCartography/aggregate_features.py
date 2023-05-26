@@ -17,7 +17,9 @@ def parse_args():
     
 def aggregate_features(input_files: list, output_file = None, features_override = None) -> pd.DataFrame:
     '''
-    Aggregates features from multiple features files by `protid`.
+    Aggregates features from multiple features files by `protid`.  
+    A features file contains at least one column with the name `protid` that is a unique identifier for each PDB file.  
+    The additional columns in the file are the features - the measures for each `protid` such as sequence.length, cluster number, etc.  
     
     Returns a matrix where each of the columns is derived from the original features file and each row is a protein.
     
