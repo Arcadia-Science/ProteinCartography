@@ -1,8 +1,12 @@
+#!/usr/bin/env python
 import pandas as pd
 import re
 import argparse
 import os
 from pathlib import Path
+
+# only import these functions when using import *
+__all__ = ["extract_foldseekhits"]
 
 # default column names for a Foldseek run in this pipeline
 FOLDSEEK_NAMES = ['query', 'target', 'fident', 'alnlen', 'mismatch', 'gapopen', 'qstart', 'qend', 'tstart', 'tend', 'prob', 'evalue', 'bits', 'qcov', 'tcov', 'qlan', 'taln', 'coord', 'tseq', 'taxid', 'taxname']
@@ -36,6 +40,8 @@ def extract_foldseekhits(input_files: list, output_file: str):
         
         # extract the model ID from the results target column
         file_df['modelid'] = file_df['target'].str.split(' ', expand = True)[0]
+        
+        file_df = file_df[file_df['modelid'].str.contains('-F1-model_v4')]
         
         # get the uniprot ID out from that target
         file_df['uniprotid'] = file_df['modelid'].apply(lambda x: re.findall('AF-(.*)-F1-model_v4', x)[0])

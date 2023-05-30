@@ -1,0 +1,10 @@
+input_dir: "input_salivacapsid/"
+output_dir: "output_salivacapsid/"
+analysis_name: "salivacapsid"
+
+override_file: "features_override.tsv"
+features_file: "uniprot_features.tsv"
+
+plotting_modes:
+- "pca_tsne"
+- "pca_umap"

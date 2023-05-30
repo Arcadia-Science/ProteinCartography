@@ -1,0 +1,16 @@
+input_dir: "input/"
+output_dir: "output/"
+analysis_name: "testing"
+
+override_file: "features_override.tsv"
+
+foldseek_databases:
+- "afdb50"
+- "afdb-swissprot"
+- "afdb-proteome"
+plotting_modes:
+- "pca_tsne"
+- "pca_umap"
+
+max_blasthits: 3000
+max_structures: 5000

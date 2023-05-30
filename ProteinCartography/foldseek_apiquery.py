@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import sys
 import os
 import argparse
@@ -14,6 +14,9 @@ curl -X POST -F q=@PATH_TO_FILE -F 'mode=3diaa' \
 https://search.foldseek.com/api/ticket
 """
 
+# only import these functions when using import *
+__all__ = ["foldseek_apiquery"]
+
 # Possible align mode options from API
 SET_MODES = ['3diaa', 'tmalign']
 
@@ -21,6 +24,7 @@ SET_MODES = ['3diaa', 'tmalign']
 SET_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome', 'mgnify_esm30', 'pdb100', 'gmgcl_id']
 DEFAULT_DATABASES = ['afdb50', 'afdb-swissprot', 'afdb-proteome']
 
+# parse command line arguments
 def parse_args():
     # Set command line arguments
     parser = argparse.ArgumentParser()

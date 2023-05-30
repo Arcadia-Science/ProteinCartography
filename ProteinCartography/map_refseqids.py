@@ -3,6 +3,9 @@ from bioservices import UniProt
 import argparse
 import pandas as pd
 
+# only import these functions when using import *
+__all__ = ["map_refseqids"]
+
 # check through these default databases
 DEFAULT_DBS = ['EMBL-GenBank-DDBJ_CDS', 'RefSeq_Protein']
 
@@ -17,7 +20,7 @@ def parse_args():
 
 # takes a list of IDs and maps them to Uniprot using bioservices
 # might make a more generalizable version of this and put it somewhere else
-def map_refseqids(input_file: str, output_file: str, query_dbs: list):
+def map_refseqids(input_file: str, output_file: str, query_dbs: list, return_full = False):
     '''
     Takes an input .txt file of accessions and maps to UniprotKB.
     
@@ -45,7 +48,7 @@ def map_refseqids(input_file: str, output_file: str, query_dbs: list):
     # for each query database, map
     for i, db in enumerate(query_dbs):
         # u.mapping returns a gross json file
-        results = u.mapping(db, "UniProtKB", query = ' '.join(ids))
+        results = u.mapping(db, "UniProtKB", query = ','.join(ids))
         
         # pandas can normalize the json and make it more tractable
         results_df = pd.json_normalize(results['results'])
@@ -67,6 +70,9 @@ def map_refseqids(input_file: str, output_file: str, query_dbs: list):
     # save those accessions to a .txt file
     with open(output_file, 'w+') as f:
         f.writelines(hit + '\n' for hit in hits)
+        
+    if return_full:
+        return dummy_df
 
 # run this if called from the interpreter
 def main():
