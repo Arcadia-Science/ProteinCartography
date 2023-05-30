@@ -11,9 +11,8 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
 
 ## Directory Structure
 - [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
-- [cartography.yml](cartography.yml): the conda environment for this repo.
-- [utils/](utils/): helper scripts that are called by the Snakemake pipeline, along with a few other bits and bobs
-- [notebooks/](notebooks/): Jupyter notebook examples of manually running this data. These are messy and will be tidied up in the final repo. Currently a development playground - don't look too deeply here yet.
+- [envs/cartography.yml](envs/cartography.yml): the conda environment for this repo.
+- [ProteinCartography/](ProteinCartography/): helper scripts that are called by the Snakemake pipeline, pip-installable and importable in Python.
 - [examples/](examples/): example output files.
 
 ## Pipeline Overview
@@ -43,37 +42,106 @@ The steps of the pipeline have the following functionality:
 4. Download a `.pdb` file from each protein from AlphaFold.  
     - This part is a bit slow, as it's currently limited to the number of cores provided to Snakemake.
 
----
-== TODO ==
-
 5. Download annotation and feature information for each protein from Uniprot.  
-    - This is pretty easy using **`bioservices UniProt`**.  
+    - This is working, but it's somewhat brittle. There are weird memory leak issues with bioservices UniProt.
 
 ### Clustering
 
-6. Cluster all protein .pdb files using FoldSeek.  
-7. Generate a similarity matrix.
+6. Generate a similarity matrix and cluster all protein .pdb files using FoldSeek.  
+7. Perform dimensionality reduction on the similarity matrix.
+    - By default, we perform 30-component PCA and pass this to both TSNE and UMAP.
 
 ### Data Aggregation
 
-8. Take features from Uniprot and other manually-input sources and aggregate them into one large .tsv file.
-    - Will need to build this in a modular fashion.
+8. Generate a variety of `_features.tsv` files.
+    - Each file has, as its first column, a list of protein ids (protid) that are shared between files.
+    - We query Uniprot to get all metadata from that service as a `uniprot_features.tsv` file.
+    - Foldseek generates a `struclusters_features.tsv` file.
+    - We perform Leiden clustering to generate a `leiden_features.tsv` file.
+    - We extract from Foldseek's all-v-all TMscore analysis a distance from every protid to our input protids as `input_distance_features.tsv` files.
+    - We determine the source of each file in the analysis (whether it was found from blast or foldseek) as the `source_features.tsv` file.
+9. Aggregate features.
+    - All of the features.tsv files are combined into one large `aggregated_features.tsv` file.
 
 ### Plotting
 
-9. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
+10. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
     - An example can be found [here](examples/scatter.html)
     - Each point has hover-over information
-    - Default parameters would include:
-        - Foldseek Structural cluster
-        - Leiden cluster
-        - Annotation score
-        - Protein length
-    - Power users would be able to customize the visualization using a variety of built-in parameters.
+    - Default parameters include:
+        - **Leiden Cluster:** Protein cluster as called by [scanpy's implementation of Leiden clustering](https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.leiden.html).
+        - **Annotation Score:** [Uniprot annotation score](https://www.uniprot.org/help/annotation_score) from 0 to 5 (5 being the best evidence).
+        - **Broad Taxon:** the broad taxonomic category for the source organism. There are two modes: 'euk' and 'bac'.
+            - Assigns the "smallest" taxonomic scope from the rankings below for each point. So, a mouse gene would get `Mammalia` but not `Vertebrata`.
+            - For 'euk', uses the taxonomic groups `Mammalia, Vertebrata, Arthropoda, Ecdysozoa, Lophotrochozoa, Metazoa, Fungi, Viridiplantae, Sar, Excavata, Amoebazoa, Eukaryota, Bacteria, Archaea, Viruses`
+            - For 'bac', uses the taxonomic groups `Pseudomonadota, Nitrospirae, Acidobacteria, Bacillota, Spirochaetes, Cyanobacteria, Actinomycetota, Deinococcota, Bacteria, Archaea, Viruses, Metazoa, Fungi, Viridiplantae, Eukaryota`
+        - **Length:** length of the protein in amino acids.
+        - **Source:** how the protein was added to the clustering space (blast, foldseek or both).
+        
+    - Power users can customize the plots using a variety of rules, described below.
+
+## Plotting Rules for `plot_interactive()`
+
+The `plot_interactive()` function has two required arguments:
+- a path to the aggregated features file with coordinates that you'd like to plot
+- a `plotting_rules` dictionary describing how the data should be plotted
+
+The `plotting_rules` dictionary should have the following format.
+Each column is an entry in the dictionary containing a dictionary of rules.
+```
+{
+    'column1.name': {
+        'type': 'categorical',
+        'parameter1': value,
+        'parameter2': value,
+        ...
+    }
+    'column2.name': {
+        'type': 'hovertext',
+        ...
+    }
+}
+```
+The possible rules for each column are as follows:
+### For any plot type
+- **'type'(required):**
+    - `'categorical'`, `'continuous'`, `'taxonomic'`, or `'hovertext'`
+    - Determines the plotting style of the data.
+    - If 'categorical', expects the data to be in string format.
+    - If 'continuous', expects the data to be in numerical (int or float) format.
+    - If 'taxonomic', expects an ordered list of taxa to be used for grouping.
+    - If 'hovertext', won't plot the data as a dropdown menu option, but will include the data in the hover-over text box.
+- **'fillna':**
+    - A value to fill rows that are `np.nan`.
+    - For categorical plots, usually empty string `''`.
+    - For continuous plots, usually `0`.
+- **'apply':**
+    - A function that will be applied to every element of the feature before plotting.
+    - This can be used to convert a numerical value into a categorical value with a lambda function.
+    - For example, `lambda x: str(x)`
+- **'skip_hover':**
+    - Boolean, whether to include this data in the hovertext.
+- **'textlabel':**
+    - A string that replaces the column name on buttons and in hover text.
+    - Useful if the column name is too ugly.
+
+### For 'categorical' and 'taxonomic' plots
+- **'color_order':**
+    - A list of HEX code colors used for coloring categorical variables.
+    - If there aren't enough colors for unique values of the data, will generate up to 3x more colors of varying darkness.
+- **'color_dict':**
+    - A dictionary of key: value pairs for coloring categorical variables.
+    - The key is the name of the category and the value is a HEX code color.
+
+### For 'taxonomic' plots
+- **'taxon_order':**
+    - Exclusively used for 'taxonomic' style plots. A list of ranked-order taxa for categorization.
+    - Should start with more-specific taxa and expand to less-specific taxa.
 
 == FUTURE ==
 > Processes below haven't been explored yet but are of interest.
 
 - Generate distance matrices using sequence similarity instead of structure.
 - Allow for passing of arbitrary TSV data types for building visualizations.
+    - (This should probably work already.)
 - Automated aggregation of input/output files to share using `biofile`?

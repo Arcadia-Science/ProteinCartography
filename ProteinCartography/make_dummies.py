@@ -1,8 +1,13 @@
+#!/usr/bin/env python
 import argparse
 import subprocess
 import os
 from pathlib import Path
 
+# only import these functions when using import *
+__all__ = ["make_dummies"]
+
+# parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", required = True, nargs = '+', help = 'Input file path of a .txt file with one accession per line.')
@@ -39,12 +44,14 @@ def make_dummies(input_file: str, output_dir: str, maximum = 0):
         output_path = output_dir + acc + '.txt'
         Path(output_path).touch()
 
+# run this if called from the interpreter
 def main():
     args = parse_args()
     input_file = args.input
     output_dir = args.output
     maximum = int(args.maximum)
     make_dummies(input_file, output_dir, maximum)
-    
+
+# check if called from interpreter
 if __name__ == '__main__':
     main()

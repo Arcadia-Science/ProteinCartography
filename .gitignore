@@ -3,3 +3,6 @@
 .ipynb_checkpoints/
 .DS_Store
 .snakemake/
+output*/
+input*/
+**__pycache__/
