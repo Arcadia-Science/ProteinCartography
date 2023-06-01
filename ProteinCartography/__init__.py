@@ -1,5 +1,6 @@
 __all__ = ["aggregate_features",
            "aggregate_lists", 
+           "cluster_similarity",
            "dim_reduction",
            "esmfold_apiquery", 
            "extract_blasthits",
@@ -19,6 +20,7 @@ __all__ = ["aggregate_features",
 
 from .aggregate_features import *
 from .aggregate_lists import *
+from .cluster_similarity import *
 from .dim_reduction import *
 from .esmfold_apiquery import *
 from .extract_blasthits import *
