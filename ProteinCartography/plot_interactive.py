@@ -45,7 +45,7 @@ def adjust_lightness(color: str, amount = 0.5) -> str:
     # convert rgb to hls
     color_string = colorsys.rgb_to_hls(*mc.to_rgb(color_string))
     # adjust the lightness in hls space and convert back to rgb
-    color_string2 = colorsys.hls_to_rgb(c[0], max(0, min(1, amount * color_string[1])), color_string[2])
+    color_string2 = colorsys.hls_to_rgb(color_string[0], max(0, min(1, amount * color_string[1])), color_string[2])
     # return the new rgb as a hex value
     return mc.to_hex(color_string2)
 
