@@ -38,6 +38,9 @@ def extract_foldseekhits(input_files: list, output_file: str):
         # load the file
         file_df = pd.read_csv(file, sep = '\t', names = FOLDSEEK_NAMES)
         
+        if os.path.getsize(file) == 0:
+            continue
+        
         # extract the model ID from the results target column
         file_df['modelid'] = file_df['target'].str.split(' ', expand = True)[0]
         
