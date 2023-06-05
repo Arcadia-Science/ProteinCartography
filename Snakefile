@@ -27,9 +27,19 @@ if "override_file" in config:
     
     # If it isn't a real file, ignore it
     if not os.path.exists(OVERRIDE_FILE):
-        OVERRIDE_FILE = ''
+        OVERRIDE_FILE = None
 else:
-    OVERRIDE_FILE = ''
+    OVERRIDE_FILE = None
+    
+if "custom_features" in config:
+    CUSTOM_FEATURES = [input_dir / i for i in config["custom_features"]]
+else:
+    CUSTOM_FEATURES = None
+    
+if "taxon_focus" in config:
+    TAXON_FOCUS = config["taxon_focus"]
+else:
+    TAXON_FOCUS = 'euk'
 
 MAX_BLASTHITS = int(config["max_blasthits"])
 MAX_STRUCTURES = int(config["max_structures"])
@@ -328,7 +338,8 @@ rule aggregate_features:
         output_dir / clusteringresults_dir / "uniprot_features.tsv",
         output_dir / clusteringresults_dir / "leiden_features.tsv",
         expand(output_dir / clusteringresults_dir / '{protid}_distance_features.tsv', protid = PROTID),
-        output_dir / clusteringresults_dir / 'source_features.tsv'
+        output_dir / clusteringresults_dir / 'source_features.tsv',
+        CUSTOM_FEATURES
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
         override = OVERRIDE_FILE
@@ -351,8 +362,9 @@ rule plot_interactive:
         output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html")
     params:
         modes = "{modes}",
-        protid = expand("{protid}", protid = PROTID)
+        protid = expand("{protid}", protid = PROTID),
+        taxon_focus = TAXON_FOCUS
     shell:
         '''
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid} -x bac
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid} -x {params.taxon_focus}
         '''
