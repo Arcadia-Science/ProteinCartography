@@ -387,5 +387,5 @@ rule plot_similarity_leiden:
         column = 'LeidenCluster'
     shell:
         '''
-        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -t {output.tsv} -h {output.html}
+        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
         '''
