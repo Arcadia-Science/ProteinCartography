@@ -18,11 +18,11 @@ def parse_args():
     
     return args
 
-def calculate_group_similarity(pivot_file: str, features_file: str, features_column: str, output_file = None):
+def calculate_group_similarity(matrix_file: str, features_file: str, features_column: str, output_file = None):
     '''
     '''
     # load in each dataframe
-    pivot_df = pd.read_csv(pivot_file, sep = '\t')
+    pivot_df = pd.read_csv(matrix_file, sep = '\t')
     features_df = pd.read_csv(features_file, sep = '\t')
     
     # merge the two dataframes on protid
@@ -52,7 +52,7 @@ def calculate_group_similarity(pivot_file: str, features_file: str, features_col
     
     return pivot_t_agg
     
-def plot_group_similarity(group_similarity_file: str, plot_width = 500, plot_height = 800, output_file = None, show = False):
+def plot_group_similarity(group_similarity_file: str, plot_width = 700, plot_height = 700, output_file = None, show = False):
     arcadia_viridis = [(0, "#341E60"), 
                    (0.49, apc.arcadia_all["arcadia:aegean"]), 
                    (0.75, apc.arcadia_all["arcadia:lime"]),
@@ -79,6 +79,14 @@ def plot_group_similarity(group_similarity_file: str, plot_width = 500, plot_hei
 
 def main():
     args = parse_args()
+    matrix = args.matrix_file
+    features = args.features_file
+    column = args.features_column
+    output_tsv = args.output_tsv
+    output_html = args.output_html
+    
+    calculate_group_similarity(matrix, features, column, output_file = output_tsv)
+    plot_group_similarity(output_tsv, output_file = output_html)
     
 if __name__ == '__main__':
     main()
