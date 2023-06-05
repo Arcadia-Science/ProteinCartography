@@ -73,7 +73,8 @@ BLAST_DEFAULT_STRING = '"' + ' '.join(['6'] + BLAST_DEFAULTS) + '"'
 
 rule all:
     input:
-        expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES)
+        expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES),
+        output_dir / clsuteringresults_dir / (analysis_name + "_leiden_similarity.html")
 
 ###########################################
 ## make .pdb files using esmfold API query
@@ -367,4 +368,24 @@ rule plot_interactive:
     shell:
         '''
         python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid} -x {params.taxon_focus}
+        '''
+
+rule plot_similarity_leiden:
+    '''
+    Plots a similarity score matrix for Leiden clusters.
+    For each cluster, calculates the mean TMscore of all structures in that cluster versus all other clusters.
+    The diagonal of the plot shows how similar proteins are within a given cluster.
+    The other cells show how similar other clusters are to each other.
+    '''
+    input:
+        matrix = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
+        features = output_dir / clusteringresults_dir / "leiden_features.tsv",
+    output:
+        tsv = output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.tsv"),
+        html = output_dir / clsuteringresults_dir / (analysis_name + "_leiden_similarity.html")
+    params:
+        column = 'LeidenCluster'
+    shell:
+        '''
+        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -t {output.tsv} -h {output.html}
         '''
