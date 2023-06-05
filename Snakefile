@@ -34,7 +34,7 @@ else:
 if "custom_features" in config:
     CUSTOM_FEATURES = [input_dir / i for i in config["custom_features"]]
 else:
-    CUSTOM_FEATURES = None
+    CUSTOM_FEATURES = ''
     
 if "taxon_focus" in config:
     TAXON_FOCUS = config["taxon_focus"]
