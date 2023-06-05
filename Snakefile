@@ -31,11 +31,6 @@ if "override_file" in config:
 else:
     OVERRIDE_FILE = None
     
-if "custom_features" in config:
-    CUSTOM_FEATURES = [input_dir / i for i in config["custom_features"]]
-else:
-    CUSTOM_FEATURES = ''
-    
 if "taxon_focus" in config:
     TAXON_FOCUS = config["taxon_focus"]
 else:
@@ -339,8 +334,7 @@ rule aggregate_features:
         output_dir / clusteringresults_dir / "uniprot_features.tsv",
         output_dir / clusteringresults_dir / "leiden_features.tsv",
         expand(output_dir / clusteringresults_dir / '{protid}_distance_features.tsv', protid = PROTID),
-        output_dir / clusteringresults_dir / 'source_features.tsv',
-        CUSTOM_FEATURES
+        output_dir / clusteringresults_dir / 'source_features.tsv'
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
         override = OVERRIDE_FILE
