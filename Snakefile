@@ -74,7 +74,7 @@ BLAST_DEFAULT_STRING = '"' + ' '.join(['6'] + BLAST_DEFAULTS) + '"'
 rule all:
     input:
         expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES),
-        output_dir / clsuteringresults_dir / (analysis_name + "_leiden_similarity.html")
+        output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html")
 
 ###########################################
 ## make .pdb files using esmfold API query
@@ -382,7 +382,7 @@ rule plot_similarity_leiden:
         features = output_dir / clusteringresults_dir / "leiden_features.tsv",
     output:
         tsv = output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.tsv"),
-        html = output_dir / clsuteringresults_dir / (analysis_name + "_leiden_similarity.html")
+        html = output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html")
     params:
         column = 'LeidenCluster'
     shell:
