@@ -3,6 +3,7 @@ from bioservices import UniProt
 import argparse
 import os
 import subprocess
+from pathlib import Path
 
 # only import these functions when using import *
 __all__ = ["fetch_fasta", "fetch_pdb"]
@@ -25,7 +26,7 @@ def fetch_fasta(accession: str, output_dir: str):
         output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.fasta".
     '''
     u = UniProt()
-    output_path = output_dir + accession + '.fasta'
+    output_path = Path(output_dir) / (accession + '.fasta')
         
     if not os.path.exists(output_path):
         res = u.retrieve(accession, frmt = 'fasta')
@@ -40,7 +41,7 @@ def fetch_pdb(accession: str, output_dir: str):
         accession (str): a valid UniprotKB accession.
         output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.pdb".
     '''
-    output_path = output_dir + accession + '.pdb'
+    output_path = Path(output_dir) / (accession + '.pdb')
     source = 'https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v4.pdb'.format(accession)
 
     if not os.path.exists(output_path):
@@ -51,9 +52,6 @@ def main():
     args = parse_args()
     accessions = args.accession
     output_dir = args.output
-    
-    if output_dir[-1] != '/':
-        output_dir = output_dir + '/'
     
     formats = args.format
     
