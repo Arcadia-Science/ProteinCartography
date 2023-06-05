@@ -12,8 +12,8 @@ def parse_args():
     parser.add_argument("-m", "--matrix-file", required = True, help = 'Path to input all-v-all similarity matrix.')
     parser.add_argument("-f", "--features-file", required = True, help = 'Path to features file for grouping.')
     parser.add_argument("-c", "--features-column", required = True, help = 'Column to aggregate groups on.')
-    parser.add_argument("-t", "--output-tsv", default = '', help = 'Path to output TSV file.')
-    parser.add_argument("-h", "--output-html", default = '', help = 'Path to output HTML file.')
+    parser.add_argument("-T", "--output-tsv", default = '', help = 'Path to output TSV file.')
+    parser.add_argument("-H", "--output-html", default = '', help = 'Path to output HTML file.')
     args = parser.parse_args()
     
     return args
