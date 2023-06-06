@@ -2,9 +2,11 @@
 from bioservices import UniProt
 import argparse
 import pandas as pd
+from requests import get, post
+from time import sleep
 
 # only import these functions when using import *
-__all__ = ["map_refseqids"]
+__all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
 
 # check through these default databases
 DEFAULT_DBS = ['EMBL-GenBank-DDBJ_CDS', 'RefSeq_Protein']
@@ -15,12 +17,13 @@ def parse_args():
     parser.add_argument("-i", "--input", required = True, help = 'path to input .txt file containing one accession per line.')
     parser.add_argument("-o", "--output", required = True, help = 'path to destination .txt file where uniquely-mapped Uniprot accessions will be printed.')
     parser.add_argument("-d", "--databases", nargs = '+', default = DEFAULT_DBS, help = f'which databases to use for mapping. defaults to {DEFAULT_DBS}')
+    parser.add_argument("-s", "--service", default = "rest", help = "how to fetch mapping")
     args = parser.parse_args()
     return args
 
 # takes a list of IDs and maps them to Uniprot using bioservices
 # might make a more generalizable version of this and put it somewhere else
-def map_refseqids(input_file: str, output_file: str, query_dbs: list, return_full = False):
+def map_refseqids_bioservices(input_file: str, output_file: str, query_dbs: list, return_full = False):
     '''
     Takes an input .txt file of accessions and maps to UniprotKB.
     
@@ -74,6 +77,66 @@ def map_refseqids(input_file: str, output_file: str, query_dbs: list, return_ful
     if return_full:
         return dummy_df
 
+# Example curl POST request
+"""
+% curl --request POST 'https://rest.uniprot.org/idmapping/run' --form 'ids="P21802,P12345"' --form 'from="UniProtKB_AC-ID"' --form 'to="UniRef90"'
+"""
+
+def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, return_full = False):
+    
+    # open the input file to extract ids
+    with open(input_file, 'r') as f:
+        input_string = f.read().replace('\n', ',')
+    
+    dummy_df = pd.DataFrame()
+    
+    for i, db in enumerate(query_dbs):
+        ticket = post('https://rest.uniprot.org/idmapping/run', {
+                    'ids': input_string,
+                    'from': db,
+                    'to': "UniProtKB"
+                 }).json()
+        
+        # poll until the job was successful or failed
+        repeat = True
+        tries = 0
+        limit = 10
+        sleep_time = 30
+        while repeat and tries < limit:
+            status = get('https://rest.uniprot.org/idmapping/status/' + ticket['jobId']).json()
+
+            # wait a short time between poll requests
+            sleep(sleep_time)
+            tries += 1
+            repeat = 'results' not in status
+
+        if tries == 10:
+            sys.exit(f'The ticket failed to complete after {tries * sleep_time} seconds.')
+        
+        results = get('https://rest.uniprot.org/idmapping/stream/' + ticket['jobId']).json()
+        results_df = pd.DataFrame(results['results'])
+        
+         # if there are no results, move on
+        if len(results_df) == 0:
+            continue
+        
+        # if it's the first database, replace it with the dummy dataframe
+        if i == 0:
+            dummy_df = results_df
+        # otherwise append to the dataframe
+        else:
+            dummy_df = pd.concat([dummy_df, results_df], axis = 0)
+    
+    # extract just the unique Uniprot accessions
+    hits = dummy_df['to'].unique()
+    
+    # save those accessions to a .txt file
+    with open(output_file, 'w+') as f:
+        f.writelines(hit + '\n' for hit in hits)
+        
+    if return_full:
+        return dummy_df
+
 # run this if called from the interpreter
 def main():
     # parse arguments
@@ -83,9 +146,14 @@ def main():
     input_file = args.input
     output_file = args.output
     query_dbs = args.databases
+    service = args.service
     
-    # send to map_refseqids
-    map_refseqids(input_file, output_file, query_dbs)
+    
+    if service == "bioservices":
+        # send to map_refseqids
+        map_refseqids_bioservices(input_file, output_file, query_dbs)
+    elif service == "rest":
+        map_refseqids_rest(input_file, output_file, query_dbs)
 
 # check if called from interpreter
 if __name__ == '__main__':
