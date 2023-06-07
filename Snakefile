@@ -27,9 +27,9 @@ if "override_file" in config:
     
     # If it isn't a real file, ignore it
     if not os.path.exists(OVERRIDE_FILE):
-        OVERRIDE_FILE = None
+        OVERRIDE_FILE = ''
 else:
-    OVERRIDE_FILE = None
+    OVERRIDE_FILE = ''
     
 if "taxon_focus" in config:
     TAXON_FOCUS = config["taxon_focus"]
