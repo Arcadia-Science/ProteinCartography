@@ -95,6 +95,9 @@ def main():
     input_file = args.input
     output_file = args.output
     
+    if output_file == '':
+        output_file = None
+    
     esmfold_apiquery(input_file, output_file)
 
 # check if called from interpreter
