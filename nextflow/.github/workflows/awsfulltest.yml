@@ -10,7 +10,7 @@ on:
 jobs:
   run-tower:
     name: Run AWS full tests
-    if: github.repository == 'ArcadiaScience/gene-family-cartography'
+    if: github.repository == 'Arcadia-Science/gene-family-cartography'
     runs-on: ubuntu-latest
     steps:
       - name: Launch workflow via tower

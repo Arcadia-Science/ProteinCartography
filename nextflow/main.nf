@@ -1,9 +1,9 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ArcadiaScience/gene-family-cartography
+    Arcadia-Science/gene-family-cartography
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/ArcadiaScience/gene-family-cartography
+    Github : https://github.com/Arcadia-Science/gene-family-cartography
 ----------------------------------------------------------------------------------------
 */
 
@@ -26,7 +26,7 @@ WorkflowMain.initialize(workflow, params, log)
 include { GENE_FAMILY_CARTOGRAPHY } from './workflows/gene_family_cartography'
 
 //
-// WORKFLOW: Run main ArcadiaScience/gene-family-cartography analysis pipeline
+// WORKFLOW: Run main Arcadia-Science/gene-family-cartography analysis pipeline
 //
 workflow NFCORE_GENE_FAMILY_CARTOGRAPHY {
     GENE_FAMILY_CARTOGRAPHY ()
