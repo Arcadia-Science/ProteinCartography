@@ -1,0 +1,11 @@
+{
+    "name": "Arcadia-Science/gene-family-cartography",
+    "homePage": "https://github.com/Arcadia-Science/gene-family-cartography",
+    "repos": {
+        "https://github.com/nf-core/modules.git": {
+            "modules": {
+                "nf-core": {}
+            }
+        }
+    }
+}
