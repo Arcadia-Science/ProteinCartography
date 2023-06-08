@@ -1,8 +1,8 @@
 // TODO: Update the description
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/ArcadiaScience/gene-family-cartography/main/nextflow_schema.json",
-    "title": "ArcadiaScience/gene-family-cartography pipeline parameters",
+    "$id": "https://raw.githubusercontent.com/Arcadia-Science/gene-family-cartography/main/nextflow_schema.json",
+    "title": "Arcadia-Science/gene-family-cartography pipeline parameters",
     "description": "null",
     "type": "object",
     "definitions": {

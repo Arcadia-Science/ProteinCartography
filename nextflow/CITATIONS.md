@@ -1,4 +1,4 @@
-# ArcadiaScience/gene-family-cartography: Citations
+# Arcadia-Science/gene-family-cartography: Citations
 
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 
