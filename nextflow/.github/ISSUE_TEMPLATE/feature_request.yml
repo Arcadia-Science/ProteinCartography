@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest an idea for the ArcadiaScience/gene-family-cartography pipeline
+description: Suggest an idea for the Arcadia-Science/gene-family-cartography pipeline
 labels: enhancement
 body:
   - type: textarea

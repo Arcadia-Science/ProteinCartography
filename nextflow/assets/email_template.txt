@@ -4,15 +4,15 @@
   |\\ | |__  __ /  ` /  \\ |__) |__         }  {
   | \\| |       \\__, \\__/ |  \\ |___     \\`-._,-`-,
                                         `._,._,'
-  ArcadiaScience/gene-family-cartography v${version}
+  Arcadia-Science/gene-family-cartography v${version}
 ----------------------------------------------------
 Run Name: $runName
 
 <% if (success){
-    out << "## ArcadiaScience/gene-family-cartography execution completed successfully! ##"
+    out << "## Arcadia-Science/gene-family-cartography execution completed successfully! ##"
 } else {
     out << """####################################################
-## ArcadiaScience/gene-family-cartography execution completed unsuccessfully! ##
+## Arcadia-Science/gene-family-cartography execution completed unsuccessfully! ##
 ####################################################
 The exit status of the task that caused the workflow execution to fail was: $exitStatus.
 The full error message was:
@@ -35,5 +35,5 @@ Pipeline Configuration:
 <% out << summary.collect{ k,v -> " - $k: $v" }.join("\n") %>
 
 --
-ArcadiaScience/gene-family-cartography
-https://github.com/ArcadiaScience/gene-family-cartography
+Arcadia-Science/gene-family-cartography
+https://github.com/Arcadia-Science/gene-family-cartography

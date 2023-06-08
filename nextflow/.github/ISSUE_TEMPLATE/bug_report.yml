@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before you post this issue, please check the [documentation](https://github.com/ArcadiaScience/gene-family-cartography).
+        Before you post this issue, please check the [documentation](https://github.com/Arcadia-Science/gene-family-cartography).
 
   - type: textarea
     id: description
@@ -44,4 +44,4 @@ body:
         * Executor _(eg. slurm, local, awsbatch)_
         * Container engine: _(e.g. Docker, Singularity, Conda)_
         * OS _(eg. CentOS Linux, macOS, Linux Mint)_
-        * Version of ArcadiaScience/gene-family-cartography _(eg. 1.1, 1.5, 1.8.2)_
+        * Version of Arcadia-Science/gene-family-cartography _(eg. 1.1, 1.5, 1.8.2)_
