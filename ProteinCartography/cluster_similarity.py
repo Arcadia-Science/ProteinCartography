@@ -61,7 +61,7 @@ def plot_group_similarity(group_similarity_file: str, plot_width = 700, plot_hei
     
     sim_df = pd.read_csv(group_similarity_file, index_col = 0, sep = '\t')
 
-    fig = px.imshow(sim_df, color_continuous_scale = arcadia_viridis)
+    fig = px.imshow(sim_df, color_continuous_scale = arcadia_viridis, range_color = [0, 1])
     fig.update_layout(width = plot_width, height = plot_height, 
                           coloraxis_colorbar=dict(
                               title="cluster similarity"
