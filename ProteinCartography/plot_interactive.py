@@ -139,7 +139,7 @@ def extend_colors(color_keys: list, color_order: list, steps = [0.7, 0.5, 0.3]) 
     Returns:
         extended list of colors, not including original colors
     '''
-    num_cycles = int(np.round(len(color_keys) / len(color_order)))
+    num_cycles = int(np.ceil(len(color_keys) / len(color_order)))
 
     # collector for additional colors
     more_colors = []
