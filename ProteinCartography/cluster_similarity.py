@@ -88,5 +88,6 @@ def main():
     calculate_group_similarity(matrix, features, column, output_file = output_tsv)
     plot_group_similarity(output_tsv, output_file = output_html)
     
+    
 if __name__ == '__main__':
     main()
