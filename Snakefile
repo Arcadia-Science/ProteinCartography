@@ -69,7 +69,8 @@ BLAST_DEFAULT_STRING = '"' + ' '.join(['6'] + BLAST_DEFAULTS) + '"'
 rule all:
     input:
         expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES),
-        output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html")
+        output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html"),
+        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
 
 ###########################################
 ## make .pdb files using esmfold API query
@@ -382,4 +383,21 @@ rule plot_similarity_leiden:
     shell:
         '''
         python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
+        '''
+
+rule plot_semantic_analysis:
+    '''
+    Plots a semantic analysis chart for groups within the data.
+    '''
+    input:
+        features_file = output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
+    output:
+        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
+    params:
+        agg_column = 'LeidenCluster',
+        annot_column = 'proteinDescription.recommendedName.fullName.value',
+        analysis_name = analysis_name
+    shell:
+        '''
+        python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output} -a {params.analysis_name}
         '''
