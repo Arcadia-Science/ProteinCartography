@@ -10,7 +10,98 @@ import matplotlib.colors as mc
 import colorsys
 
 # only import these functions when using import *
-__all__ = ["adjust_lightness", "apply_coordinates", "assign_taxon", "extend_colors", "plot_interactive"]
+__all__ = ["adjust_lightness", "apply_coordinates", 
+           "assign_taxon", "extend_colors", "plot_interactive", 
+           "arcadia_viridis",  "arcadia_viridis_r", 
+           "arcadia_magma", "arcadia_magma_r", 
+           "arcadia_cividis", "arcadia_cividis_r",
+           "arcadia_icyhot", "arcadia_pansies"]
+
+arcadia_viridis = [
+    [0, "#341E60"], 
+    [0.49, apc.arcadia_all["arcadia:aegean"]], 
+    [0.75, apc.arcadia_all["arcadia:lime"]],
+    [1, "yellow"]
+]
+
+arcadia_viridis_r = [
+    [0, "yellow"],
+    [0.25, apc.arcadia_all["arcadia:lime"]],
+    [0.51, apc.arcadia_all["arcadia:aegean"]], 
+    [1, "#341E60"]
+]
+
+arcadia_magma = [
+    [0, apc.arcadia_all["arcadia:black"]], 
+    [0.38, "#5A4596"], 
+    [0.72, "#E87485"], 
+    [0.9, apc.arcadia_all["arcadia:orange"]], 
+    [1, apc.arcadia_all["arcadia:oat"]]
+]
+
+arcadia_magma_r = [
+    [0, apc.arcadia_all["arcadia:oat"]],
+    [0.1, apc.arcadia_all["arcadia:orange"]], 
+    [0.28, "#E87485"], 
+    [0.62, "#5A4596"], 
+    [1, apc.arcadia_all["arcadia:black"]]
+]
+
+arcadia_cividis = [
+    [0, apc.arcadia_all["arcadia:crow"]],
+    [0.39, apc.arcadia_all["arcadia:forest"]],
+    [0.85,  apc.arcadia_all["arcadia:canary"]],
+    [1,  apc.arcadia_all["arcadia:satin"]]
+]
+
+arcadia_cividis_r = [
+    [0,  apc.arcadia_all["arcadia:satin"]],
+    [0.15,  apc.arcadia_all["arcadia:canary"]],
+    [0.61, apc.arcadia_all["arcadia:forest"]],
+    [1, apc.arcadia_all["arcadia:crow"]],
+]
+
+arcadia_icyhot = [
+    [0, "#341E60"],
+    [0.26, apc.arcadia_all["arcadia:aegean"]],
+    [0.35, apc.arcadia_all["arcadia:vitalblue"]],
+    [0.5, apc.arcadia_all["arcadia:zephyr"]],
+    [0.6, apc.arcadia_all["arcadia:dress"]],
+    [0.7, apc.arcadia_all["arcadia:amber"]],
+    [0.8, apc.arcadia_all["arcadia:dragon"]],
+    [1, "#52180a"]
+]
+
+arcadia_icyhot_r = [
+    [1 - 1, "#52180a"],
+    [1 - 0.8, apc.arcadia_all["arcadia:dragon"]],
+    [1 - 0.7, apc.arcadia_all["arcadia:amber"]],
+    [1 - 0.6, apc.arcadia_all["arcadia:dress"]],
+    [1 - 0.5, apc.arcadia_all["arcadia:zephyr"]],
+    [1 - 0.35, apc.arcadia_all["arcadia:vitalblue"]],
+    [1 - 0.26, apc.arcadia_all["arcadia:aegean"]],
+    [1 - 0, "#341E60"]
+]
+
+arcadia_pansies = [
+    [0, "#3f2d5c"],
+    [0.21, apc.arcadia_all["arcadia:aster"]],
+    [0.39, apc.arcadia_all["arcadia:wish"]],
+    [0.5, apc.arcadia_all["arcadia:dawn"]],
+    [0.55, apc.arcadia_all["arcadia:oat"]],
+    [0.64, apc.arcadia_all["arcadia:canary"]],
+    [1, "#4d2c03"]
+]
+
+arcadia_pansies_r = [
+    [1 - 1, "#4d2c03"],
+    [1 - 0.64, apc.arcadia_all["arcadia:canary"]],
+    [1 - 0.55, apc.arcadia_all["arcadia:oat"]],
+    [1 - 0.5, apc.arcadia_all["arcadia:dawn"]],
+    [1 - 0.39, apc.arcadia_all["arcadia:wish"]],
+    [1 - 0.21, apc.arcadia_all["arcadia:aster"]],
+    [1 - 0, "#3f2d5c"],
+]
 
 # parse command line arguments
 def parse_args():
@@ -48,6 +139,31 @@ def adjust_lightness(color: str, amount = 0.5) -> str:
     color_string2 = colorsys.hls_to_rgb(color_string[0], max(0, min(1, amount * color_string[1])), color_string[2])
     # return the new rgb as a hex value
     return mc.to_hex(color_string2)
+
+def rescale_list(values, new_min, new_max):
+    # Find the original minimum and maximum values
+    original_min = min(values)
+    original_max = max(values)
+
+    # Calculate the range of the original values
+    original_range = original_max - original_min
+
+    # Calculate the range of the new values
+    new_range = new_max - new_min
+
+    # Rescale each value within the new range
+    rescaled_values = []
+    for value in values:
+        # Calculate the relative position of the value within the original range
+        relative_position = (value - original_min) / original_range
+
+        # Rescale the relative position to the new range
+        rescaled_value = (relative_position * new_range) + new_min
+
+        # Add the rescaled value to the list
+        rescaled_values.append(rescaled_value)
+
+    return rescaled_values
 
 def apply_coordinates(dimensions_file: str, features_file: str, saveprefix = None, dimtype = None, save = False, prep_step = False):
     '''
@@ -430,13 +546,77 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         else:
             showlegend = True
         
+        if 'textlabel' in plotting_rules[col]:
+            colorbar_title = plotting_rules[col]['textlabel']
+        else:
+            colorbar_title = col
+        
+        colorbar_dict = dict(
+            title = colorbar_title, 
+            x = 0, y = 0, 
+            orientation = 'h',
+            xanchor = 'left',
+            yanchor = 'top'
+        )
+        
         # finally, add the original plot to the new plot.
         for scatter in plot.data:
             
             if type(scatter) == plotly.graph_objs._scattergl.Scattergl:
-                fig.add_trace(go.Scattergl(scatter, visible = vis, showlegend = showlegend))
+                obj_method = go.Scattergl
             elif type(scatter) == plotly.graph_objs._scatter.Scatter:
-                fig.add_trace(go.Scatter(scatter, visible = vis, showlegend = showlegend))
+                obj_method = go.Scatter
+                
+            if plotting_rules[col]['type'] == 'continuous':
+                if 'cmax' in plotting_rules[col]:
+                    cmax = plotting_rules[col]['cmax']
+                else:
+                    cmax = df[col].max()
+                    
+                if 'cmin' in plotting_rules[col]:
+                    cmin = plotting_rules[col]['cmin']
+                else:
+                    cmin = df[col].min()
+                
+                if 'color_scale' in plotting_rules[col]:
+                    new_color_scale = plotting_rules[col]['color_scale']
+                else:
+                    new_color_scale = 'viridis'
+                    
+                if 'fillna' in plotting_rules[col] and plotting_rules[col]['fillna'] < cmin:
+                    fillna_value = plotting_rules[col]['fillna']
+                    fillna_fraction = -1 * (cmin - fillna_value) / (cmax - fillna_value)
+
+                    input_values = [fillna_fraction] + [i[0] for i in new_color_scale]
+                    original_colors = [i[1] for i in new_color_scale]
+                    new_values = rescale_list(input_values, 0, 1)
+                    new_values_discretized = new_values[0:2] + new_values[1:]
+                    
+                    if 'na_color' in plotting_rules[col]:
+                        na_color = plotting_rules[col]['na_color']
+                    else:
+                        na_color = '#eaeaea'
+                        
+                    new_colors = [na_color] * 2 + original_colors
+                    
+                    new_color_scale_collector = [[new_values_discretized[i], new_colors[i]] for i in np.arange(len(new_values_discretized))]
+                    new_color_scale = new_color_scale_collector
+                    
+                    cmin = plotting_rules[col]['fillna']
+
+                fig.add_trace(obj_method(scatter, visible = vis, showlegend = showlegend,
+                                          marker = dict(
+                                              color = scatter.marker.color, 
+                                              colorbar = colorbar_dict,
+                                              colorscale = new_color_scale,
+                                              opacity = marker_opacity,
+                                              size = marker_size,
+                                              cmax = cmax,
+                                              cmin = cmin
+                                          )
+                                      ))
+            else:
+                fig.add_trace(obj_method(scatter, visible = vis, showlegend = showlegend))
     
     # if there are any keyids provided, generate an additional plot
     if keyids != []:
@@ -521,8 +701,8 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             )],
             type = 'buttons',
             showactive = True,
-            x = 0.5,
-            xanchor = "left",
+            x = 1,
+            xanchor = "right",
             y = 1.1,
             yanchor = "top" 
         )
@@ -554,8 +734,8 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     
     # move the legend for categorical and color bar features to the bottom
     fig.update_layout(legend=dict(orientation = "h", yanchor="top", y = 0, xanchor="left", x = 0, font = dict(size = 10)))
-    fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=0, x=0.5,
-                                          ticks="outside", orientation = 'h'))
+    # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=0, x=0.5,
+    #                                       ticks="outside", orientation = 'h'))
     
     # save if filename is provided
     if output_file != '':
@@ -690,7 +870,8 @@ def main():
         'sequence.length': {
             'type': 'continuous',
             'fillna': 0,
-            'textlabel': 'Length'
+            'textlabel': 'Length',
+            'color_scale': arcadia_cividis_r
         },
         'source.method': {
             'type': 'categorical',
@@ -705,8 +886,27 @@ def main():
         # Add a plot for tmscore to each input protein
         plotting_rules[f'TMscore_v_{keyid}'] = {
             'type': 'continuous', 
-            'fillna': 0, 
-            'textlabel': f'TMscore vs. {keyid}'
+            'fillna': -0.01, 
+            'textlabel': f'TMscore vs. {keyid}',
+            'color_scale': arcadia_viridis,
+            'cmin': 0,
+            'cmax': 1
+        }
+        plotting_rules[f'fident_v_{keyid}'] = {
+            'type': 'continuous', 
+            'fillna': -0.01, 
+            'textlabel': f'Fraction seq identity vs. {keyid}',
+            'color_scale': arcadia_magma,
+            'cmin': 0,
+            'cmax': 1
+        }
+        plotting_rules[f'convergence_v_{keyid}'] = {
+            'type': 'continuous', 
+            'fillna': -1.01, 
+            'textlabel': f'Convergence vs. {keyid}',
+            'color_scale': arcadia_icyhot_r,
+            'cmin': -1,
+            'cmax': 1
         }
         # Add hovertext for whether or not a given protein was a hit via blast or foldseek to the input protein
         plotting_rules[f'{keyid}.hit'] = {
