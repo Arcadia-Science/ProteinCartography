@@ -175,6 +175,20 @@ rule run_foldseek:
         tar -xvf {output.targz} -C {output.unpacked}
         python ProteinCartography/extract_foldseekhits.py -i {output.m8files} -o {output.foldseekhits}
         '''
+        
+rule aggregate_foldseek_fident:
+    '''
+    '''
+    input:
+        m8files = expand(output_dir / foldseekresults_dir / "{{protid}}" / "alis_{db}.m8", db = FS_DATABASES)
+    output:
+        fident_features = output_dir / foldseekresults_dir / "{protid}_fident_features.tsv"
+    params:
+        protid = "{protid}"
+    shell:
+        '''
+        python ProteinCartography/aggregate_fident.py -i {input.m8files} -o {output.fident_features} -p {params.protid}
+        '''
 
 #####################################################################
 ## aggregate all hits, download metadata, download structure files
@@ -304,6 +318,21 @@ rule input_distances:
         '''
         python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
         '''
+
+rule calculate_convergence:
+    '''
+
+    '''
+    input: 
+        tmscore_file = output_dir / clusteringresults_dir / '{protid}_distance_features.tsv',
+        fident_file = output_dir / foldseekresults_dir / '{protid}_fident_features.tsv'
+    params:
+        protid = "{protid}"
+    output: output_dir / clusteringresults_dir / '{protid}_convergence_features.tsv'
+    shell:
+        '''
+        python ProteinCartography/calculate_convergence.py -t {input.tmscore_file} -f {input.fident_file} -o {output} -p {params.protid}
+        '''
         
 rule get_source:
     '''
@@ -334,8 +363,10 @@ rule aggregate_features:
         output_dir / clusteringresults_dir / "struclusters_features.tsv",
         output_dir / clusteringresults_dir / "uniprot_features.tsv",
         output_dir / clusteringresults_dir / "leiden_features.tsv",
-        expand(output_dir / clusteringresults_dir / '{protid}_distance_features.tsv', protid = PROTID),
-        output_dir / clusteringresults_dir / 'source_features.tsv'
+        expand(output_dir / clusteringresults_dir / "{protid}_distance_features.tsv", protid = PROTID),
+        expand(output_dir / foldseekresults_dir / "{protid}_fident_features.tsv", protid = PROTID),
+        expand(output_dir / clusteringresults_dir / "{protid}_convergence_features.tsv", protid = PROTID),
+        output_dir / clusteringresults_dir / "source_features.tsv"
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
         override = OVERRIDE_FILE

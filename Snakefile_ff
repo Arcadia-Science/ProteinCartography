@@ -55,7 +55,10 @@ for file in os.listdir(input_dir):
 
 rule all:
     input:
-        expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES)
+        expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES),
+        output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html"),
+        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
+        
 
 #####################################################################
 ## clustering and dimensionality reduction
@@ -142,3 +145,41 @@ rule plot_interactive:
         '''
         python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -x euk
         '''
+
+rule plot_similarity_leiden:
+    '''
+    Plots a similarity score matrix for Leiden clusters.
+    For each cluster, calculates the mean TMscore of all structures in that cluster versus all other clusters.
+    The diagonal of the plot shows how similar proteins are within a given cluster.
+    The other cells show how similar other clusters are to each other.
+    '''
+    input:
+        matrix = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
+        features = output_dir / clusteringresults_dir / "leiden_features.tsv",
+    output:
+        tsv = output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.tsv"),
+        html = output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html")
+    params:
+        column = 'LeidenCluster'
+    shell:
+        '''
+        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
+        '''
+
+rule plot_semantic_analysis:
+    '''
+    Plots a semantic analysis chart for groups within the data.
+    '''
+    input:
+        features_file = output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
+    output:
+        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
+    params:
+        agg_column = 'LeidenCluster',
+        annot_column = 'proteinDescription.recommendedName.fullName.value',
+        analysis_name = analysis_name
+    shell:
+        '''
+        python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output} -a {params.analysis_name}
+        '''
+
