@@ -28,7 +28,7 @@ The steps of the pipeline have the following functionality:
     - The workflow starts with input FASTA files, one entry per file, with a unique ID.
     - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB.
 
-==TODO==
+==TODO==  
 [ ] Check the quality of the input structure and warn user if it's of low quality.
 [ ] Provide the ability to download files from the PDB.
 [ ] Handle multi-chain PDB files appropriately.
@@ -43,7 +43,7 @@ The steps of the pipeline have the following functionality:
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a Uniprot ID using `requests` and [the Uniprot REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob). 
     - This can sometimes fail for unknown reasons.
     
-==TODO==
+==TODO==  
 [ ] Make the ID mapping process happen locally to avoid API query issues.
 
 ### Download Data
@@ -56,20 +56,20 @@ The steps of the pipeline have the following functionality:
 5. Download annotation and feature information for each protein from Uniprot.  
     - This is working, but it's somewhat brittle. There can be issues with `bioservices UniProt` that seem to stem from memory allocation issues.
     
-==TODO==
+==TODO==  
 [ ] Replace or improve the bioservices Uniprot annotation retrieval.
 
 ### Clustering
 
 6. Generate a similarity matrix and cluster all protein .pdb files using FoldSeek.  
 
-==TODO==
+==TODO==  
 [ ] Implement all-v-all sequence alignment using FAMSA, WITCH, or other alignment approach.
 
 7. Perform dimensionality reduction and clustering on the similarity matrix.
     - By default, we perform 30-component PCA and pass this to both TSNE and UMAP.
     
-==TODO==
+==TODO==  
 [ ] Identify sensible clustering defaults.
 
 ### Data Analysis and Aggregation
@@ -84,7 +84,7 @@ The steps of the pipeline have the following functionality:
     - We subtract the fraction sequence identity from the TMscore to generate a `<input_protid>_convergence_features.tsv` file.
     - We determine the source of each file in the analysis (whether it was found from blast or foldseek) as the `source_features.tsv` file.
     
-==TODO==
+==TODO==  
 [ ] Generate statistics for convergence.
 [ ] Figure out per-cluster and per-protein quality metrics.
 [ ] Figure out how to evaluate taxonomic mixing.
@@ -103,7 +103,7 @@ The steps of the pipeline have the following functionality:
     - Perform a word count analysis on all of the annotations and generate a word cloud.
     - Save as a PDF file with suffix `_semantic_analysis.pdf`.
     
-==TODO==
+==TODO==  
 [ ] Implement fuzzy string matching to collapse very similar annotations.
 
 12. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
@@ -190,7 +190,7 @@ The possible rules for each column are as follows:
     - Exclusively used for 'taxonomic' style plots. A list of ranked-order taxa for categorization.
     - Should start with more-specific taxa and expand to less-specific taxa.
 
-== FUTURE ==
+== FUTURE ==  
 > Processes below haven't been explored yet but are of interest.
 
 - Generate distance matrices using sequence similarity instead of structure.
