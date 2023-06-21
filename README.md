@@ -29,9 +29,9 @@ The steps of the pipeline have the following functionality:
     - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB.
 
 ==TODO==  
-[ ] Check the quality of the input structure and warn user if it's of low quality.
-[ ] Provide the ability to download files from the PDB.
-[ ] Handle multi-chain PDB files appropriately.
+- [ ] Check the quality of the input structure and warn user if it's of low quality.
+- [ ] Provide the ability to download files from the PDB.
+- [ ] Handle multi-chain PDB files appropriately.
 
 ### Protein Search
 1. Search the Alphafold databases using queries to the FoldSeek webserver API for each provided `.pdb` file.  
@@ -44,7 +44,7 @@ The steps of the pipeline have the following functionality:
     - This can sometimes fail for unknown reasons.
     
 ==TODO==  
-[ ] Make the ID mapping process happen locally to avoid API query issues.
+- [ ] Make the ID mapping process happen locally to avoid API query issues.
 
 ### Download Data
 3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of Uniprot IDs.  
@@ -57,20 +57,20 @@ The steps of the pipeline have the following functionality:
     - This is working, but it's somewhat brittle. There can be issues with `bioservices UniProt` that seem to stem from memory allocation issues.
     
 ==TODO==  
-[ ] Replace or improve the bioservices Uniprot annotation retrieval.
+- [ ] Replace or improve the bioservices Uniprot annotation retrieval.
 
 ### Clustering
 
 6. Generate a similarity matrix and cluster all protein .pdb files using FoldSeek.  
 
 ==TODO==  
-[ ] Implement all-v-all sequence alignment using FAMSA, WITCH, or other alignment approach.
+- [ ] Implement all-v-all sequence alignment using FAMSA, WITCH, or other alignment approach.
 
 7. Perform dimensionality reduction and clustering on the similarity matrix.
     - By default, we perform 30-component PCA and pass this to both TSNE and UMAP.
     
 ==TODO==  
-[ ] Identify sensible clustering defaults.
+- [ ] Identify sensible clustering defaults.
 
 ### Data Analysis and Aggregation
 
@@ -85,9 +85,9 @@ The steps of the pipeline have the following functionality:
     - We determine the source of each file in the analysis (whether it was found from blast or foldseek) as the `source_features.tsv` file.
     
 ==TODO==  
-[ ] Generate statistics for convergence.
-[ ] Figure out per-cluster and per-protein quality metrics.
-[ ] Figure out how to evaluate taxonomic mixing.
+- [ ] Generate statistics for convergence.
+- [ ] Figure out per-cluster and per-protein quality metrics.
+- [ ] Figure out how to evaluate taxonomic mixing.
     
 9. Aggregate features.
     - All of the features.tsv files are combined into one large `aggregated_features.tsv` file.
@@ -104,7 +104,7 @@ The steps of the pipeline have the following functionality:
     - Save as a PDF file with suffix `_semantic_analysis.pdf`.
     
 ==TODO==  
-[ ] Implement fuzzy string matching to collapse very similar annotations.
+- [ ] Implement fuzzy string matching to collapse very similar annotations.
 
 12. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
     - An example can be found [here](examples/scatter.html)
