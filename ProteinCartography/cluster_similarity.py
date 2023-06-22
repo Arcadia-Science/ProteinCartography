@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import arcadia_pycolor as apc
+from plot_interactive import arcadia_viridis
 
 __all__ = ['calculate_group_similarity', 'plot_group_similarity']
 
@@ -20,6 +21,18 @@ def parse_args():
 
 def calculate_group_similarity(matrix_file: str, features_file: str, features_column: str, output_file = None):
     '''
+    Takes an all-v-all similiarity matrix_file and averages across a grouping found in a features_file.
+    The grouping is specified based on a column of the features file.
+    
+    Each row and column in the matrix_file should be a protid.
+    Within the features file, each protid should have an associated value in the specified features_column, which is its category.
+    The similarity matrix will be aggregated based on those groupings, and the similarity values averaged across the whole group versus every other group.
+    
+    Args:
+        matrix_file (str): path of input similarity matrix file.
+        features_file (str): path of input features file.
+        features_column (str); column of the features file to aggregate on.
+        output_file (str): path of destination file.
     '''
     # load in each dataframe
     pivot_df = pd.read_csv(matrix_file, sep = '\t')
@@ -52,15 +65,28 @@ def calculate_group_similarity(matrix_file: str, features_file: str, features_co
     
     return pivot_t_agg
     
-def plot_group_similarity(group_similarity_file: str, plot_width = 700, plot_height = 700, output_file = None, show = False):
-    arcadia_viridis = [(0, "#341E60"), 
-                   (0.49, apc.arcadia_all["arcadia:aegean"]), 
-                   (0.75, apc.arcadia_all["arcadia:lime"]),
-                   (1, "yellow")
-                  ]
+def plot_group_similarity(group_similarity_file: str, 
+                          output_file = None, 
+                          plot_width = 700, plot_height = 700, 
+                          show = False):
+    '''
+    Takes an all-v-all aggregated group_similarity_file and makes a plotly interactive heatmap.
+    Saves to an HTML file if an output filepath is provided.
     
+    Args:
+        group_similarity_file (str): path of input group-averaged similarity matrix file.
+        output_file (str): path of destination file.
+        plot_width (int): width of plot in pixels. Defaults to 700.
+        plot_height (int): height of plot in pixels. Defaults to 700.
+        show (bool): whether or not to show the plot.
+    
+    Returns:
+        A Plotly figure object for the corresponding interactive plot.
+    '''
+    # opens the aggregated similarity matrix file
     sim_df = pd.read_csv(group_similarity_file, index_col = 0, sep = '\t')
-
+    
+    # generates a plotly heatmap for that matrix file
     fig = px.imshow(sim_df, color_continuous_scale = arcadia_viridis, range_color = [0, 1])
     fig.update_layout(width = plot_width, height = plot_height, 
                           coloraxis_colorbar=dict(
@@ -87,7 +113,6 @@ def main():
     
     calculate_group_similarity(matrix, features, column, output_file = output_tsv)
     plot_group_similarity(output_tsv, output_file = output_html)
-    
     
 if __name__ == '__main__':
     main()

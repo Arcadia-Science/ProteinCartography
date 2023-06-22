@@ -23,6 +23,11 @@ def parse_args():
     return args
 
 def linear_convergence(tmscore, fident):
+    '''
+    Takes two values and subtracts them.
+    
+    This is a function mostly because we'll build in other convergence metrics and will need to have functions for each method for calculating convergence/divergence.
+    '''
     distance = tmscore - fident
     return distance
 
@@ -30,6 +35,17 @@ def calculate_convergence(tmscore_file: str, fident_file: str, protid: str, outp
                           method = 'linear', evalue_maximum = 0.001, tmscore_minimum = 0,
                           save = True):
     '''
+    Takes a TMscore 'distance_features.tsv' file and a sequence identity 'fident_features.tsv' file and calculates a convergence metric.
+    Filters results using user-provided cutoffs and saves filtered results to a 'convergence_features.tsv' file.
+    
+    Args:
+        tmscore_file (str): path of input tmscore file.
+        fident_file (str): path of input fraction sequence identity file.
+        protid (str): protid of the input protein associated with the tmscore and fident files.
+        output_file (str): path of destination file.
+        method (str): how to calculate convergence. Currently only supports 'linear', which subtracts fident from tmscore.
+        evalue_maximum (float): maximum cutoff for evalues from .m8 results files. Defaults to 0.001.
+        tmscore_minimum (float): minimum tmscore to include in calculations. Defaults to 0.
     '''
     fident_df = pd.read_csv(fident_file, sep = '\t')
     tmscore_df = pd.read_csv(tmscore_file, sep = '\t')
