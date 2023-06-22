@@ -1,0 +1,243 @@
+#!/usr/bin/env python
+import argparse
+import pandas as pd
+import numpy as np
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
+__all__ = ['plot_semantic_analysis']
+
+arcadia_Accent_ordered = {
+    'arcadia:aegean': '#5088C5', 
+    'arcadia:amber': '#F28360',  
+    'arcadia:canary': '#F7B846', 
+    'arcadia:lime': '#97CD78',
+    'arcadia:aster': '#7A77AB',
+    'arcadia:rose': '#F898AE',
+    'arcadia:seaweed': '#3B9886',
+    'arcadia:dragon': '#C85152',
+    'arcadia:vitalblue': '#73B5E3',
+    'arcadia:chateau': '#BAB0A8',
+    'arcadia:marineblue': '#8A99AD',
+    'arcadia:orange': '#FFB984'
+}
+
+arcadia_Light_ordered = {
+    'arcadia:bluesky': '#C6E7F4',
+    'arcadia:dress': '#F8C5C1',
+    'arcadia:oat': '#F5E4BE',
+    'arcadia:sage': '#B5BEA4',
+    'arcadia:periwinkle': '#DCBFFC',
+    'arcadia:denim': '#B6C8D4',
+    'arcadia:taupe': '#DAD3C7',
+    'arcadia:mars': '#DA9085',
+    'arcadia:blossom': '#F5CBE4',
+    'arcadia:mint': '#D1EADF',
+    'arcadia:wish': '#BABEE0',
+    'arcadia:satin': '#F1E8DA'
+}
+
+arcadia_All_ordered = arcadia_Accent_ordered | arcadia_Light_ordered
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--features-file", required = True, help = 'Path to features file for grouping.')
+    parser.add_argument("-c", "--agg-column", required = True, help = 'Column to aggregate groups on.')
+    parser.add_argument("-n", "--annot-column", required = True, help = 'Column of annotations to analyze.')
+    parser.add_argument("-o", "--output", default = '', help = 'Path to output file ending in a matplotlib-compatible format (png, pdf, ps, eps, and svg)')
+    parser.add_argument("-e", "--exclude-words", nargs = "+", default = ['protein', 'None'], help = 'Words to exclude from word cloud')
+    parser.add_argument("-a", "--analysis-name", default = '', help = 'name of analysis for plotting')
+    args = parser.parse_args()
+    
+    return args
+
+def adjust_lightness(color: str, amount = 0.5) -> str:
+    '''
+    Takes a HEX code or matplotlib color name and adjusts the lightness.
+    Values < 1 result in a darker color, whereas values > 1 result in a lighter color.
+    
+    Args:
+        color (str): hex value (e.g. "#FEACAF") or a valid matplotlib color name (e.g. "tab:blue").
+        amount (float): values < 1 produce a darker color and values > 1 produce a lighter color.
+    Returns:
+        resulting color as HEX string.
+    '''
+    try:
+        color_string = mc.cnames[color]
+    except:
+        color_string = color
+    # convert rgb to hls
+    color_string = colorsys.rgb_to_hls(*mc.to_rgb(color_string))
+    # adjust the lightness in hls space and convert back to rgb
+    color_string2 = colorsys.hls_to_rgb(color_string[0], max(0, min(1, amount * color_string[1])), color_string[2])
+    # return the new rgb as a hex value
+    return mc.to_hex(color_string2)
+
+def extend_colors(color_keys: list, color_order: list, steps = [0.7, 0.5, 0.3]) -> list:
+    '''
+    Checks a list of keys and colors and extends the colors list as needed.
+    
+    Args:
+        color_keys (list): list of color keys
+        color_order (list): list of HEX colors
+        steps (list): float list of potential lightness adjustments to make
+    Returns:
+        extended list of colors, not including original colors
+    '''
+    num_cycles = int(np.ceil(len(color_keys) / len(color_order)))
+
+    # collector for additional colors
+    more_colors = []
+
+    # if there aren't enough cycles, die
+    if num_cycles > len(steps):
+        raise Exception(f'Can create up to {len(steps) * len(color_order)} colors to use.\nNeeded {len(color_keys)} colors.')
+
+    # create additional colors and add to collector
+    for n in range(num_cycles - 1):
+        color_order_duplicated = [adjust_lightness(color) for color in color_order]
+        more_colors.extend(color_order_duplicated)
+        
+    return more_colors
+
+def plot_semantic_analysis(features_file: str, agg_col: str, annot_col: str, colors: list, 
+                           exclude_words = ['protein', 'None'], ignore_nan = True, 
+                           top_n = 10, max_str_len = 30, n_cols = 3,
+                           analysis_name = '', savefile = None, show = False):
+    '''
+    Takes a features file and performs semantic analysis on an annot_col for a given group of entries specified in agg_col.
+    The annot_col usually contains a gene description for each protein in the features file.
+    The agg_col is a column that describes the group for each protein (e.g. its cluster number, species, etc).
+    
+    Generates a bar chart where the most common annotations (up to top_n) in each group are ranked.
+    Also generates a word cloud for the most common words in the annotations for that group.
+    
+    Args:
+        features_file (str): path of input features file.
+        agg_col (str): column in the features file to use for aggregation.
+        annot_col (str): column in the features file that contains the annotations.
+        colors (list): ordered list of HEX or rgba values to color the groups with.
+        exclude_words (list): list of words to ignore when building word cloud. Defaults to 'protein' and 'None'.
+        ignore_nan (bool): whether to ignore empty annotation cells when building the bar chart and word cloud. Defaults to True.
+        top_n (int): up to this number of annotations will be displayed in the bar chart.
+        max_str_len (int): maximum number of characters to display from annotation string in bar chart. Defaults to 30.
+        n_cols (int): number of columns of paired bar chart + word cloud plots to show. Number of rows is automatically adjusted to fit.
+        analysis_name (str): an analysis name to add to the title of the plot. Defaults to ''.
+        savefile (str or None): if not None, saves a file to this path.
+        show (bool): whether or not to show the plot. Used during interactive sessions. Defaults to False.
+        output_file (str): path of destination file.
+    '''
+    # read in features file
+    features_df = pd.read_csv(features_file, sep = '\t')
+    
+    ignore_fxn = lambda x: [i for i in x if i is not np.nan] if ignore_nan else lambda x: [i for i in x]
+    
+    # group features file by aggregation column and extract aggregated annotation column
+    groupedby_agg_df = features_df.groupby(agg_col).agg(ignore_fxn)[annot_col]
+    
+    # determine number of groups
+    n_groups = len(groupedby_agg_df)
+    
+    used_colors = colors
+
+    if len(used_colors) < n_groups:
+        used_colors = used_colors + extend_colors([1] * n_groups, used_colors)
+    
+    # set plot row parameters based on number of groups and columns
+    n_rows = int(np.ceil(len(groupedby_agg_df) / n_cols))
+    
+    # collectors for plot information
+    summary_dict = {}
+    str_summary_dict = {}
+    len_dict = {}
+    wc_dict = {}
+    
+    # generate summary statistics
+    for i, (clu, values) in enumerate(groupedby_agg_df.items()):
+        # count the number of occurrences of each exact annotation string
+        summary_dict[clu] = pd.DataFrame(pd.value_counts(values))
+        
+        # count number of unique annotations per cluster
+        len_dict[clu] = len(values)
+        
+        # combine all annotations into one long space-separated string, then break into individual words
+        annot_word_list = ' '.join(list(values)).split(' ')
+        
+        # sanitize word list by removing irrelevant words
+        sanitized_word_list = [word for word in annot_word_list if word not in exclude_words]
+        
+        # get value counts per-word
+        str_summary = dict(pd.value_counts(sanitized_word_list, normalize = True))
+        
+        # save word frequencies to dict
+        str_summary_dict[clu] = str_summary
+        
+        # generate word cloud based on frequencies
+        wc_dict[clu] = WordCloud(width = 500, height = 500,
+                                 background_color = 'white',
+                                color_func = lambda *args, **kwargs: used_colors[i]).generate_from_frequencies(str_summary)
+        
+    # create figure with correct number of dimensions
+    plt.figure(figsize = (n_cols * 6, n_rows * 3))
+    plt.suptitle(f'Simple semantic analysis of {analysis_name} {agg_col}', y = 1.01, fontsize = 18)
+    
+    # generate plots
+    for i, clu in enumerate(summary_dict.keys()):        
+        # plot the bar chart
+        plt.subplot(n_rows, n_cols * 2, i * 2 + 1)
+        top_n_df = summary_dict[clu].head(top_n)
+        
+        # shorten annotation strings based on a maximum number of characters
+        labels = [i[:max_str_len] + '...' if len(i) > max_str_len else i for i in list(top_n_df.index)]
+        widths = list(top_n_df['count'])
+
+        plt.barh(y = np.arange(len(widths)), width = widths, tick_label = labels, color = used_colors[i], alpha = 0.8)
+        plt.gca().invert_yaxis()
+        plt.setp(plt.gca().yaxis.get_majorticklabels(), ha="left", x = 0.05)
+        plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.gca().tick_params(axis = 'y', length = 0)
+        plt.ylabel(f'{agg_col} {clu}', fontsize = 14)
+        plt.xlabel('number of annotations')
+        plt.title(f'top {top_n} full annotations')
+        
+        # plot the word cloud
+        plt.subplot(n_rows, n_cols * 2, i * 2 + 2)
+        plt.imshow(wc_dict[clu])
+        
+        # hide xticks and yticks for word cloud
+        plt.gca().set_xticks([])
+        plt.gca().set_yticks([])
+        plt.title('proportional word cloud')
+        
+    # tighten up the layout after plotting
+    plt.tight_layout()
+    
+    if savefile is not None:
+        plt.savefig(savefile, bbox_inches = 'tight')
+    
+    if show:
+        plt.show()
+
+def main():
+    args = parse_args()
+    features_file = args.features_file
+    agg_col = args.agg_column
+    annot_col = args.annot_column
+    output_file = args.output
+    exclude_words = args.exclude_words
+    analysis_name = args.analysis_name
+    colors = list(arcadia_All_ordered.values())
+    
+    plot_semantic_analysis(
+        features_file = features_file,
+        agg_col = agg_col,
+        annot_col = annot_col,
+        colors = colors,
+        savefile = output_file,
+        exclude_words = exclude_words,
+        analysis_name = analysis_name
+    )
+    
+if __name__ == "__main__":
+    main()
