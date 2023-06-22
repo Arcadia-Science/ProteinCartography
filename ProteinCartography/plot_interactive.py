@@ -15,7 +15,8 @@ __all__ = ["adjust_lightness", "apply_coordinates",
            "arcadia_viridis",  "arcadia_viridis_r", 
            "arcadia_magma", "arcadia_magma_r", 
            "arcadia_cividis", "arcadia_cividis_r",
-           "arcadia_icyhot", "arcadia_pansies"]
+           "arcadia_icyhot", "arcadia_icyhot_r", 
+           "arcadia_pansies", "arcadia_pansies_r"]
 
 arcadia_viridis = [
     [0, "#341E60"], 

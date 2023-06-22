@@ -27,6 +27,27 @@ def plot_semantic_analysis(features_file: str, agg_col: str, annot_col: str, col
                            top_n = 10, max_str_len = 30, n_cols = 3,
                            analysis_name = '', savefile = None, show = False):
     '''
+    Takes a features file and performs semantic analysis on an annot_col for a given group of entries specified in agg_col.
+    The annot_col usually contains a gene description for each protein in the features file.
+    The agg_col is a column that describes the group for each protein (e.g. its cluster number, species, etc).
+    
+    Generates a bar chart where the most common annotations (up to top_n) in each group are ranked.
+    Also generates a word cloud for the most common words in the annotations for that group.
+    
+    Args:
+        features_file (str): path of input features file.
+        agg_col (str): column in the features file to use for aggregation.
+        annot_col (str): column in the features file that contains the annotations.
+        colors (list): ordered list of HEX or rgba values to color the groups with.
+        exclude_words (list): list of words to ignore when building word cloud. Defaults to 'protein' and 'None'.
+        ignore_nan (bool): whether to ignore empty annotation cells when building the bar chart and word cloud. Defaults to True.
+        top_n (int): up to this number of annotations will be displayed in the bar chart.
+        max_str_len (int): maximum number of characters to display from annotation string in bar chart. Defaults to 30.
+        n_cols (int): number of columns of paired bar chart + word cloud plots to show. Number of rows is automatically adjusted to fit.
+        analysis_name (str): an analysis name to add to the title of the plot. Defaults to ''.
+        savefile (str or None): if not None, saves a file to this path.
+        show (bool): whether or not to show the plot. Used during interactive sessions. Defaults to False.
+        output_file (str): path of destination file.
     '''
     # read in features file
     features_df = pd.read_csv(features_file, sep = '\t')

@@ -178,6 +178,9 @@ rule run_foldseek:
         
 rule aggregate_foldseek_fident:
     '''
+    Pulls the foldseek fraction sequence identity (fident) from the Foldseek results files for each input protein.
+    
+    This will probably be replaced in the future by an all-v-all sequence identity comparison using FAMSA, WITCH, or other approach.
     '''
     input:
         m8files = expand(output_dir / foldseekresults_dir / "{{protid}}" / "alis_{db}.m8", db = FS_DATABASES)
@@ -321,7 +324,9 @@ rule input_distances:
 
 rule calculate_convergence:
     '''
-
+    Currently, this subtracts the fraction sequence identity from the TMscore to get a measure of whether something is more similar in sequence or structure.
+    
+    We're working on developing some kind of test statistic that evaluates the significance of this difference from some expectation.
     '''
     input: 
         tmscore_file = output_dir / clusteringresults_dir / '{protid}_distance_features.tsv',
