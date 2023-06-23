@@ -114,7 +114,7 @@ def parse_args():
     parser.add_argument("-k", "--keyids", nargs = "+", default = [], help = "keyids for plotting. Usually input protids.")
     parser.add_argument("-x", "--taxon_focus", default = "euk", help = "Coloring scheme/ taxonomic groups for broad taxon plot.\n'euk'(aryote) is default; 'bac'(teria) is another option.")
     parser.add_argument("-X", "--plot-width", default = '700', help = "width of resulting plot.")
-    parser.add_argument("-Y", "--plot-height", default = '700', help = "width of resulting plot.")
+    parser.add_argument("-Y", "--plot-height", default = '850', help = "width of resulting plot.")
     args = parser.parse_args()
     
     return args
@@ -274,7 +274,7 @@ def extend_colors(color_keys: list, color_order: list, steps = [0.7, 0.5, 0.3]) 
 
 def plot_interactive(coordinates_file: str, plotting_rules: dict,
                     marker_size = 4, marker_opacity = 0.8, output_file = '', keyids = [], show = False,
-                    plot_width = 700, plot_height = 700):
+                    plot_width = 700, plot_height = 850):
     '''
     Plots all proteins on a 2D interactive Plotly plot using a set of rules.
     
@@ -427,7 +427,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
                     more_colors = extend_colors(color_keys, color_order, steps = [0.7, 0.5, 0.3])
                     
                     # extend color order with new colors
-                    color_order.extend(more_colors)
+                    color_order.extend(more_colors[:(len(color_keys) - len(color_order))])
                 
                 # make color dict
                 colors_dict = dict(zip(color_keys, color_order))
@@ -440,10 +440,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             # add the hovertemplate text and other aspects to the traces for that column
             plots[col].update_traces(marker = dict(size = marker_size, opacity = marker_opacity),
                                     hovertemplate = hovertemplate)
-            
-            if len(colors_dict.keys()) > 20:
-                plots[col].layout.update(showlegend = False)
-        
+
         # Plotting rules for continuous plots
         elif plotting_rules[col]['type'] == 'continuous':
             
@@ -541,8 +538,8 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         # this is needed to determine the number of true or false values for the dropdown toggle visibility field
         scatter_counter[col] = len(plot.data)
         
-        # if there are more than 15 different categories, hide the legend
-        if scatter_counter[col] > 15:
+        # if there are more than 50 different categories, hide the legend
+        if scatter_counter[col] > 50:
             showlegend = False
         else:
             showlegend = True
@@ -554,21 +551,26 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         
         colorbar_dict = dict(
             title = colorbar_title, 
-            x = 0, y = 0, 
+            x = 0.5, y = 0, 
             orientation = 'h',
-            xanchor = 'left',
-            yanchor = 'top'
+            xanchor = 'center',
+            yanchor = 'top',
+            ticklabelposition = 'inside top',
+            title_font_size = 12,
+            title_side = 'bottom',
+            len = 0.7,
+            thickness = 20
         )
         
         # finally, add the original plot to the new plot.
         for scatter in plot.data:
-            
             if type(scatter) == plotly.graph_objs._scattergl.Scattergl:
                 obj_method = go.Scattergl
             elif type(scatter) == plotly.graph_objs._scatter.Scatter:
                 obj_method = go.Scatter
                 
             if plotting_rules[col]['type'] == 'continuous':
+                
                 if 'cmax' in plotting_rules[col]:
                     cmax = plotting_rules[col]['cmax']
                 else:
@@ -605,7 +607,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
                     
                     cmin = plotting_rules[col]['fillna']
 
-                fig.add_trace(obj_method(scatter, visible = vis, showlegend = showlegend,
+                fig.add_trace(obj_method(scatter, visible = vis,
                                           marker = dict(
                                               color = scatter.marker.color, 
                                               colorbar = colorbar_dict,
@@ -632,8 +634,8 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
                 x=keypoints[dim1],
                 y=keypoints[dim2],
                 marker=dict(
-                    color='rgba(0,0,0,1)',
-                    size=10,
+                    color='rgba(0,0,0,0.9)',
+                    size=12,
                     symbol='star-diamond'
                 ),
                 showlegend=False,
@@ -684,7 +686,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
                 showactive = True,
                 x = 0.1,
                 xanchor = "left",
-                y = 1.1,
+                y = 1.07,
                 yanchor = "top"
     )
     
@@ -696,15 +698,15 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     if keyids != []:
         keyids_button = dict(
             buttons = [dict(
-                args = ['visible', [i.visible if i.name != 'keyids' else True for i in fig.select_traces()]],
-                args2 = ['visible', [i.visible if i.name != 'keyids' else False for i in fig.select_traces()]],
+                args = [{'visible': True}, [len(fig.data) - 1]],
+                args2 = [{'visible': False}, [len(fig.data) - 1]],
                 label = 'Input Proteins'
             )],
             type = 'buttons',
             showactive = True,
             x = 1,
             xanchor = "right",
-            y = 1.1,
+            y = 1.07,
             yanchor = "top" 
         )
         # add this to the menu buttons
@@ -722,21 +724,52 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     fig.update_layout(
         width = plot_width, height = plot_height,
         annotations=[
-            dict(text="color", x=0.01, xref="paper", y=1.08, yref="paper",
+            dict(text="color", x=0.01, xref="paper", y=1.05, yref="paper",
                  align="left", showarrow=False) # This shows the word "color" next to the dropdown
         ],
-        plot_bgcolor= '#fafafa'
+        plot_bgcolor= '#fcfcfc'
     )
     
-    # hide tick labels
-    fig.update_layout(xaxis = dict(showticklabels = False), yaxis = dict(showticklabels = False))
+    xmin = df[dim1].min()
+    xmax = df[dim1].max()
+    xwiggle = 0.07 * (xmax - xmin)
+    
+    ymin = df[dim2].min()
+    ymax = df[dim2].max()
+    ywiggle = 0.07 * (ymax - ymin)
+    
+    fig.update_layout(margin=dict(l = 50, r = 50, t = 80, b = 130))
     # make x and y axes have a fixed scale
-    fig.update_yaxes(scaleanchor = "x", scaleratio = 1)
+    fig.update_yaxes(
+        range = (ymin - ywiggle, ymax + ywiggle),
+        showticklabels = False,
+        showspikes = True,
+        showgrid = False
+    )
+    fig.update_xaxes(
+        range = (xmin - xwiggle, xmax + xwiggle),
+        showticklabels = False,
+        showspikes = True,
+        showgrid = False
+    )
     
     # move the legend for categorical and color bar features to the bottom
-    fig.update_layout(legend=dict(orientation = "h", yanchor="top", y = 0, xanchor="left", x = 0, font = dict(size = 10)))
+    fig.update_layout(legend = dict(
+        orientation = "h", 
+        yanchor="top", 
+        y = 0, 
+        xanchor="left",
+        x = 0, 
+        font = dict(size = 10),
+        tracegroupgap = 1
+    ))
     # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=0, x=0.5,
     #                                       ticks="outside", orientation = 'h'))
+    
+    try:
+        fig.update_layout(font=dict(family="Arial"))
+    except:
+        pass
     
     # save if filename is provided
     if output_file != '':
