@@ -556,7 +556,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             xanchor = 'center',
             yanchor = 'top',
             ticklabelposition = 'inside top',
-            title_font_size = 12,
+            title_font_size = 14,
             title_side = 'bottom',
             len = 0.7,
             thickness = 20
@@ -684,10 +684,11 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     dropdown_menu = dict(
                 buttons = list(buttons),
                 showactive = True,
-                x = 0.1,
+                x = 0.05,
                 xanchor = "left",
                 y = 1.07,
-                yanchor = "top"
+                yanchor = "top",
+                font_size = 14
     )
     
     # create a separate button to toggle keyid trace
@@ -707,7 +708,8 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             x = 1,
             xanchor = "right",
             y = 1.07,
-            yanchor = "top" 
+            yanchor = "top",
+            font_size = 14
         )
         # add this to the menu buttons
         updatemenu = [dropdown_menu, keyids_button]
@@ -724,8 +726,8 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     fig.update_layout(
         width = plot_width, height = plot_height,
         annotations=[
-            dict(text="color", x=0.01, xref="paper", y=1.05, yref="paper",
-                 align="left", showarrow=False) # This shows the word "color" next to the dropdown
+            dict(text="color", x=0.04, xref="paper", xanchor = 'right', y=1.055, yref="paper",
+                 align="right", showarrow=False, font_size = 14) # This shows the word "color" next to the dropdown
         ],
         plot_bgcolor= '#fcfcfc'
     )
@@ -744,13 +746,15 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         range = (ymin - ywiggle, ymax + ywiggle),
         showticklabels = False,
         showspikes = True,
-        showgrid = False
+        showgrid = False,
+        zeroline = False
     )
     fig.update_xaxes(
         range = (xmin - xwiggle, xmax + xwiggle),
         showticklabels = False,
         showspikes = True,
-        showgrid = False
+        showgrid = False,
+        zeroline = False
     )
     
     # move the legend for categorical and color bar features to the bottom
@@ -760,7 +764,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         y = 0, 
         xanchor="left",
         x = 0, 
-        font = dict(size = 10),
+        font = dict(size = 12),
         tracegroupgap = 1
     ))
     # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=0, x=0.5,
