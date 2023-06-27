@@ -8,3 +8,5 @@ features_file: "uniprot_features.tsv"
 plotting_modes:
 - "pca_tsne"
 - "pca_umap"
+
+taxon_focus: 'euk'

@@ -29,6 +29,11 @@ if "override_file" in config:
         OVERRIDE_FILE = ''
 else:
     OVERRIDE_FILE = ''
+    
+if "taxon_focus" in config:
+    TAXON_FOCUS = config["taxon_focus"]
+else:
+    TAXON_FOCUS = 'euk'
 
 MODES = config["plotting_modes"]
 
@@ -140,10 +145,11 @@ rule plot_interactive:
         output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html")
     params:
         modes = "{modes}",
-        protid = expand("{protid}", protid = PROTID)
+        protid = expand("{protid}", protid = PROTID),
+        taxon_focus = TAXON_FOCUS
     shell:
         '''
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -x euk
+        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -x {params.taxon_focus}
         '''
 
 rule plot_similarity_leiden:
