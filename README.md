@@ -1,6 +1,7 @@
 # gene-family-cartography
 embedding proteins into feature spaces for computational exploration
 
+---
 ## Purpose
 The relationship between protein sequence, structure, and function has only been thoroughly investigated for a handful of gene families.  
 This repo takes an agnostic approach to characterizing groups of similar proteins using feature embedding spaces.  
@@ -9,6 +10,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
 Using the full list of matches, we can build a "map" of all the similar proteins and look for clusters of proteins with similar features.  
 Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
 
+---
 ## Directory Structure
 - [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
 - [config.yml](config.yml): default config file for the pipeline.
@@ -16,6 +18,7 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
 - [ProteinCartography/](ProteinCartography/): helper scripts that are called by the Snakemake pipeline, pip-installable and importable in Python.
 - [examples/](examples/): example output files.
 
+---
 ## Pipeline Overview
 This repo cotains a Snakemake pipeline that takes input `.fasta` and `.pdb` files of interest.
 The rulegraph for this pipeline is as follows:  
@@ -121,6 +124,7 @@ The steps of the pipeline have the following functionality:
         
     - Power users can customize the plots using a variety of rules, described below.
 
+---
 ## Plotting Rules for `plot_interactive()`
 
 The `plot_interactive()` function has two required arguments:
@@ -197,3 +201,79 @@ The possible rules for each column are as follows:
 - Allow for passing of arbitrary TSV data types for building visualizations.
     - Technically, the aggregation part works. There's not a super easy way to then build the visualization's rules from there.
 - Automated aggregation of input/output files to share using `biofile`?
+
+---
+## File Conventions
+
+The pipeline generates a large number of .txt and .tsv files with specific formatting expectations.  
+Many of the pipeline's scripts accept these specific format conventions as input or return them as output.  
+These are the primary formats and their descriptions.
+
+### Accession list files (ACC)
+These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank, Uniprot), one per line.
+
+- **Example:**
+    ```
+    A0A2J8L4A7
+    K7EV54
+    A0A2J8WJR8
+    A0A811ZNA7
+    ...
+    ```
+- **Input to:** 
+    - [`aggregate_lists.py`](ProteinCartography/aggregate_lists.py)
+    - [`get_source.py`](ProteinCartography/get_source.py)
+    - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
+    - [`query_uniprot.py`](ProteinCartography/query_uniprot.py)
+    - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
+- **Output from:**
+    - [`aggregate_lists.py`](ProteinCartography/aggregate_lists.py)
+    - [`extract_blasthits.py`](ProteinCartography/extract_blasthits.py)
+    - [`extract_foldseekhits.py`](ProteinCartography/extract_foldseekhits.py)
+    - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
+    - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
+    
+### Matrix File (MTX)
+These files end with `'.tsv'` and contain distance or similarity matrices, usually all-v-all.  
+
+- **Example:**:
+    | protid | A0A2J8L4A7 | K7EV54 | A0A2J8WJR8 | A0A811ZNA7 | 
+    |-------:|:----------:|:------:|:----------:|:----------:|
+    | A0A2J8L4A7 |  1   | 0.9  | 0.85 | 0.7  |
+    | K7EV54     | 0.9  |  1   | 0.91 | 0.6  |
+    | A0A2J8WJR8 | 0.85 | 0.91 |  1   | 0.71 |
+    | A0A811ZNA7 | 0.7  | 0.6  | 0.71 |  1   |
+- **Input to:** 
+    - [`cluster_similarity.py`](ProteinCartography/cluster_similarity.py)
+    - [`dim_reduction.py`](ProteinCartography/dim_reduction.py)
+    - [`extract_input_distances.py`](ProteinCartography/extract_input_distances.py)
+- **Output from:**
+    - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
+
+### Features files (FTF)
+These files end with `'.tsv'` and contain a `protid` column, which is the unique identifier of each protein in the dataset.  
+The remaining columns are annotations for each protein. These annotations can be of any data type.
+
+- **Example:**
+    | protid | sequence.length | LeidenCluster | organism.scientificName | organism.commonName |
+    |-------:|:---------------:|:-------------:|:-----------------------:|:-------------------:|
+    | A0A2J8L4A7 | 707 | 1 | Pan troglodytes | Chimpanzee |
+    | K7EV54 | 784 | 2 | Pongo abelii | Sumatran orangutan |
+    | A0A2J8WJR8 | 707 | 1 | Pongo abelii | Sumatran orangutan |
+    | A0A811ZNA7 | 781 | 1 | Nyctereutes procyonoides | Raccoon dog |
+- **Input to:**
+    - [`aggregate_features.py`](ProteinCartography/aggregate_features.py)
+    - [`calculate_convergence.py`](ProteinCartography/calculate_convergence.py)
+    - [`dim_reduction.py`](ProteinCartography/dim_reduction.py) 
+    - [`plot_interactive.py`](ProteinCartography/plot_interactive.py)
+    - [`semantic_analysis.py`](ProteinCartography/semantic_analysis.py)
+- **Output from:**
+    - [`aggregate_fident.py`](ProteinCartography/aggregate_fident.py)
+    - [`calculate_convergence.py`](ProteinCartography/calculate_convergence.py)
+    - [`extract_input_distances.py`](ProteinCartography/extract_input_distances.py)
+    - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
+    - [`get_source.py`](ProteinCartography/get_source.py)
+    - [`leiden_clustering.py`](ProteinCartography/leiden_clustering.py)
+    - [`query_uniprot.py`](ProteinCartography/query_uniprot.py)
+
+
