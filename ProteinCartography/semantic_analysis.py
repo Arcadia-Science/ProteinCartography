@@ -148,7 +148,7 @@ def main():
     output_file = args.output
     exclude_words = args.exclude_words
     analysis_name = args.analysis_name
-    colors = list(apc.arcadia_All_ordered.values())
+    colors = apc.Palettes['arcadia:AccentAllOrdered'].colors
     
     plot_semantic_analysis(
         features_file = features_file,

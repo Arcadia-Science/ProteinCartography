@@ -188,4 +188,3 @@ rule plot_semantic_analysis:
         '''
         python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output} -a {params.analysis_name}
         '''
-

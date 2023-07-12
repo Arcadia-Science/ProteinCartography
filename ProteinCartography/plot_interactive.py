@@ -11,98 +11,25 @@ import colorsys
 
 # only import these functions when using import *
 __all__ = ["adjust_lightness", "apply_coordinates", 
-           "assign_taxon", "extend_colors", "plot_interactive", 
-           "arcadia_viridis",  "arcadia_viridis_r", 
-           "arcadia_magma", "arcadia_magma_r", 
-           "arcadia_cividis", "arcadia_cividis_r",
-           "arcadia_icyhot", "arcadia_icyhot_r", 
-           "arcadia_pansies", "arcadia_pansies_r"]
+           "assign_taxon", "extend_colors", "plot_interactive"]
 
-arcadia_viridis = [
-    [0, "#341E60"], 
-    [0.49, apc.arcadia_all["arcadia:aegean"]], 
-    [0.75, apc.arcadia_all["arcadia:lime"]],
-    [1, "yellow"]
-]
+arcadia_viridis = apc.Gradients['arcadia:viridis'].grad_nested_list
+arcadia_viridis_r = apc.Gradients['arcadia:viridis_r'].grad_nested_list
 
-arcadia_viridis_r = [
-    [0, "yellow"],
-    [0.25, apc.arcadia_all["arcadia:lime"]],
-    [0.51, apc.arcadia_all["arcadia:aegean"]], 
-    [1, "#341E60"]
-]
+arcadia_magma = apc.Gradients['arcadia:magma'].grad_nested_list
+arcadia_magma_r = apc.Gradients['arcadia:magma_r'].grad_nested_list
 
-arcadia_magma = [
-    [0, apc.arcadia_all["arcadia:black"]], 
-    [0.38, "#5A4596"], 
-    [0.72, "#E87485"], 
-    [0.9, apc.arcadia_all["arcadia:orange"]], 
-    [1, apc.arcadia_all["arcadia:oat"]]
-]
+arcadia_cividis = apc.Gradients['arcadia:cividis'].grad_nested_list
+arcadia_cividis_r = apc.Gradients['arcadia:cividis_r'].grad_nested_list
 
-arcadia_magma_r = [
-    [0, apc.arcadia_all["arcadia:oat"]],
-    [0.1, apc.arcadia_all["arcadia:orange"]], 
-    [0.28, "#E87485"], 
-    [0.62, "#5A4596"], 
-    [1, apc.arcadia_all["arcadia:black"]]
-]
+arcadia_poppies = apc.Gradients['arcadia:poppies'].grad_nested_list
+arcadia_poppies_r = apc.Gradients['arcadia:poppies_r'].grad_nested_list
 
-arcadia_cividis = [
-    [0, apc.arcadia_all["arcadia:crow"]],
-    [0.39, apc.arcadia_all["arcadia:forest"]],
-    [0.85,  apc.arcadia_all["arcadia:canary"]],
-    [1,  apc.arcadia_all["arcadia:satin"]]
-]
+arcadia_pansies = apc.Gradients['arcadia:pansies'].grad_nested_list
+arcadia_pansies_r = apc.Gradients['arcadia:pansies_r'].grad_nested_list
 
-arcadia_cividis_r = [
-    [0,  apc.arcadia_all["arcadia:satin"]],
-    [0.15,  apc.arcadia_all["arcadia:canary"]],
-    [0.61, apc.arcadia_all["arcadia:forest"]],
-    [1, apc.arcadia_all["arcadia:crow"]],
-]
-
-arcadia_icyhot = [
-    [0, "#341E60"],
-    [0.26, apc.arcadia_all["arcadia:aegean"]],
-    [0.35, apc.arcadia_all["arcadia:vitalblue"]],
-    [0.5, apc.arcadia_all["arcadia:zephyr"]],
-    [0.6, apc.arcadia_all["arcadia:dress"]],
-    [0.7, apc.arcadia_all["arcadia:amber"]],
-    [0.8, apc.arcadia_all["arcadia:dragon"]],
-    [1, "#52180a"]
-]
-
-arcadia_icyhot_r = [
-    [1 - 1, "#52180a"],
-    [1 - 0.8, apc.arcadia_all["arcadia:dragon"]],
-    [1 - 0.7, apc.arcadia_all["arcadia:amber"]],
-    [1 - 0.6, apc.arcadia_all["arcadia:dress"]],
-    [1 - 0.5, apc.arcadia_all["arcadia:zephyr"]],
-    [1 - 0.35, apc.arcadia_all["arcadia:vitalblue"]],
-    [1 - 0.26, apc.arcadia_all["arcadia:aegean"]],
-    [1 - 0, "#341E60"]
-]
-
-arcadia_pansies = [
-    [0, "#3f2d5c"],
-    [0.21, apc.arcadia_all["arcadia:aster"]],
-    [0.39, apc.arcadia_all["arcadia:wish"]],
-    [0.5, apc.arcadia_all["arcadia:dawn"]],
-    [0.55, apc.arcadia_all["arcadia:oat"]],
-    [0.64, apc.arcadia_all["arcadia:canary"]],
-    [1, "#4d2c03"]
-]
-
-arcadia_pansies_r = [
-    [1 - 1, "#4d2c03"],
-    [1 - 0.64, apc.arcadia_all["arcadia:canary"]],
-    [1 - 0.55, apc.arcadia_all["arcadia:oat"]],
-    [1 - 0.5, apc.arcadia_all["arcadia:dawn"]],
-    [1 - 0.39, apc.arcadia_all["arcadia:wish"]],
-    [1 - 0.21, apc.arcadia_all["arcadia:aster"]],
-    [1 - 0, "#3f2d5c"],
-]
+arcadia_dahlias = apc.Gradients['arcadia:dahlias'].grad_nested_list
+arcadia_dahlias_r = apc.Gradients['arcadia:dahlias_r'].grad_nested_list
 
 # parse command line arguments
 def parse_args():
@@ -498,7 +425,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
                 colors_dict = dict(zip(color_keys, color_order))
                 
                 # add entry for 'Other'
-                colors_dict['Other'] = '#eaeaea'
+                colors_dict['Other'] = apc.All['arcadia:brightgrey']
             
             # generate a taxonomic category column using assign_taxon lambda function
             col_taxonomic = col + '_taxonomic'
@@ -598,7 +525,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
                     if 'na_color' in plotting_rules[col]:
                         na_color = plotting_rules[col]['na_color']
                     else:
-                        na_color = '#eaeaea'
+                        na_color = apc.All['arcadia:brightgrey']
                         
                     new_colors = [na_color] * 2 + original_colors
                     
@@ -729,7 +656,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             dict(text="color", x=0.04, xref="paper", xanchor = 'right', y=1.055, yref="paper",
                  align="right", showarrow=False, font_size = 14) # This shows the word "color" next to the dropdown
         ],
-        plot_bgcolor= '#fcfcfc'
+        plot_bgcolor= apc.All['arcadia:paper']
     )
     
     xmin = df[dim1].min()
@@ -800,12 +727,12 @@ def main():
     
     # color order for annotation score
     annotationScore_colors = [
-        '#eaeaea', 
-        apc.arcadia_all['arcadia:aster'],
-        apc.arcadia_all['arcadia:aegean'],
-        apc.arcadia_all['arcadia:seaweed'],
-        apc.arcadia_all['arcadia:lime'],
-        apc.arcadia_all['arcadia:canary']
+        apc.All['arcadia:brightgrey'], 
+        apc.All['arcadia:aster'],
+        apc.All['arcadia:aegean'],
+        apc.All['arcadia:seaweed'],
+        apc.All['arcadia:lime'],
+        apc.All['arcadia:canary']
     ]
     
     # color dictionary for annotation score (values from 0 to 5)
@@ -814,48 +741,48 @@ def main():
     # if the taxonomic focus is eukaryote, use these groupings and colors
     if taxon_focus == 'euk':
         taxon_color_dict = {
-            'Mammalia': apc.arcadia_all['arcadia:oat'],
-            'Vertebrata': apc.arcadia_all['arcadia:canary'],
-            'Arthropoda': apc.arcadia_all['arcadia:seaweed'],
-            'Ecdysozoa': apc.arcadia_all['arcadia:mint'],
-            'Lophotrochozoa': apc.arcadia_all['arcadia:aegean'],
-            'Metazoa': apc.arcadia_all['arcadia:amber'],
-            'Fungi': apc.arcadia_all['arcadia:chateau'],
-            'Viridiplantae': apc.arcadia_all['arcadia:lime'],
-            'Sar': apc.arcadia_all['arcadia:rose'],
-            'Excavata': apc.arcadia_all['arcadia:wish'],
-            'Amoebazoa': apc.arcadia_all['arcadia:periwinkle'],
-            'Eukaryota': apc.arcadia_all['arcadia:aster'], 
-            'Bacteria': apc.arcadia_all['arcadia:slate'], 
-            'Archaea': apc.arcadia_all['arcadia:dragon'],
-            'Viruses': apc.arcadia_all['arcadia:denim']
+            'Mammalia': apc.All['arcadia:oat'],
+            'Vertebrata': apc.All['arcadia:canary'],
+            'Arthropoda': apc.All['arcadia:seaweed'],
+            'Ecdysozoa': apc.All['arcadia:mint'],
+            'Lophotrochozoa': apc.All['arcadia:aegean'],
+            'Metazoa': apc.All['arcadia:amber'],
+            'Fungi': apc.All['arcadia:chateau'],
+            'Viridiplantae': apc.All['arcadia:lime'],
+            'Sar': apc.All['arcadia:rose'],
+            'Excavata': apc.All['arcadia:wish'],
+            'Amoebazoa': apc.All['arcadia:periwinkle'],
+            'Eukaryota': apc.All['arcadia:aster'], 
+            'Bacteria': apc.All['arcadia:slate'], 
+            'Archaea': apc.All['arcadia:dragon'],
+            'Viruses': apc.All['arcadia:denim']
         }
         
     # else if the taxonomic focus is bacteria, use these groupings and colors
     elif taxon_focus == 'bac':
         taxon_color_dict = {
-            'Pseudomonadota': apc.arcadia_all['arcadia:periwinkle'],
-            'Nitrospirae': apc.arcadia_all['arcadia:vitalblue'],
-            'Acidobacteria': apc.arcadia_all['arcadia:mars'],
-            'Bacillota': apc.arcadia_all['arcadia:mint'],
-            'Spirochaetes': apc.arcadia_all['arcadia:aegean'],
-            'Cyanobacteria': apc.arcadia_all['arcadia:seaweed'],
-            'Actinomycetota': apc.arcadia_all['arcadia:canary'],
-            'Deinococcota': apc.arcadia_all['arcadia:rose'],
-            'Bacteria': apc.arcadia_all['arcadia:slate'],
-            'Archaea': apc.arcadia_all['arcadia:dragon'],
-            'Viruses': apc.arcadia_all['arcadia:denim'],
-            'Metazoa': apc.arcadia_all['arcadia:amber'],
-            'Fungi': apc.arcadia_all['arcadia:chateau'],
-            'Viridiplantae': apc.arcadia_all['arcadia:lime'],
-            'Eukaryota': apc.arcadia_all['arcadia:wish'],
+            'Pseudomonadota': apc.All['arcadia:periwinkle'],
+            'Nitrospirae': apc.All['arcadia:vitalblue'],
+            'Acidobacteria': apc.All['arcadia:mars'],
+            'Bacillota': apc.All['arcadia:mint'],
+            'Spirochaetes': apc.All['arcadia:aegean'],
+            'Cyanobacteria': apc.All['arcadia:seaweed'],
+            'Actinomycetota': apc.All['arcadia:canary'],
+            'Deinococcota': apc.All['arcadia:rose'],
+            'Bacteria': apc.All['arcadia:slate'],
+            'Archaea': apc.All['arcadia:dragon'],
+            'Viruses': apc.All['arcadia:denim'],
+            'Metazoa': apc.All['arcadia:amber'],
+            'Fungi': apc.All['arcadia:chateau'],
+            'Viridiplantae': apc.All['arcadia:lime'],
+            'Eukaryota': apc.All['arcadia:wish'],
         }
     
     # use this color dictionary for the sources (blast vs foldseek vs blast+foldseek)
-    source_color_dict = {'blast': apc.arcadia_all['arcadia:canary'], 
-                         'foldseek': apc.arcadia_all['arcadia:aegean'], 
-                         'blast+foldseek': apc.arcadia_all['arcadia:amber'], 
-                         'None': '#eaeaea'}
+    source_color_dict = {'blast': apc.All['arcadia:canary'], 
+                         'foldseek': apc.All['arcadia:aegean'], 
+                         'blast+foldseek': apc.All['arcadia:amber'], 
+                         'None': apc.All['arcadia:brightgrey']}
     
     # use this dictionary as default plotting rules
     # the order of elements in this dictionary determines their order 
@@ -880,13 +807,13 @@ def main():
             'type': 'categorical',
             'fillna': 'None',
             'apply': lambda x: str(x), # Leiden cluster is often read as int; this forces it to be string
-            'color_order': apc.arcadia_All_ordered.values(),
+            'color_order': apc.Palettes['arcadia:AccentAllOrdered'].colors,
             'textlabel': 'Leiden Cluster'
         },
         # 'StruCluster': { # This is hidden for now as people thought it wasn't very useful
         #     'type': 'categorical',
         #     'fillna': 'None',
-        #     'color_order': apc.arcadia_All_ordered.values(),
+        #     'color_order': apc.Palettes['arcadia:AccentAllOrdered'].colors,
         #     'textlabel': 'Structural Cluster'
         # },
         'annotationScore': {
@@ -942,7 +869,7 @@ def main():
             'type': 'continuous', 
             'fillna': -1.01, 
             'textlabel': f'Convergence vs. {keyid}',
-            'color_scale': arcadia_icyhot_r,
+            'color_scale': arcadia_poppies_r,
             'cmin': -1,
             'cmax': 1
         }
