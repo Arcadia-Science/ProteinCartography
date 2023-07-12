@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import arcadia_pycolor as apc
-from plot_interactive import arcadia_viridis
+
+arcadia_viridis = apc.Gradients['arcadia:viridis'].grad_nested_list
 
 __all__ = ['calculate_group_similarity', 'plot_group_similarity']
 
