@@ -10,6 +10,8 @@ from plot_interactive import adjust_lightness, extend_colors
 
 __all__ = ['plot_semantic_analysis']
 
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--features-file", required = True, help = 'Path to features file for grouping.')
@@ -149,6 +151,8 @@ def main():
     exclude_words = args.exclude_words
     analysis_name = args.analysis_name
     colors = apc.Palettes['arcadia:AccentAllOrdered'].colors
+    
+    apc.mpl_setup()
     
     plot_semantic_analysis(
         features_file = features_file,
