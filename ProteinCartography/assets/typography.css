@@ -1,0 +1,280 @@
+#logo {
+    font-family: Arial, sans-serif;
+    color: #000000;
+    font-weight: regular;
+    background: url('ProteinCartography_logo.svg') left no-repeat;
+    background-size: 30px 30px;
+    padding-left: 35px;
+    padding-right: 30px;
+    font-weight: bold;
+    letter-spacing: -0.5px;
+}
+
+h1 {
+    font-family: Arial, sans-serif;
+    color: #8A99AD;
+    font-size: 27px;
+}
+
+h2 {
+    font-family: Arial, sans-serif;
+    color: #000000;
+    font-size: 20px;
+    line-height: 0.8;
+    font-weight: lighter;
+    letter-spacing: 2px;
+}
+
+h3 {
+    font-family: Arial, sans-serif;
+    color: #8A99AD;
+    font-size: 18px;
+    line-height: 0.8;
+    font-weight: lighter;
+}
+
+p {
+    font-family: Arial, sans-serif;
+}
+
+.cell-markdown p {
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-right: 2px;
+    text-align: right;
+}
+a {
+    text-decoration: none;
+}
+a:link {
+    color: #5088C5;
+}
+a:visited {
+    color: #8A99AD;
+}
+.cell-markdown a[href^="http"] {
+    background: url("linkout_icon.svg") no-repeat 100% 0;
+    background-size: 12px 12px;
+    padding-right: 16px;
+    font-weight: bold;
+}
+
+#info-text *[href^="http"] {
+    background: url("linkout_icon.svg") no-repeat 100% 0;
+    background-position: center right;
+    background-size: 14px 14px;
+    padding-right: 18px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.dash-table-container .row {
+    display: block;
+    margin: 0;
+}
+
+#title-bar {
+    margin-left: 50px;
+    margin-right: 50px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+#title-bar-left {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: baseline;
+}
+
+#title-code {
+    font-size: 18px;
+    border-radius: 4px;
+    background-color: #EAEAEA;
+    padding: 4px 8px;
+    margin-left: 10px;
+}
+
+
+#title-bar-right {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: top;
+}
+
+#github-a {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: #F4FBFF;
+    border-radius: 4px;
+    padding: 6px 8px 6px 6px;
+}
+
+#version {
+    margin-right: 6px;
+    font-size: 16px;
+}
+
+#github-logo {
+    width: 25px;
+    height: 25px;
+    background-color: #FFFFFF;
+    border-radius: 10px;
+}
+
+#arcadia-a {
+    display: inline-flex;
+    margin-left: 10px;
+}
+
+#arcadia-logo {
+    width: 35px;
+    height: 35px;
+    background-color: #8A99AD;
+    border-radius: 4px;
+}
+
+#top-card-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: top;
+    width: 100%;
+}
+
+#info-card {
+    margin-left: 50px;
+    background-color: #FCFCFC;
+    box-shadow: 1px 1px 2px 1px #EAEAEA; 
+    position: relative;
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    display: flex;
+    flex-direction: column;
+    max-width: 20%;
+    min-width: 20%;
+}
+
+#info-text {
+    padding-top: 0px;
+    margin-top: -15px;
+}
+
+#info-text * {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+}
+
+#scatter-card {
+    margin-bottom: 10px;
+    margin-right: 10px;
+    padding-top: 14px;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: #FCFCFC;
+    box-shadow: 1px 1px 2px 1px #EAEAEA; 
+    display: inline-flex;
+    position: relative;
+}
+
+#scatter-card-title {
+    position: absolute;
+    top: 0;
+    padding-left: 8px;
+}
+
+#analysis-card {
+    margin-bottom: 10px;
+    margin-right: 50px;
+    background-color: #FCFCFC;
+    box-shadow: 1px 1px 2px 1px #EAEAEA; 
+    position: relative;
+    padding-top: 14px;
+    padding-left: 12px;
+    padding-right: 12px;
+    width: 40%;
+}
+
+#analysis-tab-content{
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#database-card {
+    background-color: #FCFCFC;
+    margin-top: 2px;
+    margin-left: 50px;
+    margin-right: 50px;
+    margin-bottom: 50px;
+    padding: 5px 5px;
+    box-shadow: 1px 1px 2px 1px #EAEAEA; 
+}
+
+#database-card-titlebar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+#search-bar {
+    width: 300px;
+    height: 25px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #B6C8D4;
+    padding: 3px;
+    background: url("search_icon.svg") no-repeat 100% 0;
+    background-size: 20px 25px;
+    background-origin: content-box;
+    background-color: white;
+}
+
+#data-table {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+input[type=text]:focus {
+    border: 1px solid #B6C8D4;
+}
+
+#download-div {
+    display: inline-flex;
+    margin-left: 10px;
+}
+
+#download-button {
+    background-image: url('download_icon.svg');
+    background-repeat: no-repeat;
+    background-position: 10%;
+    background-size: 20px 20px;
+    padding-left: 35px;
+    padding-right: 10px;
+}
+
+button {
+    background-color: #FFFFFF;
+    border: 1px solid #B6C8D4;
+    border-radius: 4px;
+    color: #333333;
+    padding: 8px 8px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 0px 0px 0px 5px;
+}
+
+button:hover {
+    cursor: pointer;
+    background-color: #F4FBFF;
+}
