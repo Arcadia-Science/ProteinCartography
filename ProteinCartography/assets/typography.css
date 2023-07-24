@@ -200,7 +200,28 @@ a:visited {
     width: 40%;
 }
 
-#analysis-tab-content{
+#heatmap-tab-content {
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#structure-tab-content {
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#semantics-tab-content {
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#phylogeny-tab-content {
     padding-top: 20px;
     display: flex;
     flex-direction: column;

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 from dash import Dash, html, dash_table, dcc, Input, Output, State, callback, ctx
+import dash_bio as dashbio
 from dash_bio.utils import PdbParser, create_mol3d_style
 import pandas as pd
 import numpy as np
@@ -25,7 +26,7 @@ def parse_args():
     
     return args
 
-def make_data_dict(input_path: str, structures_path = '',
+def make_data_dict(input_path: str, structures_path = None,
                    analysis_name = '', taxon_focus = 'euk', keyids = [],
                    plot_width = 500, plot_height = 600):
     
@@ -39,7 +40,10 @@ def make_data_dict(input_path: str, structures_path = '',
 
     plotting_rules = generate_plotting_rules(taxon_focus, keyids)
 
-    
+    if os.path.exists(structures_path):
+        structures_list = [file for file in os.listdir(structures_path)]
+    else:
+        structures_list = []
 
     scatter_figure = plot_interactive(tsne_file, plotting_rules, keyids = keyids,
                     plot_width = plot_width, plot_height = plot_height,
@@ -57,7 +61,9 @@ def make_data_dict(input_path: str, structures_path = '',
         'scatterplot_tsne': scatter_figure,
         'scatter_data': scatter_data,
         'plotting_rules': plotting_rules,
-        'heatmap': heatmap_figure
+        'heatmap': heatmap_figure,
+        'structures_path': structures_path,
+        'structures_list': structures_list
     }
 
     return data_dict
@@ -124,6 +130,10 @@ def make_dash_app(data_dict: dict):
     scatter_data = data_dict['scatter_data']
     plotting_rules = data_dict['plotting_rules']
     heatmap_figure = data_dict['heatmap']
+    structures_path = data_dict['structures_path']
+    structures_list = data_dict['structures_list']
+
+    print(structures_list)
 
     # Initialize the app
     app = Dash(__name__)
@@ -276,6 +286,44 @@ def make_dash_app(data_dict: dict):
         'paddingBottom': '0px'
     }
 
+    if structures_path is not None:
+        structure_tab_content = [
+                    html.H3(children = 'Structure viewer'),
+                    html.Div(
+                        id = 'structure-tab-menu',
+                        children = [
+                            dcc.Input(
+                                id = 'structure-protein-1-input',
+                                type = 'search', 
+                                value = 'Protein 1',
+                                list = 'structure-datalist'
+                            ),
+                            # dcc.Input(
+                            #     id = 'structure-protein-2',
+                            #     type = 'search', 
+                            #     children = 'Protein 2',
+                            #     list = structures_list
+                            # ),
+                            html.Button(
+                                id = 'structure-display-button',
+                                children = 'Display'
+                            ),
+                    ]),
+                    dashbio.Molecule3dViewer(
+                        id = 'dashbio-mol3dviewer'
+                    ),
+                    html.Datalist(
+                        id = 'structure-datalist',
+                        children = structures_list,
+                        hidden = True
+                    )
+                ]
+    else:
+        structure_tab_content = [
+                    html.H3(children = 'Structure viewer'),
+                    html.P(children = 'No data provided.')
+                ]
+
     # App layout
     app.layout = html.Div([
         html.Div(
@@ -362,12 +410,59 @@ def make_dash_app(data_dict: dict):
                             value = 'heatmap-tab',
                             style = tabs_styles,
                             children = [
-                                dcc.Tab(label = 'Heatmap', value = 'heatmap-tab', style = tab_style, selected_style = tab_selected_style),
-                                dcc.Tab(label = 'Structure', value = 'structure-tab', style = tab_style, selected_style = tab_selected_style),
-                                dcc.Tab(label = 'Semantics', value = 'semantics-tab', style = tab_style, selected_style = tab_selected_style),
-                                dcc.Tab(label = 'Phylogeny', value = 'phylogeny-tab', style = tab_style, selected_style = tab_selected_style)
-                        ]),
-                        html.Div(id = 'analysis-tab-content')
+                                dcc.Tab(
+                                    label = 'Heatmap', 
+                                    value = 'heatmap-tab', 
+                                    style = tab_style, 
+                                    selected_style = tab_selected_style,
+                                    children = [
+                                        html.Div(
+                                            id = 'heatmap-tab-content',
+                                            children = [
+                                                html.H3(children = 'Cluster similarity heatmap'),
+                                                dcc.Graph(figure = heatmap_figure, config = heatmap_config)
+                                            ])
+                                ]),
+                                dcc.Tab(
+                                    label = 'Structure', 
+                                    value = 'structure-tab', 
+                                    style = tab_style, 
+                                    selected_style = tab_selected_style,
+                                    children = [
+                                        html.Div(
+                                            id = 'structure-tab-content',
+                                            children = [
+                                                html.H3(children = 'Structure viewer'),
+                                                html.P(children = 'In development :)')
+                                            ])
+                                ]),
+                                dcc.Tab(
+                                    label = 'Semantics', 
+                                    value = 'semantics-tab', 
+                                    style = tab_style, 
+                                    selected_style = tab_selected_style,
+                                    children = [
+                                        html.Div(
+                                            id = 'semantics-tab-content',
+                                            children = [
+                                                html.H3(children = 'Semantic analysis'),
+                                                html.P(children = 'In development :)')
+                                            ])
+                                ]),
+                                dcc.Tab(
+                                    label = 'Phylogeny', 
+                                    value = 'phylogeny-tab', 
+                                    style = tab_style, 
+                                    selected_style = tab_selected_style,
+                                    children = [
+                                        html.Div(
+                                            id = 'phylogeny-tab-content',
+                                            children = [
+                                                html.H3(children = 'Phylogeny'),
+                                                html.P(children = 'In development :)')
+                                            ])
+                            ])
+                        ])
                 ]),
         ]),
         html.Div(
@@ -557,36 +652,27 @@ def make_dash_app(data_dict: dict):
                 entries_list.append(f'<b>{key}:</b> {value}')
 
         return header + '<br>'.join(entries_list)
-        
+    
     @callback(
-        Output('analysis-tab-content', 'children'),
-        Input('analysis-tabs', 'value'))
-    def display_hover_data(value):
-        if value == 'heatmap-tab':
-            return [
-                html.H3(children = 'Cluster similarity heatmap'),
-                dcc.Graph(figure = heatmap_figure, config = heatmap_config)
-                ]
-        elif value == 'structure-tab':
-            return [
-                html.H3(children = 'Structure viewer'),
-                html.P(children = 'In development :)')
-                ]
-        elif value == 'semantics-tab':
-            return [
-                html.H3(children = 'Semantic analysis'),
-                html.P(children = 'In development :)')
-            ]
-        elif value == 'phylogeny-tab':
-            return [
-                html.H3(children = 'Semantic analysis'),
-                html.P(children = 'In development :)')
-            ]
-        else:
-            return [
-                html.H3(children = 'Something went wrong :('),
-            ]
-        
+        Output("dashbio-mol3dviewer", "modelData"),
+        Output("dashbio-mol3dviewer", "styles"),
+        Input("structure-display-button", "n_clicks"),
+        State("structure-protein-1-input", "value"),
+        prevent_initial_call = True
+    )
+    def func(n_clicks, protein1):
+        if protein1 == 'Protein 1':
+            return '', ''
+
+        protein1_path = os.path.join(structures_path, protein1)
+        parser1 = PdbParser(protein1_path)
+
+        data1 = parser1.mol3d_data()
+        styles1 = create_mol3d_style(
+            data1['atoms'], visualization_type='cartoon',
+        )
+        return data1, styles1
+
     app.run(debug=True)
 
 def main():
@@ -595,13 +681,18 @@ def main():
     analysis_name = args.analysis_name
     keyids = args.keyids
     taxon_focus = args.taxon_focus
-    plot_width = int(args.plot_width)
-    plot_height = int(args.plot_height)
+    structures_path = args.structures_path
+    
+    if structures_path == '':
+        str_path = None
+    else:
+        str_path = structures_path
+
 
     data_dict = make_data_dict(
         input_path = input_path,
-        analysis_name = analysis_name, taxon_focus = taxon_focus, keyids = keyids, 
-        plot_width = plot_width, plot_height = plot_height
+        analysis_name = analysis_name, taxon_focus = taxon_focus, keyids = keyids,
+        structures_path = str_path
     )
 
     make_dash_app(data_dict)
