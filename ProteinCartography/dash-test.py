@@ -2,53 +2,65 @@
 import argparse
 from dash import Dash, html, dash_table, dcc, Input, Output, State, callback, ctx
 import dash_bio as dashbio
+import dash_daq as daq
 from dash_bio.utils import PdbParser, create_mol3d_style
 import pandas as pd
 import numpy as np
 import arcadia_pycolor as apc
 import matplotlib.colors as mcolors
+import colorsys
 import json
 from pathlib import Path
 import os
 
 from plot_interactive import generate_plotting_rules, plot_interactive, assign_taxon
 from cluster_similarity import plot_group_similarity
+from residue_confidence import assign_residue_colors, extract_residue_confidence, RESIDUE_CONFIDENCE_COLORS
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input-path", required = True, help = "path to ProteinCartography clusteringresults folder")
+    parser.add_argument("-i", "--input-path", required = True, help = "path to ProteinCartography output folder")
     parser.add_argument("-n", "--analysis-name", default = '', help = "name of the analysis")
     parser.add_argument("-t", "--dimensions-type", default = '', help = "dimensions data type (pca, tsne, umap, etc.)")
     parser.add_argument("-k", "--keyids", nargs = "+", default = [], help = "keyids for plotting. Usually input protids.")
     parser.add_argument("-x", "--taxon_focus", default = "euk", help = "Coloring scheme/ taxonomic groups for broad taxon plot.\n'euk'(aryote) is default; 'bac'(teria) is another option.")
-    parser.add_argument("-s", "--structures-path", default = '', help = "path to folder containing PDB structures of interest.")
     args = parser.parse_args()
     
     return args
 
-def make_data_dict(input_path: str, structures_path = None,
+def make_data_dict(input_path: str, 
                    analysis_name = '', taxon_focus = 'euk', keyids = [],
                    plot_width = 500, plot_height = 600):
     
-    input_Path = Path(input_path)
+    input_Path = Path(input_path) 
+
+    results_Path = input_Path / 'clusteringresults'
 
     if analysis_name == '':
-        analysis_name = [i for i in os.listdir(input_Path) if '_aggregated_features.tsv' in i][0].replace('_aggregated_features.tsv', '')
+        analysis_name = [i for i in os.listdir(results_Path) if '_aggregated_features.tsv' in i][0].replace('_aggregated_features.tsv', '')
 
-    tsne_file = input_Path / f'{analysis_name}_aggregated_features_pca_tsne.tsv'
-    similarity_file = input_Path / f'{analysis_name}_leiden_similarity.tsv'
+    tsne_file = results_Path / f'{analysis_name}_aggregated_features_pca_tsne.tsv'
+    umap_file = results_Path / f'{analysis_name}_aggregated_features_pca_umap.tsv'
+    similarity_file = results_Path / f'{analysis_name}_leiden_similarity.tsv'
 
     plotting_rules = generate_plotting_rules(taxon_focus, keyids)
 
-    if os.path.exists(structures_path):
-        structures_list = [file for file in os.listdir(structures_path)]
+    structures_Path = input_Path / 'foldseekclustering'
+
+    if os.path.exists(structures_Path):
+        structures_list = [file for file in os.listdir(structures_Path)]
     else:
         structures_list = []
 
-    scatter_figure = plot_interactive(tsne_file, plotting_rules, keyids = keyids,
+    scatter_tsne = plot_interactive(tsne_file, plotting_rules, keyids = keyids,
                     plot_width = plot_width, plot_height = plot_height,
                     show = False, marker_size = 4, marker_opacity = 0.8,
                     plot_bgcolor='white', hide_hover = True)
+    
+    scatter_umap = plot_interactive(umap_file, plotting_rules, keyids = keyids,
+                plot_width = plot_width, plot_height = plot_height,
+                show = False, marker_size = 4, marker_opacity = 0.8,
+                plot_bgcolor='white', hide_hover = True)
     
     scatter_data = pd.read_csv(tsne_file, sep = '\t')
 
@@ -58,12 +70,14 @@ def make_data_dict(input_path: str, structures_path = None,
     
     data_dict = {
         'analysis_name': analysis_name,
-        'scatterplot_tsne': scatter_figure,
+        'scatterplot_tsne': scatter_tsne,
+        'scatterplot_umap': scatter_umap,
         'scatter_data': scatter_data,
         'plotting_rules': plotting_rules,
         'heatmap': heatmap_figure,
-        'structures_path': structures_path,
-        'structures_list': structures_list
+        'structures_path': structures_Path,
+        'structures_list': structures_list,
+        'keyids': keyids
     }
 
     return data_dict
@@ -126,14 +140,14 @@ def search_df(df: pd.DataFrame, query: str, low_memory = False):
 def make_dash_app(data_dict: dict):
     # take input data
     analysis_name = data_dict['analysis_name']
-    scatter_figure = data_dict['scatterplot_tsne']
+    scatter_tsne = data_dict['scatterplot_tsne']
+    scatter_umap = data_dict['scatterplot_umap']
     scatter_data = data_dict['scatter_data']
     plotting_rules = data_dict['plotting_rules']
     heatmap_figure = data_dict['heatmap']
     structures_path = data_dict['structures_path']
     structures_list = data_dict['structures_list']
-
-    print(structures_list)
+    keyids = data_dict['keyids']
 
     # Initialize the app
     app = Dash(__name__)
@@ -155,7 +169,7 @@ def make_dash_app(data_dict: dict):
         if row['Entry'] is not np.nan:
             return f'[{protid}](https://www.uniprot.org/uniprotkb/{protid})'
         else:
-            return protid
+            return 'Not in Uniprot'
         
     scatter_data['protid_link'] = scatter_data.apply(lambda row: link_generator(row), axis = 1)
 
@@ -171,9 +185,9 @@ def make_dash_app(data_dict: dict):
 
     default_columns = list(column_name_mapper.keys())
 
-    protid_column = [{'id': 'protid_link', 'name': 'protid', 'type': 'text', 'presentation': 'markdown'}]
+    protid_columns = [{'id': 'protid', 'name': 'protid',}, {'id': 'protid_link', 'name': 'Uniprot', 'type': 'text', 'presentation': 'markdown'}]
 
-    data_table_columns = protid_column + [{'id': c, 'name': column_name_mapper[c]} for c in default_columns]
+    data_table_columns = protid_columns + [{'id': c, 'name': column_name_mapper[c]} for c in default_columns]
 
     LC_conditional_color_dict = dict(zip(sorted(
         scatter_data['LeidenCluster'].unique()), 
@@ -286,19 +300,22 @@ def make_dash_app(data_dict: dict):
         'paddingBottom': '0px'
     }
 
+    first_input_protein = keyids[0] + '.pdb'
+    residue_confidence_key = dict(zip(['Very high (>90)', 'Confident (>70)', 'Low (>50)', 'Very low (<50)'], RESIDUE_CONFIDENCE_COLORS.values()))
+
     if structures_path is not None:
         structure_tab_content = [
                     html.H3(children = 'Structure viewer'),
                     html.Div(
                         id = 'structure-tab-menu',
                         children = [
-                            dcc.Input(
+                            dcc.Dropdown(
                                 id = 'structure-protein-1-input',
-                                type = 'search', 
-                                value = 'Protein 1',
-                                list = 'structure-datalist'
+                                value = first_input_protein,
+                                options = structures_list,
+                                maxHeight = 200
                             ),
-                            # dcc.Input(
+                            #(
                             #     id = 'structure-protein-2',
                             #     type = 'search', 
                             #     children = 'Protein 2',
@@ -310,13 +327,20 @@ def make_dash_app(data_dict: dict):
                             ),
                     ]),
                     dashbio.Molecule3dViewer(
-                        id = 'dashbio-mol3dviewer'
+                        id = 'dashbio-mol3dviewer',
+                        modelData = {'atoms': [], 'bonds': []},
+                        zoom = {'factor': 1.3},
+                        height = 400
                     ),
-                    html.Datalist(
-                        id = 'structure-datalist',
-                        children = structures_list,
-                        hidden = True
-                    )
+                    html.Div(
+                        id = 'structure-quality-key',
+                        children = [html.A('pLDDT', id = 'plddt-link', href = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3799472/", target="_blank")] + [
+                            html.Div([
+                                html.Div(
+                                    style = {'backgroundColor': color, 'width': 20, 'height': 20}), 
+                                html.P(quality)
+                        ]) for quality, color in residue_confidence_key.items()
+                        ])
                 ]
     else:
         structure_tab_content = [
@@ -326,7 +350,7 @@ def make_dash_app(data_dict: dict):
 
     # App layout
     app.layout = html.Div([
-        html.Div(
+        html.Header(
             id = 'title-bar',
             children = [
                 html.Div(
@@ -377,9 +401,14 @@ def make_dash_app(data_dict: dict):
                             id = 'info-card-titlebar',
                             children = [
                                 html.H2(
-                                id = 'info-card-title',
-                                children = 'Info'
-                                )
+                                    id = 'info-card-title',
+                                    children = 'Info'
+                                ),
+                                html.Button(
+                                    id = 'tutorial-button',
+                                    children = 'Tutorial',
+                                    n_clicks = 0
+                                )   
                         ]),
                         dcc.Markdown(
                             id = 'info-text',
@@ -392,13 +421,30 @@ def make_dash_app(data_dict: dict):
                 html.Div(
                     id = 'scatter-card',
                     children = [
-                        html.H2(
-                            id = 'scatter-card-title',
-                            children = 'Scatter'
+                        html.Div(
+                            id = 'scatter-card-titlebar',
+                            children = [
+                                html.H2(
+                                    id = 'scatter-card-title',
+                                    children = 'Scatter'
+                                ),
+                                html.Div(
+                                    id = 'space-toggle',
+                                    children = [
+                                        html.A('t-SNE'),
+                                        daq.ToggleSwitch(
+                                            id = 'space-toggle-switch',
+                                            value = False,
+                                            size = 30
+                                        ),
+                                        html.A('UMAP')
+                                    ]
+                                )   
+                            ]
                         ),
                         dcc.Graph(
                             id = 'scatter-plot',
-                            figure = scatter_figure,
+                            figure = scatter_tsne,
                             config = scatter_config
                         ),
                 ]),
@@ -431,10 +477,8 @@ def make_dash_app(data_dict: dict):
                                     children = [
                                         html.Div(
                                             id = 'structure-tab-content',
-                                            children = [
-                                                html.H3(children = 'Structure viewer'),
-                                                html.P(children = 'In development :)')
-                                            ])
+                                            children = structure_tab_content
+                                        )
                                 ]),
                                 dcc.Tab(
                                     label = 'Semantics', 
@@ -515,11 +559,21 @@ def make_dash_app(data_dict: dict):
                     },
                     style_cell = cell_style,
                     style_data_conditional = cell_conditional_formats,
+                    style_header_conditional=[{
+                        'if': {'column_id': col},
+                        'textDecoration': 'underline',
+                        'textDecorationStyle': 'dotted',
+                    } for col in ['Rep', 'Dem', 'Ind']],
                     style_cell_conditional = [
+                        {
+                            'if': {'column_id': 'protid'},
+                            'textAlign': 'right',
+                            'width' : '8%'
+                        },
                         {
                             'if': {'column_id': 'protid_link'},
                             'textAlign': 'right',
-                            'width' : '13%'
+                            'width' : '8%'
                         },
                         {
                             'if': {'column_id': 'Gene Names (primary)'},
@@ -560,7 +614,6 @@ def make_dash_app(data_dict: dict):
         Output('data-table', 'tooltip_data'),
         Output('search-bar', 'value'),
         Output('scatter-plot', 'selectedData'),
-        Output('scatter-plot', 'clickData'),
         Input('search-button', 'n_clicks'),
         Input('reset-button', 'n_clicks'),
         Input('search-bar', 'n_submit'),
@@ -573,27 +626,39 @@ def make_dash_app(data_dict: dict):
 
         if triggered_id == 'search-button' or triggered_id == 'search-bar':
             if value == '':
-                return scatter_records, tooltip_data, value, None, None
+                return scatter_records, tooltip_data, value, None
             else:
                 searched = search_df(scatter_data, value)
-                return searched.to_dict('records'), tooltip_maker(searched), value, None, None
+                return searched.to_dict('records'), tooltip_maker(searched), value, None
         elif triggered_id == 'reset-button':
-            return scatter_records, tooltip_data, '', None, None
+            return scatter_records, tooltip_data, '', None
         elif triggered_id == 'scatter-plot':
-            if clickData is not None:
-                protid = clickData['points'][0]['customdata'][0]
-                clicked_data = scatter_data[scatter_data['protid'] == protid]
-
-                return clicked_data.to_dict('records'), tooltip_maker(clicked_data), '', None, None
-            elif selectedData is not None:
+            if selectedData is not None:
                 protids = [i['customdata'][0] for i in selectedData['points'] if 'customdata' in i]
                 selected_data = scatter_data[scatter_data['protid'].isin(protids)]
 
-                return selected_data.to_dict('records'), tooltip_maker(selected_data),  '', None, None
+                return selected_data.to_dict('records'), tooltip_maker(selected_data),  '', None
             elif selectedData is None:
-                return scatter_records, tooltip_data, '', None, None
+
+                if clickData is not None:
+                    protid = clickData['points'][0]['customdata'][0]
+                    clicked_data = scatter_data[scatter_data['protid'] == protid]
+
+                    return clicked_data.to_dict('records'), tooltip_maker(clicked_data), '', None
+                
+                return scatter_records, tooltip_data, '', None
         else:
-            return scatter_records, tooltip_data, '', None, None
+            return scatter_records, tooltip_data, '', None
+        
+    @callback(
+        Output("scatter-plot", "figure"),
+        Input("space-toggle-switch", "value")
+    )
+    def toggle_space(switch):
+        if switch:
+            return scatter_umap
+        else:
+            return scatter_tsne
         
     @callback(
         Output("download-tsv-component", "data"),
@@ -609,8 +674,43 @@ def make_dash_app(data_dict: dict):
         
     @callback(
         Output('info-text', 'children'),
-        Input('scatter-plot', 'hoverData'))
-    def display_hover_data(hoverData):
+        Input('scatter-plot', 'hoverData'),
+        Input('tutorial-button', 'n_clicks')
+        )
+    def display_hover_data(hoverData, tutorial):
+        triggered_id = ctx.triggered_id
+
+        color_dict_dict = {
+            'Cluster': dict(LC_conditional_color_dict),
+            'Score': dict(Annotation_conditional_color_dict),
+            'Taxon': taxon_color_dict,
+            'Source': source_color_dict,
+        }
+
+        tutorial_content = """
+            <br>
+
+            <hr/>
+
+            ## **Exploration**
+
+            1. Hover over data in **Scatter** to show protein information.
+            2. Click on a point to show it in the **Database** card.
+            3. Use the Box Select or Lasso Select tools in the top right of the **Scatter** card to filter the **Database** card.
+            4. Export the current contents fo the **Database** card as a CSV usign the **Download** button.
+
+            <hr/>
+
+            ## **Feature Information**
+            - **Cluster:** these clusters are identified using the <a href="https://www.cwts.nl/blog?article=n-r2u2a4" target="_blank" children="Leiden algorithm" />.
+            - **Score:** the <a href="https://www.uniprot.org/help/annotation_score" target="_blank" children="Uniprot Annotation Score" /> of the protein.
+            - **Taxon:** the most-specific taxonomic group as listed in the plot. For example, a human protein be categorized as "Mammalia" because it is more specific than "Vertebrata".
+            - **Source:** whether the protein was a hit from BLAST, Foldseek, or both.
+
+        """
+
+        if triggered_id == 'tutorial-button':
+            return tutorial_content
 
         help_text = 'Hover over a point to get more information.'
 
@@ -627,17 +727,10 @@ def make_dash_app(data_dict: dict):
             'Cluster': customdata[4],
             'Score': customdata[5],
             'Taxon': assign_taxon(customdata[6], taxon_order, hierarchical = True),
-            'Length': customdata[7],
+            'Length': str(customdata[7]) + 'aa',
             'Source': customdata[8]
         }
-
-        color_dict_dict = {
-            'Cluster': dict(LC_conditional_color_dict),
-            'Score': dict(Annotation_conditional_color_dict),
-            'Taxon': taxon_color_dict,
-            'Source': source_color_dict,
-        }
-
+        
         entries_list = []
         header = ''
         for key,value in output_dict.items():
@@ -647,22 +740,40 @@ def make_dash_app(data_dict: dict):
                 else:
                     header = f'<span style="font-size: 20px;" children="{value}" /><hr>'
             elif key in color_dict_dict:
-                entries_list.append(f'<b>{key}: <span style="color:{color_dict_dict[key][value]};" children="● {value}" /></b>')
+                bg_color = color_dict_dict[key][value]
+                bg_color_rgb = mcolors.to_rgb(bg_color)
+                color_lightness = colorsys.rgb_to_hls(bg_color_rgb[0], bg_color_rgb[1], bg_color_rgb[2])[1]
+                text_color = '#FFFFFF' if color_lightness < 0.8 else '#000000'
+                entries_list.append(f'<p><b>{key}:</b> <span style="background-color:{bg_color}; color: {text_color}; padding: 2px; border-radius: 2px;" children="{value}" /></p>')
             else:
-                entries_list.append(f'<b>{key}:</b> {value}')
+                entries_list.append(f'<p><b>{key}:</b> {value}</p>')
 
-        return header + '<br>'.join(entries_list)
+        if len(customdata) > 9:
+            additional_info = customdata[9:]
+            additional_plotting_rules = [i.replace('_v_', ' vs. ').replace('.hit', ' hit') for i in list(plotting_rules.keys())[9:]]
+            additional_info = dict(zip(additional_plotting_rules, additional_info))
+            additional_md = '<hr>' + '<br>'.join([f'<b>{key}:</b> {value}' for key, value in additional_info.items()])
+        else:
+            additional_md = ''
+
+        return header + ''.join(entries_list) + additional_md
     
     @callback(
         Output("dashbio-mol3dviewer", "modelData"),
         Output("dashbio-mol3dviewer", "styles"),
+        Output("structure-protein-1-input", "value"),
         Input("structure-display-button", "n_clicks"),
+        Input("scatter-plot", "clickData"),
         State("structure-protein-1-input", "value"),
         prevent_initial_call = True
     )
-    def func(n_clicks, protein1):
-        if protein1 == 'Protein 1':
-            return '', ''
+    def func(n_clicks, clickData, protein1):
+        triggered_id = ctx.triggered_id
+        
+        if triggered_id == 'scatter-plot':
+            if clickData is not None:
+                customdata = clickData['points'][0]['customdata'][0]
+                protein1 = customdata + '.pdb'
 
         protein1_path = os.path.join(structures_path, protein1)
         parser1 = PdbParser(protein1_path)
@@ -671,7 +782,14 @@ def make_dash_app(data_dict: dict):
         styles1 = create_mol3d_style(
             data1['atoms'], visualization_type='cartoon',
         )
-        return data1, styles1
+        
+        confidences = extract_residue_confidence(protein1_path)
+        colors = assign_residue_colors(confidences)
+
+        for i, atom in enumerate(styles1):
+            atom['color'] = colors[i]
+
+        return data1, styles1, protein1
 
     app.run(debug=True)
 
@@ -681,18 +799,10 @@ def main():
     analysis_name = args.analysis_name
     keyids = args.keyids
     taxon_focus = args.taxon_focus
-    structures_path = args.structures_path
-    
-    if structures_path == '':
-        str_path = None
-    else:
-        str_path = structures_path
-
 
     data_dict = make_data_dict(
         input_path = input_path,
         analysis_name = analysis_name, taxon_focus = taxon_focus, keyids = keyids,
-        structures_path = str_path
     )
 
     make_dash_app(data_dict)
