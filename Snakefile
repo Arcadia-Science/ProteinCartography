@@ -34,12 +34,16 @@ if "taxon_focus" in config:
     TAXON_FOCUS = config["taxon_focus"]
 else:
     TAXON_FOCUS = 'euk'
+    
+UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 
 MAX_BLASTHITS = int(config["max_blasthits"])
 MAX_STRUCTURES = int(config["max_structures"])
 
 FS_DATABASES = config["foldseek_databases"]
 MODES = config["plotting_modes"]
+
+MIN_LENGTH = int(config["min_length"])
 
 ###########################################
 ## Setup directory structure
@@ -204,10 +208,36 @@ rule aggregate_lists:
         expand(output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid = PROTID), 
         expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid = PROTID)
     output:
-        jointlist = output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
+        jointlist = output_dir / clusteringresults_dir / "jointhits.txt"
     shell:
         '''
         python ProteinCartography/aggregate_lists.py -i {input} -o {output.jointlist}
+        '''
+        
+rule get_uniprot_metadata:
+    '''
+    Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
+    '''
+    input: output_dir / clusteringresults_dir / "jointhits.txt"
+    output: output_dir / clusteringresults_dir / "uniprot_features.tsv"
+    params:
+        additional_fields = UNIPROT_ADDITIONAL_FIELDS
+    shell:
+        '''
+        python ProteinCartography/query_uniprot.py -i {input} -o {output} -a {params.additional_fields}
+        '''
+
+rule filter_uniprot_hits:
+    '''
+    Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
+    '''
+    input: output_dir / clusteringresults_dir / "uniprot_features.tsv"
+    output: output_dir / clusteringresults_dir / "alphafold_querylist.txt"
+    params:
+        min_length = MIN_LENGTH
+    shell:
+        '''
+        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length}
         '''
 
 checkpoint create_alphafold_wildcard:
@@ -215,7 +245,7 @@ checkpoint create_alphafold_wildcard:
     Create dummy files to make Snakemake detect a wildcard
     '''
     input:
-        jointlist = output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
+        jointlist = output_dir / clusteringresults_dir / "alphafold_querylist.txt"
     output: directory(os.path.join(output_dir, "alphafold_dummy/"))
     params:
         max_structures = MAX_STRUCTURES
@@ -249,17 +279,6 @@ def checkpoint_create_alphafold_wildcard(wildcards):
                         acc = glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc) + \
                  expand(output_dir / foldseekclustering_dir / "{protid}.pdb", protid = PROTID)
     return file_names
-
-rule get_uniprot_metadata:
-    '''
-    Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
-    '''
-    input: output_dir / foldseekclustering_dir / "alphafold_querylist.txt"
-    output: output_dir / clusteringresults_dir / "uniprot_features.tsv"
-    shell:
-        '''
-        python ProteinCartography/query_uniprot.py -i {input} -o {output}
-        '''
 
 #####################################################################
 ## clustering and dimensionality reduction
@@ -430,7 +449,7 @@ rule plot_semantic_analysis:
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
     params:
         agg_column = 'LeidenCluster',
-        annot_column = 'proteinDescription.recommendedName.fullName.value',
+        annot_column = "'Protein names'",
         analysis_name = analysis_name
     shell:
         '''
