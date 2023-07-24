@@ -11,7 +11,13 @@ import colorsys
 
 # only import these functions when using import *
 __all__ = ["adjust_lightness", "apply_coordinates", 
-           "assign_taxon", "extend_colors", "plot_interactive"]
+           "assign_taxon", "extend_colors", "plot_interactive",
+           "ANNOTATION_SCORE_COLORS","EUK_COLOR_DICT", "BAC_COLOR_DICT",
+           "SOURCE_COLOR_DICT"]
+
+##############################
+## Standard plotting colors ##
+##############################
 
 arcadia_viridis = apc.Gradients['arcadia:viridis'].grad_nested_list
 arcadia_viridis_r = apc.Gradients['arcadia:viridis_r'].grad_nested_list
@@ -31,6 +37,62 @@ arcadia_pansies_r = apc.Gradients['arcadia:pansies_r'].grad_nested_list
 arcadia_dahlias = apc.Gradients['arcadia:dahlias'].grad_nested_list
 arcadia_dahlias_r = apc.Gradients['arcadia:dahlias_r'].grad_nested_list
 
+ANNOTATION_SCORE_COLORS = [
+        apc.All['arcadia:brightgrey'], 
+        apc.All['arcadia:aster'],
+        apc.All['arcadia:aegean'],
+        apc.All['arcadia:seaweed'],
+        apc.All['arcadia:lime'],
+        apc.All['arcadia:canary']
+    ]
+
+ANNOTATION_SCORE_COLOR_DICT = dict(zip([str(i) for i in range(6)], ANNOTATION_SCORE_COLORS))
+
+EUK_COLOR_DICT = {
+            'Mammalia': apc.All['arcadia:oat'],
+            'Vertebrata': apc.All['arcadia:canary'],
+            'Arthropoda': apc.All['arcadia:seaweed'],
+            'Ecdysozoa': apc.All['arcadia:mint'],
+            'Lophotrochozoa': apc.All['arcadia:aegean'],
+            'Metazoa': apc.All['arcadia:amber'],
+            'Fungi': apc.All['arcadia:chateau'],
+            'Viridiplantae': apc.All['arcadia:lime'],
+            'Sar': apc.All['arcadia:rose'],
+            'Excavata': apc.All['arcadia:wish'],
+            'Amoebazoa': apc.All['arcadia:periwinkle'],
+            'Eukaryota': apc.All['arcadia:aster'], 
+            'Bacteria': apc.All['arcadia:slate'], 
+            'Archaea': apc.All['arcadia:dragon'],
+            'Viruses': apc.All['arcadia:denim']
+        }
+
+BAC_COLOR_DICT = {
+            'Pseudomonadota': apc.All['arcadia:periwinkle'],
+            'Nitrospirae': apc.All['arcadia:vitalblue'],
+            'Acidobacteria': apc.All['arcadia:mars'],
+            'Bacillota': apc.All['arcadia:mint'],
+            'Spirochaetes': apc.All['arcadia:aegean'],
+            'Cyanobacteria': apc.All['arcadia:seaweed'],
+            'Actinomycetota': apc.All['arcadia:canary'],
+            'Deinococcota': apc.All['arcadia:rose'],
+            'Bacteria': apc.All['arcadia:slate'],
+            'Archaea': apc.All['arcadia:dragon'],
+            'Viruses': apc.All['arcadia:denim'],
+            'Metazoa': apc.All['arcadia:amber'],
+            'Fungi': apc.All['arcadia:chateau'],
+            'Viridiplantae': apc.All['arcadia:lime'],
+            'Eukaryota': apc.All['arcadia:wish'],
+        }
+
+SOURCE_COLOR_DICT = {'blast': apc.All['arcadia:canary'], 
+                         'foldseek': apc.All['arcadia:aegean'], 
+                         'blast+foldseek': apc.All['arcadia:amber'], 
+                         'None': apc.All['arcadia:brightgrey']}
+
+###############
+## Functions ##
+###############
+
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -41,7 +103,7 @@ def parse_args():
     parser.add_argument("-k", "--keyids", nargs = "+", default = [], help = "keyids for plotting. Usually input protids.")
     parser.add_argument("-x", "--taxon_focus", default = "euk", help = "Coloring scheme/ taxonomic groups for broad taxon plot.\n'euk'(aryote) is default; 'bac'(teria) is another option.")
     parser.add_argument("-X", "--plot-width", default = '700', help = "width of resulting plot.")
-    parser.add_argument("-Y", "--plot-height", default = '850', help = "width of resulting plot.")
+    parser.add_argument("-Y", "--plot-height", default = '750', help = "width of resulting plot.")
     args = parser.parse_args()
     
     return args
@@ -199,9 +261,175 @@ def extend_colors(color_keys: list, color_order: list, steps = [0.7, 0.5, 0.3]) 
         
     return more_colors
 
+def generate_plotting_rules(taxon_focus: str, keyids = [], version = 'current') -> dict:
+    # color dictionary for annotation score (values from 0 to 5)
+    annotationScore_color_dict = ANNOTATION_SCORE_COLOR_DICT
+    
+    # if the taxonomic focus is eukaryote, use these groupings and colors
+    if taxon_focus == 'euk':
+        taxon_color_dict = EUK_COLOR_DICT
+        
+    # else if the taxonomic focus is bacteria, use these groupings and colors
+    elif taxon_focus == 'bac':
+        taxon_color_dict = BAC_COLOR_DICT
+    
+    # use this color dictionary for the sources (blast vs foldseek vs blast+foldseek)
+    source_color_dict = SOURCE_COLOR_DICT
+
+    plotting_rules = {}
+
+    if version == 'current':
+        # use this dictionary as default plotting rules
+        # the order of elements in this dictionary determines their order 
+        # both in the plotting dropdown list and the hovertext
+        plotting_rules = {
+            'Protein names': {
+                'type': 'hovertext', # this data only shows up in hovertext
+                'fillna': '',
+                'textlabel': 'Protein name'
+            },
+            'Gene Names (primary)': {
+                'type': 'hovertext', # this data only shows up in hovertext
+                'fillna': '',
+                'textlabel': 'Gene name'
+            },
+            'Organism': {
+                'type': 'hovertext', # this data only shows up in hovertext
+                'fillna': '',
+                'textlabel': 'Organism'
+            },
+            'LeidenCluster': {
+                'type': 'categorical',
+                'fillna': 'None',
+                'apply': lambda x: str(x), # Leiden cluster is often read as int; this forces it to be string
+                'color_order': apc.Palettes['arcadia:AccentAllOrdered'].colors,
+                'textlabel': 'Leiden Cluster'
+            },
+            'Annotation': {
+                'type': 'categorical',
+                'fillna': 0,
+                'apply': lambda x: str(int(x)), # Annotation score is parsed as float but we want it to be string
+                'color_dict': annotationScore_color_dict,
+                'textlabel': 'Annotation Score'
+            },
+            'Lineage': {
+                'type': 'taxonomic',
+                'fillna': '[]',
+                'apply': lambda x: eval(x), # This converts the taxonomic groupings from a string-ified list to a real list
+                'taxon_order': taxon_color_dict.keys(),
+                'color_order': taxon_color_dict.values(),
+                'textlabel': 'Broad Taxon',
+                'skip_hover': True
+            },
+            'Length': {
+                'type': 'continuous',
+                'fillna': 0,
+                'textlabel': 'Length',
+                'color_scale': arcadia_cividis_r
+            },
+            'source.method': {
+                'type': 'categorical',
+                'fillna': 'None',
+                'color_dict': source_color_dict,
+                'textlabel': 'Source'
+            },
+        }
+    elif version == 'v0.2.0' or 'v0.2':
+        plotting_rules = {
+            'proteinDescription.recommendedName.fullName.value': {
+                'type': 'hovertext', # this data only shows up in hovertext
+                'fillna': '',
+                'textlabel': 'Description'
+            },
+            'organism.scientificName': {
+                'type': 'hovertext', # this data only shows up in hovertext
+                'fillna': '',
+                'textlabel': 'Species'
+            },
+            'organism.commonName': {
+                'type': 'hovertext', # this data only shows up in hovertext
+                'fillna': '',
+                'textlabel': 'Common name'
+            },
+            'LeidenCluster': {
+                'type': 'categorical',
+                'fillna': 'None',
+                'apply': lambda x: str(x), # Leiden cluster is often read as int; this forces it to be string
+                'color_order': apc.Palettes['arcadia:AccentAllOrdered'].colors,
+                'textlabel': 'Leiden Cluster'
+            },
+            'annotationScore': {
+                'type': 'categorical',
+                'fillna': 0,
+                'apply': lambda x: str(int(x)), # Annotation score is parsed as float but we want it to be string
+                'color_dict': annotationScore_color_dict,
+                'textlabel': 'Annotation Score'
+            },
+            'organism.lineage': {
+                'type': 'taxonomic',
+                'fillna': '[]',
+                'apply': lambda x: eval(x), # This converts the taxonomic groupings from a string-ified list to a real list
+                'taxon_order': taxon_color_dict.keys(),
+                'color_order': taxon_color_dict.values(),
+                'textlabel': 'Broad Taxon',
+                'skip_hover': True
+            },
+            'sequence.length': {
+                'type': 'continuous',
+                'fillna': 0,
+                'textlabel': 'Length',
+                'color_scale': arcadia_cividis_r
+            },
+            'source.method': {
+                'type': 'categorical',
+                'fillna': 'None',
+                'color_dict': source_color_dict,
+                'textlabel': 'Source'
+            },
+        }
+    
+    # Add additional plotting rules for each keyid (usually the input protein)
+    for keyid in keyids:
+        # Add a plot for tmscore to each input protein
+        plotting_rules[f'TMscore_v_{keyid}'] = {
+            'type': 'continuous', 
+            'fillna': -0.01, 
+            'textlabel': f'TMscore vs. {keyid}',
+            'color_scale': arcadia_viridis,
+            'cmin': 0,
+            'cmax': 1
+        }
+        plotting_rules[f'fident_v_{keyid}'] = {
+            'type': 'continuous', 
+            'fillna': -0.01, 
+            'textlabel': f'Fraction seq identity vs. {keyid}',
+            'color_scale': arcadia_magma,
+            'cmin': 0,
+            'cmax': 1
+        }
+        plotting_rules[f'convergence_v_{keyid}'] = {
+            'type': 'continuous', 
+            'fillna': -1.01, 
+            'textlabel': f'Convergence vs. {keyid}',
+            'color_scale': arcadia_poppies_r,
+            'cmin': -1,
+            'cmax': 1
+        }
+        # Add hovertext for whether or not a given protein was a hit via blast or foldseek to the input protein
+        plotting_rules[f'{keyid}.hit'] = {
+            'type': 'hovertext', 
+            'apply': lambda x: True if x == 1 else False, 
+            'fillna': 'None', 
+            'textlabel': f'Blast/Foldseek Hit to {keyid}'
+        }
+
+    return plotting_rules
+
 def plot_interactive(coordinates_file: str, plotting_rules: dict,
                     marker_size = 4, marker_opacity = 0.8, output_file = '', keyids = [], show = False,
-                    plot_width = 700, plot_height = 850):
+                    plot_width = 500, plot_height = 550, 
+                    plot_bgcolor = apc.All['arcadia:paper'], paper_bgcolor = 'rgba(0,0,0,0)',
+                    hide_hover = False):
     '''
     Plots all proteins on a 2D interactive Plotly plot using a set of rules.
     
@@ -313,6 +541,9 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         
     # generates a full hovertemplate string from hovertemplate_generator list
     hovertemplate = "<br>".join(hovertemplate_generator)
+
+    if hide_hover:
+        hovertemplate = '<b>%{customdata[0]}</b>'
     
     # gets the first two PCs or tSNE columns or UMAP columns
     dim1 = df.columns[1]
@@ -446,6 +677,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     # create new empty figure to move every original figure onto
     # this is a workaround to allow colored legends to be preserved and automatically switched using the dropdown
     # the alternative approach forces you to show all legend items at the same time for all colorations, which is messy
+    
     fig = go.Figure()
     
     # iterate through the plots to get their objects
@@ -589,7 +821,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     buttons = []
     
     # for each plot, create a button
-    for k, (col, plot) in enumerate(plots.items()):
+    for col, plot in plots.items():
         
         # get the textlabel for that plot if it's provided
         # otherwise, default to column name
@@ -611,11 +843,12 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     dropdown_menu = dict(
                 buttons = list(buttons),
                 showactive = True,
-                x = 0.05,
+                x = 0.08,
                 xanchor = "left",
-                y = 1.07,
-                yanchor = "top",
-                font_size = 14
+                y = 1.02,
+                yanchor = "bottom",
+                font_size = 14,
+                bgcolor = 'white'
     )
     
     # create a separate button to toggle keyid trace
@@ -634,8 +867,8 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
             showactive = True,
             x = 1,
             xanchor = "right",
-            y = 1.07,
-            yanchor = "top",
+            y = 1.02,
+            yanchor = "bottom",
             font_size = 14
         )
         # add this to the menu buttons
@@ -653,10 +886,11 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     fig.update_layout(
         width = plot_width, height = plot_height,
         annotations=[
-            dict(text="color", x=0.04, xref="paper", xanchor = 'right', y=1.055, yref="paper",
+            dict(text="color", x=0, xref="paper", xanchor = 'left', y=1.03, yref="paper", yanchor = "bottom",
                  align="right", showarrow=False, font_size = 14) # This shows the word "color" next to the dropdown
         ],
-        plot_bgcolor= apc.All['arcadia:paper']
+        plot_bgcolor = plot_bgcolor,
+        paper_bgcolor = paper_bgcolor
     )
     
     xmin = df[dim1].min()
@@ -667,21 +901,27 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     ymax = df[dim2].max()
     ywiggle = 0.07 * (ymax - ymin)
     
-    fig.update_layout(margin=dict(l = 50, r = 50, t = 80, b = 130))
+    fig.update_layout(margin=dict(l = 10, r = 10, t = 75, b = 100))
     # make x and y axes have a fixed scale
     fig.update_yaxes(
         range = (ymin - ywiggle, ymax + ywiggle),
         showticklabels = False,
         showspikes = True,
         showgrid = False,
-        zeroline = False
+        zeroline = False,
+        showline = True,
+        linecolor = '#EAEAEA',
+        mirror = True
     )
     fig.update_xaxes(
         range = (xmin - xwiggle, xmax + xwiggle),
         showticklabels = False,
         showspikes = True,
         showgrid = False,
-        zeroline = False
+        zeroline = False,
+        showline = True,
+        linecolor = '#EAEAEA',
+        mirror = True
     )
     
     # move the legend for categorical and color bar features to the bottom
@@ -694,9 +934,22 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
         font = dict(size = 12),
         tracegroupgap = 1
     ))
-    # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=0, x=0.5,
-    #                                       ticks="outside", orientation = 'h'))
-    
+
+    fig.update_layout(modebar = {
+        'bgcolor': 'rgba(0,0,0,0)', 
+        'color': apc.All['arcadia:denim'],
+        'activecolor': apc.All['arcadia:marineblue']
+        })
+
+    scatter_config = {'displayModeBar': True, 
+                    'scrollZoom': True, 
+                    'toImageButtonOptions': {
+                        'filename': 'scatter.svg',
+                        'format': 'svg'
+                        },
+                    'modeBarButtonsToRemove': ['zoomIn', 'zoomOut']
+                }
+
     try:
         fig.update_layout(font=dict(family="Arial"))
     except:
@@ -704,14 +957,15 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     
     # save if filename is provided
     if output_file != '':
-        fig.write_html(output_file)
+        fig.write_html(output_file, config = scatter_config)
     
     # show if desired
     if show:
-        fig.show()
+        fig.show(config = scatter_config)
     
     # return figure object with everything in it
     return fig
+    
 
 # run this if called from the interpreter
 def main():
@@ -725,165 +979,13 @@ def main():
     plot_width = int(args.plot_width)
     plot_height = int(args.plot_height)
     
-    # color order for annotation score
-    annotationScore_colors = [
-        apc.All['arcadia:brightgrey'], 
-        apc.All['arcadia:aster'],
-        apc.All['arcadia:aegean'],
-        apc.All['arcadia:seaweed'],
-        apc.All['arcadia:lime'],
-        apc.All['arcadia:canary']
-    ]
-    
-    # color dictionary for annotation score (values from 0 to 5)
-    annotationScore_color_dict = dict(zip([str(i) for i in range(6)], annotationScore_colors))
-    
-    # if the taxonomic focus is eukaryote, use these groupings and colors
-    if taxon_focus == 'euk':
-        taxon_color_dict = {
-            'Mammalia': apc.All['arcadia:oat'],
-            'Vertebrata': apc.All['arcadia:canary'],
-            'Arthropoda': apc.All['arcadia:seaweed'],
-            'Ecdysozoa': apc.All['arcadia:mint'],
-            'Lophotrochozoa': apc.All['arcadia:aegean'],
-            'Metazoa': apc.All['arcadia:amber'],
-            'Fungi': apc.All['arcadia:chateau'],
-            'Viridiplantae': apc.All['arcadia:lime'],
-            'Sar': apc.All['arcadia:rose'],
-            'Excavata': apc.All['arcadia:wish'],
-            'Amoebazoa': apc.All['arcadia:periwinkle'],
-            'Eukaryota': apc.All['arcadia:aster'], 
-            'Bacteria': apc.All['arcadia:slate'], 
-            'Archaea': apc.All['arcadia:dragon'],
-            'Viruses': apc.All['arcadia:denim']
-        }
-        
-    # else if the taxonomic focus is bacteria, use these groupings and colors
-    elif taxon_focus == 'bac':
-        taxon_color_dict = {
-            'Pseudomonadota': apc.All['arcadia:periwinkle'],
-            'Nitrospirae': apc.All['arcadia:vitalblue'],
-            'Acidobacteria': apc.All['arcadia:mars'],
-            'Bacillota': apc.All['arcadia:mint'],
-            'Spirochaetes': apc.All['arcadia:aegean'],
-            'Cyanobacteria': apc.All['arcadia:seaweed'],
-            'Actinomycetota': apc.All['arcadia:canary'],
-            'Deinococcota': apc.All['arcadia:rose'],
-            'Bacteria': apc.All['arcadia:slate'],
-            'Archaea': apc.All['arcadia:dragon'],
-            'Viruses': apc.All['arcadia:denim'],
-            'Metazoa': apc.All['arcadia:amber'],
-            'Fungi': apc.All['arcadia:chateau'],
-            'Viridiplantae': apc.All['arcadia:lime'],
-            'Eukaryota': apc.All['arcadia:wish'],
-        }
-    
-    # use this color dictionary for the sources (blast vs foldseek vs blast+foldseek)
-    source_color_dict = {'blast': apc.All['arcadia:canary'], 
-                         'foldseek': apc.All['arcadia:aegean'], 
-                         'blast+foldseek': apc.All['arcadia:amber'], 
-                         'None': apc.All['arcadia:brightgrey']}
-    
-    # use this dictionary as default plotting rules
-    # the order of elements in this dictionary determines their order 
-    # both in the plotting dropdown list and the hovertext
-    plotting_rules = {
-        'proteinDescription.recommendedName.fullName.value': {
-            'type': 'hovertext', # this data only shows up in hovertext
-            'fillna': '',
-            'textlabel': 'Description'
-        },
-        'organism.scientificName': {
-            'type': 'hovertext', # this data only shows up in hovertext
-            'fillna': '',
-            'textlabel': 'Species'
-        },
-        'organism.commonName': {
-            'type': 'hovertext', # this data only shows up in hovertext
-            'fillna': '',
-            'textlabel': 'Common name'
-        },
-        'LeidenCluster': {
-            'type': 'categorical',
-            'fillna': 'None',
-            'apply': lambda x: str(x), # Leiden cluster is often read as int; this forces it to be string
-            'color_order': apc.Palettes['arcadia:AccentAllOrdered'].colors,
-            'textlabel': 'Leiden Cluster'
-        },
-        # 'StruCluster': { # This is hidden for now as people thought it wasn't very useful
-        #     'type': 'categorical',
-        #     'fillna': 'None',
-        #     'color_order': apc.Palettes['arcadia:AccentAllOrdered'].colors,
-        #     'textlabel': 'Structural Cluster'
-        # },
-        'annotationScore': {
-            'type': 'categorical',
-            'fillna': 0,
-            'apply': lambda x: str(int(x)), # Annotation score is parsed as float but we want it to be string
-            'color_dict': annotationScore_color_dict,
-            'textlabel': 'Annotation Score'
-        },
-        'organism.lineage': {
-            'type': 'taxonomic',
-            'fillna': '[]',
-            'apply': lambda x: eval(x), # This converts the taxonomic groupings from a string-ified list to a real list
-            'taxon_order': taxon_color_dict.keys(),
-            'color_order': taxon_color_dict.values(),
-            'textlabel': 'Broad Taxon',
-            'skip_hover': True
-        },
-        'sequence.length': {
-            'type': 'continuous',
-            'fillna': 0,
-            'textlabel': 'Length',
-            'color_scale': arcadia_cividis_r
-        },
-        'source.method': {
-            'type': 'categorical',
-            'fillna': 'None',
-            'color_dict': source_color_dict,
-            'textlabel': 'Source'
-        },
-    }
-    
-    # Add additional plotting rules for each keyid (usually the input protein)
-    for keyid in keyids:
-        # Add a plot for tmscore to each input protein
-        plotting_rules[f'TMscore_v_{keyid}'] = {
-            'type': 'continuous', 
-            'fillna': -0.01, 
-            'textlabel': f'TMscore vs. {keyid}',
-            'color_scale': arcadia_viridis,
-            'cmin': 0,
-            'cmax': 1
-        }
-        plotting_rules[f'fident_v_{keyid}'] = {
-            'type': 'continuous', 
-            'fillna': -0.01, 
-            'textlabel': f'Fraction seq identity vs. {keyid}',
-            'color_scale': arcadia_magma,
-            'cmin': 0,
-            'cmax': 1
-        }
-        plotting_rules[f'convergence_v_{keyid}'] = {
-            'type': 'continuous', 
-            'fillna': -1.01, 
-            'textlabel': f'Convergence vs. {keyid}',
-            'color_scale': arcadia_poppies_r,
-            'cmin': -1,
-            'cmax': 1
-        }
-        # Add hovertext for whether or not a given protein was a hit via blast or foldseek to the input protein
-        plotting_rules[f'{keyid}.hit'] = {
-            'type': 'hovertext', 
-            'apply': lambda x: True if x == 1 else False, 
-            'fillna': 'None', 
-            'textlabel': f'Blast/Foldseek Hit to {keyid}'
-        }
-    
     # generate coordinates file for the plot
     coordinates_file = apply_coordinates(dimensions_file, features_file, save = True, prep_step = True, 
                                          dimtype = dimensions_type)
+    
+    # generate plotting rules
+    plotting_rules = generate_plotting_rules(taxon_focus, keyids)
+
     # make the plot
     plot_interactive(coordinates_file, plotting_rules, 
                      output_file = output_file, keyids = keyids,

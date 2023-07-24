@@ -89,12 +89,32 @@ def plot_group_similarity(group_similarity_file: str,
     
     # generates a plotly heatmap for that matrix file
     fig = px.imshow(sim_df, color_continuous_scale = arcadia_viridis, range_color = [0, 1])
+
+    colorbar_dict = dict(
+        title = "similarity", 
+        x = 1, y = 0.5, 
+        xanchor = 'left',
+        yanchor = 'middle',
+        title_font_size = 14,
+        title_side = 'top',
+        len = 0.7,
+        thickness = 20
+    )
+
     fig.update_layout(width = plot_width, height = plot_height, 
-                          coloraxis_colorbar=dict(
-                              title="cluster similarity"
-                          )
+                          coloraxis_colorbar = colorbar_dict
                      )
+    fig.update_layout(
+        margin = dict(l = 0, r = 0, t = 0, b = 0),
+        paper_bgcolor = 'rgba(0,0,0,0)'
+    )
+
     fig.update_xaxes(side = "top")
+
+    try:
+        fig.update_layout(font=dict(family="Arial"))
+    except:
+        pass
 
     if output_file is not None:
         fig.write_html(output_file)
