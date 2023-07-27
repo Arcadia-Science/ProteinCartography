@@ -3,7 +3,7 @@
     color: #000000;
     font-weight: regular;
     background: url('ProteinCartography_logo.svg') left no-repeat;
-    background-size: 30px 30px;
+    background-size: 32px 32px;
     padding-left: 35px;
     padding-right: 30px;
     font-weight: bold;
@@ -103,7 +103,6 @@ a:visited {
     padding: 4px 8px;
     margin-left: 10px;
 }
-
 
 #title-bar-right {
     display: inline-flex;
@@ -225,9 +224,14 @@ a:visited {
 
 #space-toggle *{
     font-family: Arial, sans-serif;
-    font-size: 12px;
+    font-size: 14px;
     color: #8A99AD;
     position: 30%;
+    font-weight: bold;
+}
+
+.daq-toggleswitch--light__indicator--on {
+    background-color: #5088C5;
 }
 
 #analysis-card {

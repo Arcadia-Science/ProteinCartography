@@ -15,7 +15,7 @@ import os
 
 from plot_interactive import generate_plotting_rules, plot_interactive, assign_taxon
 from cluster_similarity import plot_group_similarity
-from residue_confidence import assign_residue_colors, extract_residue_confidence, RESIDUE_CONFIDENCE_COLORS
+from pdb_tools import assign_residue_colors, extract_residue_confidence, RESIDUE_CONFIDENCE_COLORS
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -62,7 +62,7 @@ def make_data_dict(input_path: str,
                 show = False, marker_size = 4, marker_opacity = 0.8,
                 plot_bgcolor='white', hide_hover = True)
     
-    scatter_data = pd.read_csv(tsne_file, sep = '\t')
+    scatter_data = pd.read_csv(tsne_file, sep = '\t').drop_duplicates()
 
     heatmap_figure = plot_group_similarity(
         similarity_file, show = False, plot_width = 450, plot_height = 450
@@ -157,6 +157,7 @@ def make_dash_app(data_dict: dict):
 
     taxon_order = plotting_rules['Lineage']['taxon_order']
     taxon_color_dict = dict(zip(taxon_order, plotting_rules['Lineage']['color_order']))
+    taxon_color_dict['Other'] = apc.All['arcadia:brightgrey']
     scatter_data['Taxon'] = scatter_data['Lineage'].apply(lambda x: assign_taxon(x, taxon_order, hierarchical = True))
     scatter_data['Taxon_circle'] = "● " + scatter_data['Taxon']
 
@@ -431,13 +432,13 @@ def make_dash_app(data_dict: dict):
                                 html.Div(
                                     id = 'space-toggle',
                                     children = [
-                                        html.A('t-SNE'),
+                                        html.A('t-SNE', href="https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html", target="_blank", style = {'marginRight': '5px'}),
                                         daq.ToggleSwitch(
                                             id = 'space-toggle-switch',
                                             value = False,
-                                            size = 30
+                                            size = 30,
                                         ),
-                                        html.A('UMAP')
+                                        html.A('UMAP', href="https://umap-learn.readthedocs.io/en/latest/", target="_blank", style = {'marginLeft': '5px'})
                                     ]
                                 )   
                             ]
@@ -559,11 +560,6 @@ def make_dash_app(data_dict: dict):
                     },
                     style_cell = cell_style,
                     style_data_conditional = cell_conditional_formats,
-                    style_header_conditional=[{
-                        'if': {'column_id': col},
-                        'textDecoration': 'underline',
-                        'textDecorationStyle': 'dotted',
-                    } for col in ['Rep', 'Dem', 'Ind']],
                     style_cell_conditional = [
                         {
                             'if': {'column_id': 'protid'},
@@ -604,7 +600,11 @@ def make_dash_app(data_dict: dict):
                         }
                     ],
                     tooltip_data = tooltip_data,
-                    tooltip_duration=None
+                    tooltip_duration=None,
+                    filter_action = "native",
+                    filter_options = {'case': 'insensitive'},
+                    sort_action = "native",
+
                 )]
         )
     ])
@@ -667,6 +667,7 @@ def make_dash_app(data_dict: dict):
         prevent_initial_call = True
     )
     def func(n_clicks, data):
+
         output_data = pd.DataFrame(data)
         output_data = output_data[[col for col in output_data.columns if '_circle' not in col and 'protid_link' not in col]]
 
@@ -712,7 +713,16 @@ def make_dash_app(data_dict: dict):
         if triggered_id == 'tutorial-button':
             return tutorial_content
 
-        help_text = 'Hover over a point to get more information.'
+        help_text = """
+        <br>
+
+        <hr/>
+
+        ## **Welcome to ProteinCartography's Dashboard!**
+
+        Hover over a point to see protein information, or click **Tutorial** above to learn more.
+        
+        """
 
         if hoverData is None:
             return help_text
