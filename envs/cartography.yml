@@ -445,3 +445,4 @@ dependencies:
       - bioservices==1.11.2
       - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"
       - dash-bio
+      - dash-daq
