@@ -7,10 +7,16 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import arcadia_pycolor as apc
 from plot_interactive import adjust_lightness, extend_colors
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+from PIL import Image
+import base64
+from io import BytesIO
+import textwrap
+import os
 
 __all__ = ['plot_semantic_analysis']
-
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -141,6 +147,199 @@ def plot_semantic_analysis(features_file: str, agg_col: str, annot_col: str, col
     
     if show:
         plt.show()
+        
+def count_features(features_file: str, agg_col: str, annot_col: str, colors: list,
+                   exclude_words = ['protein', 'None'], ignore_nan = True):
+    # read in features file
+    features_df = pd.read_csv(features_file, sep = '\t')
+
+    ignore_fxn = lambda x: [i for i in x if i is not np.nan] if ignore_nan else lambda x: [i for i in x]
+
+    # group features file by aggregation column and extract aggregated annotation column
+    groupedby_agg_df = features_df.groupby(agg_col).agg(ignore_fxn)[annot_col]
+
+    # determine number of groups
+    n_groups = len(groupedby_agg_df)
+
+    used_colors = colors
+
+    if len(used_colors) < n_groups:
+        used_colors = used_colors + extend_colors([1] * n_groups, used_colors)
+
+    # collectors for plot information
+    annotation_count_dict = {}
+    str_annotation_count_dict = {}
+    total_annots_dict = {}
+    wordclouds_dict = {}
+
+    # generate summary statistics
+    for i, (clu, values) in enumerate(groupedby_agg_df.items()):
+        # count the number of occurrences of each exact annotation string
+        annotation_count_dict[clu] = pd.DataFrame(pd.value_counts(values))
+
+        # count number of unique annotations per cluster
+        total_annots_dict[clu] = len(values)
+
+        # combine all annotations into one long space-separated string, then break into individual words
+        annot_word_list = ' '.join(list(values)).split(' ')
+
+        # sanitize word list by removing irrelevant words
+        sanitized_word_list = [word for word in annot_word_list if word not in exclude_words]
+
+        # get value counts per-word
+        str_summary = dict(pd.value_counts(sanitized_word_list, normalize = True))
+
+        # save word frequencies to dict
+        str_annotation_count_dict[clu] = str_summary
+
+        # generate word cloud based on frequencies
+        wordclouds_dict[clu] = WordCloud(width = 500, height = 500,
+                                 background_color = 'white',
+                                color_func = lambda *args, **kwargs: used_colors[i]).generate_from_frequencies(str_summary)
+    
+    results = {
+        'annotation_count': annotation_count_dict,
+        'str_annotation_count': str_annotation_count_dict,
+        'total_annots': total_annots_dict,
+        'wordclouds': wordclouds_dict
+    }
+    
+    return results
+
+def semantic_barchart_plotly(annotation_count: dict, group: str, color: str, top_n = 10):
+    
+    annotation_count_group = annotation_count[group]
+    
+    annotation_count_group_filtered = annotation_count_group.head(top_n)
+    
+    x = annotation_count_group_filtered['count']
+    y = annotation_count_group_filtered['count']
+    text = annotation_count_group_filtered.index
+    customdata = ['<br>'.join(textwrap.wrap(i, 30)) for i in text]
+    
+    bar = go.Bar(
+        x = x,
+        text = text,
+        marker_color = color,
+        xaxis = 'x',
+        yaxis = 'y', 
+        customdata = customdata,
+        hovertemplate = "<br>".join([
+            '%{customdata}',
+            '<b>Count:</b> %{x}'
+        ]) + "<extra></extra>"
+    )
+    return bar
+
+def wordcloud_image(wordclouds: dict, group: str, color: str, mode = 'fig', savefile = None):
+    
+    if mode == 'fig':
+        wc = wordclouds[group].to_array()
+        image = go.Image(
+                z = wc,
+                xaxis = 'x2',
+                yaxis = 'y2',
+                hoverinfo = 'skip'
+            )
+        return image
+    
+    elif mode == 'svg' and savefile is not None:
+        wordclouds[group].to_svg(savefile)
+        
+    elif mode == 'png' and savefile is not None:
+        wordclouds[group].to_file(savefile)
+        
+    return
+
+def semantic_multiplot_plotly(count_features_results: dict, colors: list, 
+                              group = None, n_cols = 3, show = False):
+    n_groups = len(count_features_results['annotation_count'].keys())
+    
+    # set plot row parameters based on number of groups and columns
+    n_rows = int(np.ceil(n_groups / n_cols))
+    
+    fig = make_subplots(rows = n_rows, cols = n_cols * 2, horizontal_spacing = 0.02, vertical_spacing = 0.05)
+    
+    flattened_indices = [k for lst in [[(j + 1, i + 1) for i in np.arange(n_cols * 2)] for j in np.arange(n_rows)] for k in lst]
+
+    colors_dict = dict(zip(count_features_results['annotation_count'].keys(), colors))
+    
+    xaxis_params = {
+        'showline': True,
+        'linewidth': 1,
+        'linecolor': apc.All['arcadia:crow'],
+        'title': 'counts',
+        'title_standoff': 2
+    }
+
+    yaxis_params = {
+        'showline': True,
+        'linewidth': 1,
+        'linecolor': apc.All['arcadia:crow'],
+        'autorange': 'reversed',
+        'showticklabels': False
+    }
+
+    xaxis2_params = {
+        'showticklabels': False,
+        'showline': True,
+        'linewidth': 1,
+        'linecolor': apc.All['arcadia:brightgrey'],
+        'mirror': True
+    }
+
+    yaxis2_params = {
+        'showticklabels': False,
+        'showline': True,
+        'linewidth': 1,
+        'linecolor': apc.All['arcadia:brightgrey'],
+        'mirror': True
+    }
+    
+    i = 0
+    for group in count_features_results['annotation_count'].keys():
+        bar = semantic_barchart_plotly(count_features_results['annotation_count'], group, colors_dict[group])
+
+        fig.add_trace(
+            bar, 
+            row = flattened_indices[i][0], 
+            col = flattened_indices[i][1]
+        )
+        next(fig.select_xaxes(row = flattened_indices[i][0], col = flattened_indices[i][1])).update(xaxis_params | {'title': group})
+        next(fig.select_yaxes(row = flattened_indices[i][0], col = flattened_indices[i][1])).update(yaxis_params)
+        
+        i += 1
+
+        image = wordcloud_image(count_features_results['wordclouds'], group, colors_dict[group])
+
+        fig.add_trace(
+            image,
+            row = flattened_indices[i][0],
+            col = flattened_indices[i][1]
+        )
+        next(fig.select_xaxes(row = flattened_indices[i][0], col = flattened_indices[i][1])).update(xaxis2_params)
+        next(fig.select_yaxes(row = flattened_indices[i][0], col = flattened_indices[i][1])).update(yaxis2_params)
+        
+        i += 1
+
+    fig.update_layout(
+        uniformtext_minsize = 10,
+        uniformtext_mode = 'show',
+        paper_bgcolor = 'rgba(0,0,0,0)', 
+        plot_bgcolor = 'rgba(0,0,0,0)',
+        width = 550 * n_cols, height = 300 * n_rows,
+        font_family = 'Arial',
+        margin_l = 10,
+        margin_t = 10,
+        margin_r = 10,
+        margin_b = 10,
+        showlegend = False
+    )
+    
+    if show:
+        fig.show()
+    
+    return fig
 
 def main():
     args = parse_args()

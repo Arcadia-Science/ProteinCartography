@@ -20,6 +20,8 @@ taxon_focus: 'euk'
 uniprot_additional_fields: []
 min_length: 0
 
+override_quality_check: False
+
 # You can add custom features files using this config parameter.
 # These will be merged into the final "_aggregated_features.tsv" file.
 # They will not be plotted by default; you will need to manually run
