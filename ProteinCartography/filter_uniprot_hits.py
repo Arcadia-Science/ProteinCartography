@@ -24,7 +24,7 @@ def filter_results(input_file: str, output_file: str,
     if filter_fragment:
         filtered_df = filtered_df[filtered_df['Fragment'] != 'fragment']
     if min_length > 0:
-        filtered_df = filtered_df[filtered_df['Length'] > min_length]
+        filtered_df = filtered_df[filtered_df['Length'].astype(int) > min_length]
         
     with open(output_file, 'w+') as f:
         f.writelines([protid + '\n' for protid in filtered_df['protid']])

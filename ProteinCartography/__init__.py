@@ -38,3 +38,4 @@ from .py3dmol_plot import *
 from .query_uniprot import *
 from .rescue_mapping import *
 from .run_blast import *
+from .pdb_tools import *
