@@ -73,6 +73,7 @@ rule all:
     input:
         expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES),
         output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html"),
+        output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html"),
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
 
 ###########################################
@@ -434,6 +435,26 @@ rule plot_similarity_leiden:
         html = output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html")
     params:
         column = 'LeidenCluster'
+    shell:
+        '''
+        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
+        '''
+        
+rule plot_similarity_strucluster:
+    '''
+    Plots a similarity score matrix for Leiden clusters.
+    For each cluster, calculates the mean TMscore of all structures in that cluster versus all other clusters.
+    The diagonal of the plot shows how similar proteins are within a given cluster.
+    The other cells show how similar other clusters are to each other.
+    '''
+    input:
+        matrix = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
+        features = output_dir / clusteringresults_dir / "struclusters_features.tsv",
+    output:
+        tsv = output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.tsv"),
+        html = output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html")
+    params:
+        column = 'StruCluster'
     shell:
         '''
         python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
