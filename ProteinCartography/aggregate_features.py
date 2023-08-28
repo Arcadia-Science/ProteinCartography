@@ -72,6 +72,8 @@ def aggregate_features(input_files: list, output_file = None, features_override 
                     
                     # otherwise, replace the valule at that position
                     agg_df.loc[agg_df['protid'] == entry, col] = entry_row[col].values[0]
+                    
+    agg_df.drop_duplicates(inplace = True)
     
     # Save to an output file if a path is provided
     if output_file is not None:

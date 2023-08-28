@@ -63,6 +63,9 @@ def aggregate_foldseek_fident(input_files: list, output_file: str, protid: str) 
     results_df[f'fident_v_{protid}'] = results_df['fident'] * 0.01
     results_df.drop(columns = 'fident', inplace = True)
     
+    results_df.sort_values('evalue', inplace = True)
+    results_df.drop_duplicates('protid', inplace = True)
+    
     # append protid to evalue and prob columns
     results_df.rename(columns = {'evalue': f'evalue_v_{protid}', 'prob': f'prob_v_{protid}'}, inplace = True)
     
