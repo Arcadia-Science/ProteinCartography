@@ -135,6 +135,8 @@ def query_uniprot_rest(query_list: str, output_file: str, batch_size = 1000, sub
     # Split the query accessions into batches
     accession_batches = [query_accessions[i:i+batch_size] for i in range(0, len(query_accessions), batch_size)]
     
+    header_written = False  # Flag to check if header has been written
+    
     # Process each batch separately
     for i, accession_batch in enumerate(accession_batches):
         print(f'>> Starting batch {i + 1} of {len(accession_batches)}')
@@ -150,13 +152,19 @@ def query_uniprot_rest(query_list: str, output_file: str, batch_size = 1000, sub
         with open(temp_file, 'a') as f:
             for batch, total in get_batch(url):
                 lines = batch.text.splitlines()
-                if not progress:
-                    print(lines[0], file=f)
-                for line in lines[1:]:
+                
+                if not header_written:
+                    print_lines = lines
+                    header_written = True
+                else:
+                    print_lines = lines[1:]
+
+                for line in print_lines:
                     print(line, file=f)
-                progress += len(lines[1:])
+
+                progress += len(lines) - 1
                 print(f'downloaded {progress} / {total} hits for batch {i + 1}')
-    
+
     df = pd.read_csv(temp_file, sep = '\t')
     
     lineage_string_splitter = lambda lineage_string: [rank.split(' (')[0] for rank in lineage_string.split(', ')] if lineage_string is not np.nan else np.nan

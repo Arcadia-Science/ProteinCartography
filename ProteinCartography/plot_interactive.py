@@ -407,10 +407,10 @@ def generate_plotting_rules(taxon_focus: str, keyids = [], version = 'current') 
             'cmin': 0,
             'cmax': 1
         }
-        plotting_rules[f'convergence_v_{keyid}'] = {
+        plotting_rules[f'concordance_v_{keyid}'] = {
             'type': 'continuous', 
             'fillna': -1.01, 
-            'textlabel': f'Convergence vs. {keyid}',
+            'textlabel': f'Concordance vs. {keyid}',
             'color_scale': arcadia_poppies_r,
             'cmin': -1,
             'cmax': 1
