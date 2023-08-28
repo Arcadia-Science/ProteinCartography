@@ -189,7 +189,7 @@ rule aggregate_foldseek_fident:
     input:
         m8files = expand(output_dir / foldseekresults_dir / "{{protid}}" / "alis_{db}.m8", db = FS_DATABASES)
     output:
-        fident_features = output_dir / foldseekresults_dir / "{protid}_fident_features.tsv"
+        fident_features = output_dir / clusteringresults_dir / "{protid}_fident_features.tsv"
     params:
         protid = "{protid}"
     shell:
@@ -349,7 +349,7 @@ rule calculate_concordance:
     '''
     input: 
         tmscore_file = output_dir / clusteringresults_dir / '{protid}_distance_features.tsv',
-        fident_file = output_dir / foldseekresults_dir / '{protid}_fident_features.tsv'
+        fident_file = output_dir / clusteringresults_dir / '{protid}_fident_features.tsv'
     params:
         protid = "{protid}"
     output: output_dir / clusteringresults_dir / '{protid}_concordance_features.tsv'
@@ -388,7 +388,7 @@ rule aggregate_features:
         output_dir / clusteringresults_dir / "uniprot_features.tsv",
         output_dir / clusteringresults_dir / "leiden_features.tsv",
         expand(output_dir / clusteringresults_dir / "{protid}_distance_features.tsv", protid = PROTID),
-        expand(output_dir / foldseekresults_dir / "{protid}_fident_features.tsv", protid = PROTID),
+        expand(output_dir / clusteringresults_dir / "{protid}_fident_features.tsv", protid = PROTID),
         expand(output_dir / clusteringresults_dir / "{protid}_concordance_features.tsv", protid = PROTID),
         output_dir / clusteringresults_dir / "source_features.tsv"
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
