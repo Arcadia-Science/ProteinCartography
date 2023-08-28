@@ -19,6 +19,7 @@ taxon_focus: 'euk'
 
 uniprot_additional_fields: []
 min_length: 0
+max_length: 0
 
 override_quality_check: False
 
