@@ -44,6 +44,7 @@ FS_DATABASES = config["foldseek_databases"]
 MODES = config["plotting_modes"]
 
 MIN_LENGTH = int(config["min_length"])
+MAX_LENGTH = int(config["max_length"])
 
 ###########################################
 ## Setup directory structure
@@ -235,10 +236,11 @@ rule filter_uniprot_hits:
     input: output_dir / clusteringresults_dir / "uniprot_features.tsv"
     output: output_dir / clusteringresults_dir / "alphafold_querylist.txt"
     params:
-        min_length = MIN_LENGTH
+        min_length = MIN_LENGTH,
+        max_length = MAX_LENGTH
     shell:
         '''
-        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length}
+        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length} -M {params.max_length}
         '''
 
 checkpoint create_alphafold_wildcard:

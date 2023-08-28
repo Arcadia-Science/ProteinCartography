@@ -86,7 +86,9 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
     
     # open the input file to extract ids
     with open(input_file, 'r') as f:
-        input_string = f.read().replace('\n', ',')
+        input_lines = [i.replace('\n', '') for i in f.readlines()]
+        input_ids = list(set(input_lines))
+        input_string = ','.join(input_ids)
     
     dummy_df = pd.DataFrame()
     
