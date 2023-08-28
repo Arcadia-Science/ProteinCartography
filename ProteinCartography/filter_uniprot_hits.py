@@ -2,6 +2,8 @@
 import argparse
 import pandas as pd
 
+__all__ = ['filter_results']
+
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()

@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 # only import these functions when using import *
-__all__ = ["extract_foldseekhits"]
+__all__ = ["aggregate_foldseek_fident"]
 
 # default column names for a Foldseek run in this pipeline
 FOLDSEEK_NAMES = ['query', 'target', 'fident', 'alnlen', 'mismatch', 'gapopen', 'qstart', 'qend', 'tstart', 'tend', 'prob', 'evalue', 'bits', 'qcov', 'tcov', 'qlan', 'taln', 'coord', 'tseq', 'taxid', 'taxname']

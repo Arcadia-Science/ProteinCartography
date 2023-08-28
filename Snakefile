@@ -341,7 +341,7 @@ rule input_distances:
         python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
         '''
 
-rule calculate_convergence:
+rule calculate_concordance:
     '''
     Currently, this subtracts the fraction sequence identity from the TMscore to get a measure of whether something is more similar in sequence or structure.
     
@@ -352,10 +352,10 @@ rule calculate_convergence:
         fident_file = output_dir / foldseekresults_dir / '{protid}_fident_features.tsv'
     params:
         protid = "{protid}"
-    output: output_dir / clusteringresults_dir / '{protid}_convergence_features.tsv'
+    output: output_dir / clusteringresults_dir / '{protid}_concordance_features.tsv'
     shell:
         '''
-        python ProteinCartography/calculate_convergence.py -t {input.tmscore_file} -f {input.fident_file} -o {output} -p {params.protid}
+        python ProteinCartography/calculate_concordance.py -t {input.tmscore_file} -f {input.fident_file} -o {output} -p {params.protid}
         '''
         
 rule get_source:
@@ -389,7 +389,7 @@ rule aggregate_features:
         output_dir / clusteringresults_dir / "leiden_features.tsv",
         expand(output_dir / clusteringresults_dir / "{protid}_distance_features.tsv", protid = PROTID),
         expand(output_dir / foldseekresults_dir / "{protid}_fident_features.tsv", protid = PROTID),
-        expand(output_dir / clusteringresults_dir / "{protid}_convergence_features.tsv", protid = PROTID),
+        expand(output_dir / clusteringresults_dir / "{protid}_concordance_features.tsv", protid = PROTID),
         output_dir / clusteringresults_dir / "source_features.tsv"
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
