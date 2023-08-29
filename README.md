@@ -222,12 +222,12 @@ These files end with `'.tsv'` and contain a `protid` column, which is the unique
 The remaining columns are annotations for each protein. These annotations can be of any data type.
 
 - **Example:**
-    | protid | sequence.length | LeidenCluster | organism.scientificName | organism.commonName |
-    |-------:|:---------------:|:-------------:|:-----------------------:|:-------------------:|
-    | A0A2J8L4A7 | 707 | 1 | Pan troglodytes | Chimpanzee |
-    | K7EV54 | 784 | 2 | Pongo abelii | Sumatran orangutan |
-    | A0A2J8WJR8 | 707 | 1 | Pongo abelii | Sumatran orangutan |
-    | A0A811ZNA7 | 781 | 1 | Nyctereutes procyonoides | Raccoon dog |
+    | protid | Length | LeidenCluster | Organism |
+    |-------:|:---------------:|:-------------:|:-----------------------:|
+    | A0A2J8L4A7 | 707 | 1 | Pan troglodytes (Chimpanzee) |
+    | K7EV54 | 784 | 2 | Pongo abelii (Sumatran orangutan) |
+    | A0A2J8WJR8 | 707 | 1 | Pongo abelii (Sumatran orangutan) |
+    | A0A811ZNA7 | 781 | 1 | Nyctereutes procyonoides (Raccoon dog) |
 - **Input to:**
     - [`aggregate_features.py`](ProteinCartography/aggregate_features.py)
     - [`calculate_convergence.py`](ProteinCartography/calculate_convergence.py)
