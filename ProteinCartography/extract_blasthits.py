@@ -33,6 +33,9 @@ def extract_blasthits(input_file: str, output_file: str,
     df = pd.read_csv(input_file, sep = '\t', names = names)
 
     hits = df['sacc'].unique()
+    
+    if len(hits) == 0:
+        raise Exception('No hits were returned. Check to see if remote BLAST died.')
 
     with open(output_file, 'w+') as f:
         f.writelines(hit + '\n' for hit in hits)
