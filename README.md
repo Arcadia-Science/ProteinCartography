@@ -1,5 +1,5 @@
-# gene-family-cartography
-embedding proteins into feature spaces for computational exploration
+# ProteinCartography
+The ProteinCartography pipeline searches sequence and structure databases for matches to input proteins and builds maps of protein space for the purposes of discovery and exploration.
 
 ---
 ## Purpose
@@ -31,11 +31,6 @@ The steps of the pipeline have the following functionality:
     - The workflow starts with input FASTA files, one entry per file, with a unique ID.
     - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB.
 
-==TODO==  
-- [ ] Check the quality of the input structure and warn user if it's of low quality.
-- [ ] Provide the ability to download files from the PDB.
-- [ ] Handle multi-chain PDB files appropriately.
-
 ### Protein Search
 1. Search the Alphafold databases using queries to the FoldSeek webserver API for each provided `.pdb` file.  
     - Currently, we're limited to a maximum of 1000 hits per protein.  
@@ -46,9 +41,6 @@ The steps of the pipeline have the following functionality:
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a Uniprot ID using `requests` and [the Uniprot REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob). 
     - This can sometimes fail for unknown reasons.
     
-==TODO==  
-- [ ] Make the ID mapping process happen locally to avoid API query issues.
-
 ### Download Data
 3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of Uniprot IDs.  
 
@@ -59,22 +51,13 @@ The steps of the pipeline have the following functionality:
 5. Download annotation and feature information for each protein from Uniprot.  
     - This is working, but it's somewhat brittle. There can be issues with `bioservices UniProt` that seem to stem from memory allocation issues.
     
-==TODO==  
-- [ ] Replace or improve the bioservices Uniprot annotation retrieval.
-
 ### Clustering
 
 6. Generate a similarity matrix and cluster all protein .pdb files using FoldSeek.  
 
-==TODO==  
-- [ ] Implement all-v-all sequence alignment using FAMSA, WITCH, or other alignment approach.
-
 7. Perform dimensionality reduction and clustering on the similarity matrix.
     - By default, we perform 30-component PCA and pass this to both TSNE and UMAP.
     
-==TODO==  
-- [ ] Identify sensible clustering defaults.
-
 ### Data Analysis and Aggregation
 
 8. Generate a variety of `_features.tsv` files.
@@ -86,11 +69,6 @@ The steps of the pipeline have the following functionality:
     - We extract from Foldseek search a fraction sequence identy for every protid in our input protids as `<input_protid>_fident_features.tsv` files.
     - We subtract the fraction sequence identity from the TMscore to generate a `<input_protid>_convergence_features.tsv` file.
     - We determine the source of each file in the analysis (whether it was found from blast or foldseek) as the `source_features.tsv` file.
-    
-==TODO==  
-- [ ] Generate statistics for convergence.
-- [ ] Figure out per-cluster and per-protein quality metrics.
-- [ ] Figure out how to evaluate taxonomic mixing.
     
 9. Aggregate features.
     - All of the features.tsv files are combined into one large `aggregated_features.tsv` file.
@@ -106,9 +84,6 @@ The steps of the pipeline have the following functionality:
     - Perform a word count analysis on all of the annotations and generate a word cloud.
     - Save as a PDF file with suffix `_semantic_analysis.pdf`.
     
-==TODO==  
-- [ ] Implement fuzzy string matching to collapse very similar annotations.
-
 12. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
     - An example can be found [here](examples/scatter.html)
     - Each point has hover-over information
@@ -194,14 +169,6 @@ The possible rules for each column are as follows:
     - Exclusively used for 'taxonomic' style plots. A list of ranked-order taxa for categorization.
     - Should start with more-specific taxa and expand to less-specific taxa.
 
-== FUTURE ==  
-> Processes below haven't been explored yet but are of interest.
-
-- Generate distance matrices using sequence similarity instead of structure.
-- Allow for passing of arbitrary TSV data types for building visualizations.
-    - Technically, the aggregation part works. There's not a super easy way to then build the visualization's rules from there.
-- Automated aggregation of input/output files to share using `biofile`?
-
 ---
 ## File Conventions
 
@@ -276,4 +243,22 @@ The remaining columns are annotations for each protein. These annotations can be
     - [`leiden_clustering.py`](ProteinCartography/leiden_clustering.py)
     - [`query_uniprot.py`](ProteinCartography/query_uniprot.py)
 
+#### Feature file main columns
 
+A variety of metadata features for each protein are usually pulled from Uniprot for visualization purposes.  
+The following table describes those features with examples.  
+
+If you are providing a set of custom proteins (such as those not fetched from Uniprot), you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map.  
+
+Features used for the default plotting rules are marked with *(Plotting)* below.
+
+| feature | example | description | source |
+|--------:|:-------:|:------------|:-------|
+|`"protid"` | `"P42212"` | *(Required)* the unique identifier of the protein. Usually the Uniprot accession, but can be any alphanumeric string | User-provided or Uniprot |
+|`"Protein names"`| `"Green fluorescent protein"` | *(Plotting)* a human-readable description of the protein | Uniprot |
+|`"Gene Names (primary)"` | `"GFP"` | *(Plotting)* a gene symbol for the protein | Uniprot |
+|`"Annotation"`| `5` | *(Default)* Uniprot [Annotation Score](https://www.uniprot.org/help/annotation_score) (0 to 5) | Uniprot |
+|`"Organism"` | `"Aequorea victoria (Water jellyfish) (Mesonema victoria)"` | *(Plotting)* Scientific name (common name) (synonyms) | Uniprot |
+|`"Taxonomic lineage"`|`"cellular organisms (no rank), Eukaryota (superkingdom), ... Aequoreidae (family), Aequorea (genus)"`| string of comma-separated `Lineage name (rank)` for the organism's full taxonomic lineage | Uniprot |
+|`"Lineage"`|`["cellular organisms", "Eukaryota", ... "Aequoreidae", "Aequorea"]` | *(Plotting)* ordered list of lineage identifiers without rank information, generated from `"Taxonomic lineage"` | ProteinCartography |
+|`"Length"`| `238` | *(Plotting)* number of amino acids in protein | Uniprot |
