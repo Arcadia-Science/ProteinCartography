@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+import argparse
 import re
 import pandas as pd
 import numpy as np
@@ -49,8 +51,7 @@ ATOM_SPEC_NAMES = list(ATOM_SPEC_DICT.keys())
 def parse_args():
     # Set command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--textfile", nargs = '+', help = 'Input path to text file containing file paths, one per line.')
-    parser.add_argument("-p", "--paths", nargs = '+', help = 'Input PDB file paths.')
+    parser.add_argument("-t", "--textfile", help = 'Input path to text file containing file paths, one per line.')
     parser.add_argument("-o", "--output", required = True, help = 'Name of output TSV file.')
     args = parser.parse_args()
     return args
@@ -192,20 +193,11 @@ def read_txtlist(input_file: str):
 def main():
     args = parse_args()
     textfile = args.textfile
-    paths = args.paths
     output_file = args.output
     
-    if textfile != '':
-        files_list = read_txtlist(input)
-    else:
-        files_list = []
-        
-    files_list = paths + files_list
+    files_list = read_txtlist(textfile)
     
-    if len(files_list) == 0:
-        sys.exit('Please provide a text file containing paths, a list of file paths, or both.')
-    
-    assess_pdbs(structures_list = files_list, output_file = output)
+    assess_pdbs(structures_list = files_list, output_file = output_file)
     
 if __name__ == '__main__':
     main()
