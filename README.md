@@ -250,15 +250,15 @@ The following table describes those features with examples.
 
 If you are providing a set of custom proteins (such as those not fetched from Uniprot), you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map.  
 
-Features used for the default plotting rules are marked with *(Plotting)* below.
+Features used for color schemes in the default plotting rules are marked with *(Plotting)* below. Features used only for hover-over description are marked with *(Hovertext)*.
 
 | feature | example | description | source |
 |--------:|:-------:|:------------|:-------|
 |`"protid"` | `"P42212"` | *(Required)* the unique identifier of the protein. Usually the Uniprot accession, but can be any alphanumeric string | User-provided or Uniprot |
-|`"Protein names"`| `"Green fluorescent protein"` | *(Plotting)* a human-readable description of the protein | Uniprot |
-|`"Gene Names (primary)"` | `"GFP"` | *(Plotting)* a gene symbol for the protein | Uniprot |
-|`"Annotation"`| `5` | *(Default)* Uniprot [Annotation Score](https://www.uniprot.org/help/annotation_score) (0 to 5) | Uniprot |
-|`"Organism"` | `"Aequorea victoria (Water jellyfish) (Mesonema victoria)"` | *(Plotting)* Scientific name (common name) (synonyms) | Uniprot |
+|`"Protein names"`| `"Green fluorescent protein"` | *(Hovertext)* a human-readable description of the protein | Uniprot |
+|`"Gene Names (primary)"` | `"GFP"` | *(Hovertext)* a gene symbol for the protein | Uniprot |
+|`"Annotation"`| `5` | *(Plotting)* Uniprot [Annotation Score](https://www.uniprot.org/help/annotation_score) (0 to 5) | Uniprot |
+|`"Organism"` | `"Aequorea victoria (Water jellyfish) (Mesonema victoria)"` | *(Hovertext)* Scientific name (common name) (synonyms) | Uniprot |
 |`"Taxonomic lineage"`|`"cellular organisms (no rank), Eukaryota (superkingdom), ... Aequoreidae (family), Aequorea (genus)"`| string of comma-separated `Lineage name (rank)` for the organism's full taxonomic lineage | Uniprot |
 |`"Lineage"`|`["cellular organisms", "Eukaryota", ... "Aequoreidae", "Aequorea"]` | *(Plotting)* ordered list of lineage identifiers without rank information, generated from `"Taxonomic lineage"` | ProteinCartography |
 |`"Length"`| `238` | *(Plotting)* number of amino acids in protein | Uniprot |

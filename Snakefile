@@ -117,7 +117,7 @@ rule run_blast:
     '''
     Using files located in the input directory, perform BLAST using the web API.
     
-    This can die if too many queries are made. Will shift to using a local database.
+    Large proteins will cause remote BLAST to fail; you can still perform a manual BLAST search to get around this.
     '''
     input:
         cds = input_dir / "{protid}.fasta"
@@ -137,9 +137,6 @@ rule map_refseqids:
     '''
     Using List of RefSeq IDs, query the Uniprot ID mapping tool using bioservices UniProt.
     Returns a list of UniProt IDs.
-    This script is quite brittle; something is wrong with bioservices UniProt.
-    Need to refactor the API calls manually to use `requests.post()` etc.
-    Need to also make a local version of the databases for querying.
     '''
     input:
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
@@ -162,8 +159,6 @@ rule run_foldseek:
     The script accepts an input file ending in '.pdb' and returns an output file ending in '.tar.gz'.
     The script also accepts a `--mode` flag of either '3diaa' (default) or 'tmalign' and choice of databases.
     After running, untars the files and extracts hits.
-    
-    This fails on the first try every time for some `requests`-related reason.
     '''
     input:
         cds = input_dir / "{protid}.pdb"
@@ -231,7 +226,7 @@ rule get_uniprot_metadata:
 
 rule filter_uniprot_hits:
     '''
-    Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
+    Use the metadata features from Uniprot to filter hits based on sequence status, fragment, and size.
     '''
     input: output_dir / clusteringresults_dir / "uniprot_features.tsv"
     output: output_dir / clusteringresults_dir / "alphafold_querylist.txt"
@@ -245,7 +240,7 @@ rule filter_uniprot_hits:
 
 checkpoint create_alphafold_wildcard:
     '''
-    Create dummy files to make Snakemake detect a wildcard
+    Create dummy files to make Snakemake detect a wildcard.
     '''
     input:
         jointlist = output_dir / clusteringresults_dir / "alphafold_querylist.txt"
@@ -444,7 +439,7 @@ rule plot_similarity_leiden:
         
 rule plot_similarity_strucluster:
     '''
-    Plots a similarity score matrix for Leiden clusters.
+    Plots a similarity score matrix for Foldseek's structural clusters.
     For each cluster, calculates the mean TMscore of all structures in that cluster versus all other clusters.
     The diagonal of the plot shows how similar proteins are within a given cluster.
     The other cells show how similar other clusters are to each other.
