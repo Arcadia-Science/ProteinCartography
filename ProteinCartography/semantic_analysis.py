@@ -6,7 +6,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import arcadia_pycolor as apc
-from plot_interactive import adjust_lightness, extend_colors
+from .plot_interactive import adjust_lightness, extend_colors
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -16,7 +16,8 @@ from io import BytesIO
 import textwrap
 import os
 
-__all__ = ['plot_semantic_analysis']
+__all__ = ['plot_semantic_analysis', 'semantic_barchart_plotly',
+          'wordcloud_image', 'semantic_multiplot_plotly']
 
 def parse_args():
     parser = argparse.ArgumentParser()
