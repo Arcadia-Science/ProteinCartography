@@ -37,6 +37,20 @@ arcadia_pansies_r = apc.Gradients['arcadia:pansies_r'].grad_nested_list
 arcadia_dahlias = apc.Gradients['arcadia:dahlias'].grad_nested_list
 arcadia_dahlias_r = apc.Gradients['arcadia:dahlias_r'].grad_nested_list
 
+plddt_gradient_dict = {
+    'color_dict': apc.dragon | apc.amber | apc.canary | apc.vitalblue | {'arcadia:cobalt': '#4A72B0'},
+    'values': [0, 0.25, 0.6, 0.8, 1]
+}
+
+# instantiate a new Gradient object
+plddt_gradient = apc.Gradient(
+    name = 'my_gradient',
+    color_dict = plddt_gradient_dict['color_dict'], 
+    values = plddt_gradient_dict['values']
+)
+
+plddt_cmap = plddt_gradient.grad_nested_list
+
 ANNOTATION_SCORE_COLORS = [
         apc.All['arcadia:brightgrey'], 
         apc.All['arcadia:aster'],
@@ -88,6 +102,12 @@ SOURCE_COLOR_DICT = {'blast': apc.All['arcadia:canary'],
                          'foldseek': apc.All['arcadia:aegean'], 
                          'blast+foldseek': apc.All['arcadia:amber'], 
                          'None': apc.All['arcadia:brightgrey']}
+
+PDB_ORIGIN_COLOR_DICT = {'Alphafold': '#4A72B0',
+                        'ESMFold': apc.All['arcadia:vitalblue'],
+                        'PDB': apc.All['arcadia:bluesky'],
+                        'Other': apc.All['arcadia:marineblue'],
+                        'None': apc.All['arcadia:brightgrey']}
 
 ###############
 ## Functions ##
@@ -275,6 +295,8 @@ def generate_plotting_rules(taxon_focus: str, keyids = [], version = 'current') 
     
     # use this color dictionary for the sources (blast vs foldseek vs blast+foldseek)
     source_color_dict = SOURCE_COLOR_DICT
+    
+    pdb_origin_color_dict = PDB_ORIGIN_COLOR_DICT
 
     plotting_rules = {}
 
@@ -333,6 +355,20 @@ def generate_plotting_rules(taxon_focus: str, keyids = [], version = 'current') 
                 'color_dict': source_color_dict,
                 'textlabel': 'Source'
             },
+            'pdb_origin': {
+                'type': 'categorical',
+                'fillna': 'None',
+                'color_dict': pdb_origin_color_dict,
+                'textlabel': 'PDB Origin'
+            },
+            'pdb_confidence': {
+                'type': 'continuous',
+                'fillna': -1,
+                'textlabel': 'Mean pLDDT',
+                'color_scale': plddt_cmap,
+                'cmin': 0,
+                'cmax': 100
+            }
         }
     elif version == 'v0.2.0' or 'v0.2':
         plotting_rules = {

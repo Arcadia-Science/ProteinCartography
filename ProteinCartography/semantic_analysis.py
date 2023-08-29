@@ -6,7 +6,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import arcadia_pycolor as apc
-from .plot_interactive import adjust_lightness, extend_colors
+from plot_interactive import adjust_lightness, extend_colors
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots

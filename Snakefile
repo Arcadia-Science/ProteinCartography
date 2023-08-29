@@ -278,6 +278,23 @@ def checkpoint_create_alphafold_wildcard(wildcards):
                  expand(output_dir / foldseekclustering_dir / "{protid}.pdb", protid = PROTID)
     return file_names
 
+rule assess_pdbs:
+    '''
+    
+    '''
+    input: checkpoint_create_alphafold_wildcard
+    output:
+        pdb_paths = output_dir / clusteringresults_dir / 'pdbpaths.txt',
+        pdb_features = output_dir / clusteringresults_dir / 'pdb_features.tsv'
+    params:
+        inputdir = input_dir,
+        clusteringdir = output_dir / foldseekclustering_dir
+    shell:
+        '''
+        python ProteinCartography/prep_pdbpaths.py -d {params.clusteringdir} {params.inputdir} -o {output.pdb_paths}
+        python ProteinCartography/pdb_tools.py -t {output.pdb_paths} -o {output.pdb_features}
+        '''
+
 #####################################################################
 ## clustering and dimensionality reduction
 #####################################################################
@@ -387,7 +404,8 @@ rule aggregate_features:
         expand(output_dir / clusteringresults_dir / "{protid}_distance_features.tsv", protid = PROTID),
         expand(output_dir / clusteringresults_dir / "{protid}_fident_features.tsv", protid = PROTID),
         expand(output_dir / clusteringresults_dir / "{protid}_concordance_features.tsv", protid = PROTID),
-        output_dir / clusteringresults_dir / "source_features.tsv"
+        output_dir / clusteringresults_dir / "source_features.tsv",
+        output_dir / clusteringresults_dir / "pdb_features.tsv"
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
         override = OVERRIDE_FILE
