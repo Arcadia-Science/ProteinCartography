@@ -980,7 +980,7 @@ def plot_interactive(coordinates_file: str, plotting_rules: dict,
     scatter_config = {'displayModeBar': True, 
                     'scrollZoom': True, 
                     'toImageButtonOptions': {
-                        'filename': 'scatter.svg',
+                        'filename': 'scatter',
                         'format': 'svg'
                         },
                     'modeBarButtonsToRemove': ['zoomIn', 'zoomOut']

@@ -115,12 +115,20 @@ def plot_group_similarity(group_similarity_file: str,
         fig.update_layout(font=dict(family="Arial"))
     except:
         pass
+    
+    plot_config = {'displayModeBar': True, 
+                'toImageButtonOptions': {
+                    'filename': 'heatmap',
+                    'format': 'svg'
+                    },
+                'modeBarButtonsToRemove': ['zoomIn', 'zoomOut']
+            }
 
     if output_file is not None:
-        fig.write_html(output_file)
+        fig.write_html(output_file, config = plot_config)
     
     if show:
-        fig.show()
+        fig.show(config = plot_config)
         
     return fig
 
