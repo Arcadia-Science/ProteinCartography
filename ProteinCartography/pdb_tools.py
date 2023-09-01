@@ -128,8 +128,12 @@ def assign_origin(input_path: str):
             PDB_FLAG = 1
         if 'ESMFOLD' in contents:
             ESM_FLAG = 1
+    try:
+        dbref = fetch_dbref(input_path)[5].values
+    except KeyError:
+        print(f'{input_path} failed')
+        dbref = []
     
-    dbref = fetch_dbref(input_path)[5].values
     if 'PDB' in dbref:
         PDB_REF_FLAG = 2
     

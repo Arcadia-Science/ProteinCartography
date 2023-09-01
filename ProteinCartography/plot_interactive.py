@@ -12,7 +12,7 @@ import colorsys
 # only import these functions when using import *
 __all__ = ["adjust_lightness", "apply_coordinates", 
            "assign_taxon", "extend_colors", "plot_interactive",
-           "ANNOTATION_SCORE_COLORS","EUK_COLOR_DICT", "BAC_COLOR_DICT",
+           "ANNOTATION_SCORE_COLORS", "EUK_COLOR_DICT", "BAC_COLOR_DICT",
            "SOURCE_COLOR_DICT"]
 
 ##############################
