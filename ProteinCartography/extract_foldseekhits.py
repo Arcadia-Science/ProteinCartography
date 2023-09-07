@@ -16,11 +16,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", nargs = '+', required = True, help = 'Takes .m8 file paths as input.')
     parser.add_argument("-o", "--output", required = True, help = 'Returns a .txt file as output.')
+    parser.add_argument("-e", "--evalue", default = '0.01', help = 'Sets maximum evalue for filtering.')
     args = parser.parse_args()
     
     return args
 
-def extract_foldseekhits(input_files: list, output_file: str):
+def extract_foldseekhits(input_files: list, output_file: str, evalue = 0.01):
     '''
     Takes a list of input tabular Foldseek results files from the API query (ending in .m8).
     Generates a .txt file containing a list of unique accessions across all the .m8 files.
@@ -44,7 +45,12 @@ def extract_foldseekhits(input_files: list, output_file: str):
         # extract the model ID from the results target column
         file_df['modelid'] = file_df['target'].str.split(' ', expand = True)[0]
         
+        # extract only models that contain AF model string
+        # this will need to be changed in the future
         file_df = file_df[file_df['modelid'].str.contains('-F1-model_v4')]
+        
+        # filter by evalue
+        file_df = file_df[file_df['evalue'] < evalue]
         
         # get the uniprot ID out from that target
         file_df['uniprotid'] = file_df['modelid'].apply(lambda x: re.findall('AF-(.*)-F1-model_v4', x)[0])
@@ -71,9 +77,10 @@ def main():
     # collect arguments individually
     input_files = args.input
     output_file = args.output
+    evalue = float(args.evalue)
     
     # send to map_refseqids
-    extract_foldseekhits(input_files, output_file)
+    extract_foldseekhits(input_files, output_file, evalue = evalue)
 
 # check if called from interpreter
 if __name__ == '__main__':
