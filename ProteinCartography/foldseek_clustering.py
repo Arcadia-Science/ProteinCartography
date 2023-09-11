@@ -13,6 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-q", "--query-folder", required = True, help = "Path to query folder containing all .pdb files of interest.")
     parser.add_argument("-r", "--results-folder", required = True, help = "Path to destination folder to save results.")
+    parser.add_argument("-e", "--evalue", default = '10', help = "Maximum evalue cutoff for search. Defaults to 10.")
     args = parser.parse_args()
     
     return args
@@ -20,6 +21,7 @@ def parse_args():
 def run_foldseek_clustering(query_folder: str, results_folder: str,
                             temp_folder = None, 
                             distances_filename = 'all_by_all_tmscore.tsv',
+                            evalue = 10,
                             cluster_filename = 'struclusters.tsv',
                             cluster_mode = '0', similarity_type = '2'):
     '''
@@ -58,7 +60,7 @@ def run_foldseek_clustering(query_folder: str, results_folder: str,
 
     foldseek_out = temp_Path / 'all_by_all'
     foldseek_tmp = temp_Path / 'tmp'
-    subprocess.run(['foldseek', 'search', db_prefix, db_prefix, foldseek_out, foldseek_tmp, '-a'])
+    subprocess.run(['foldseek', 'search', db_prefix, db_prefix, foldseek_out, foldseek_tmp, '-a', '-e', evalue])
 
     foldseek_tmscore = temp_Path / 'all_by_all_tmscore'
     subprocess.run(['foldseek', 'aln2tmscore', db_prefix, db_prefix, foldseek_out, foldseek_tmscore])
@@ -148,8 +150,9 @@ def main():
     args = parse_args()
     query_folder = args.query_folder
     results_folder = args.results_folder
+    evalue = float(args.evalue)
     
-    distancestsv, clusterstsv = run_foldseek_clustering(query_folder, results_folder)
+    distancestsv, clusterstsv = run_foldseek_clustering(query_folder, results_folder, evalue = evalue)
     
     pivotedtsv = distancestsv.replace('.tsv', '_pivoted.tsv')
     pivot_foldseek_results(distancestsv, pivotedtsv)
