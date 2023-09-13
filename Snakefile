@@ -75,7 +75,8 @@ rule all:
         expand(output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"), modes = MODES),
         output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html"),
         output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html"),
-        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
+        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf"),
+        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html")
 
 ###########################################
 ## make .pdb files using esmfold API query
@@ -482,12 +483,13 @@ rule plot_semantic_analysis:
     input:
         features_file = output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     output:
-        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf")
+        pdf = output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf"),
+        interactive = output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html")
     params:
         agg_column = 'LeidenCluster',
         annot_column = "'Protein names'",
         analysis_name = analysis_name
     shell:
         '''
-        python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output} -a {params.analysis_name}
+        python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output.pdf} -i {output.interactive} -a {params.analysis_name}
         '''

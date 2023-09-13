@@ -24,8 +24,9 @@ def parse_args():
     parser.add_argument("-f", "--features-file", required = True, help = 'Path to features file for grouping.')
     parser.add_argument("-c", "--agg-column", required = True, help = 'Column to aggregate groups on.')
     parser.add_argument("-n", "--annot-column", required = True, help = 'Column of annotations to analyze.')
-    parser.add_argument("-o", "--output", default = '', help = 'Path to output file ending in a matplotlib-compatible format (png, pdf, ps, eps, and svg)')
-    parser.add_argument("-e", "--exclude-words", nargs = "+", default = ['protein', 'None'], help = 'Words to exclude from word cloud')
+    parser.add_argument("-o", "--output", default = '', help = 'Path to output file ending in a matplotlib-compatible format (png, pdf, ps, eps, and svg).')
+    parser.add_argument("-i", "--interactive", default = '', help = 'Path to output file ending with ".html" for interactive plot.')
+    parser.add_argument("-e", "--exclude-words", nargs = "+", default = ['protein', 'None'], help = 'Words to exclude from word cloud.')
     parser.add_argument("-a", "--analysis-name", default = '', help = 'name of analysis for plotting')
     args = parser.parse_args()
     
@@ -94,8 +95,8 @@ def plot_semantic_analysis(features_file: str, agg_col: str, annot_col: str, col
         # combine all annotations into one long space-separated string, then break into individual words
         annot_word_list = ' '.join(list(values)).split(' ')
         
-        # sanitize word list by removing irrelevant words
-        sanitized_word_list = [word for word in annot_word_list if word not in exclude_words]
+        # sanitize word list by removing irrelevant words and parentheses
+        sanitized_word_list = [word.replace('(', '').replace(')', '') for word in annot_word_list if word not in exclude_words]
         
         # get value counts per-word
         str_summary = dict(pd.value_counts(sanitized_word_list, normalize = True))
@@ -184,8 +185,8 @@ def count_features(features_file: str, agg_col: str, annot_col: str, colors: lis
         # combine all annotations into one long space-separated string, then break into individual words
         annot_word_list = ' '.join(list(values)).split(' ')
 
-        # sanitize word list by removing irrelevant words
-        sanitized_word_list = [word for word in annot_word_list if word not in exclude_words]
+        # sanitize word list by removing irrelevant words and parentheses
+        sanitized_word_list = [word.replace('(', '').replace(')', '') for word in annot_word_list if word not in exclude_words]
 
         # get value counts per-word
         str_summary = dict(pd.value_counts(sanitized_word_list, normalize = True))
@@ -252,14 +253,14 @@ def wordcloud_image(wordclouds: dict, group: str, color: str, mode = 'fig', save
         
     return
 
-def semantic_multiplot_plotly(count_features_results: dict, colors: list, 
-                              group = None, n_cols = 3, show = False):
+def semantic_multiplot_plotly(count_features_results: dict, colors: list, n_cols = 3, 
+                              analysis_name = '', savefile = None, show = False):
     n_groups = len(count_features_results['annotation_count'].keys())
     
     # set plot row parameters based on number of groups and columns
     n_rows = int(np.ceil(n_groups / n_cols))
     
-    fig = make_subplots(rows = n_rows, cols = n_cols * 2, horizontal_spacing = 0.02, vertical_spacing = 0.05)
+    fig = make_subplots(rows = n_rows, cols = n_cols * 2, horizontal_spacing = 0.02, vertical_spacing = 0.08, subplot_titles = [item for key in count_features_results['annotation_count'].keys() for item in (key, 'proportional word cloud')])
     
     flattened_indices = [k for lst in [[(j + 1, i + 1) for i in np.arange(n_cols * 2)] for j in np.arange(n_rows)] for k in lst]
 
@@ -269,7 +270,7 @@ def semantic_multiplot_plotly(count_features_results: dict, colors: list,
         'showline': True,
         'linewidth': 1,
         'linecolor': apc.All['arcadia:crow'],
-        'title': 'counts',
+        'title': 'number of annotations',
         'title_standoff': 2
     }
 
@@ -299,6 +300,7 @@ def semantic_multiplot_plotly(count_features_results: dict, colors: list,
     
     i = 0
     for group in count_features_results['annotation_count'].keys():
+        
         bar = semantic_barchart_plotly(count_features_results['annotation_count'], group, colors_dict[group])
 
         fig.add_trace(
@@ -306,7 +308,7 @@ def semantic_multiplot_plotly(count_features_results: dict, colors: list,
             row = flattened_indices[i][0], 
             col = flattened_indices[i][1]
         )
-        next(fig.select_xaxes(row = flattened_indices[i][0], col = flattened_indices[i][1])).update(xaxis_params | {'title': group})
+        next(fig.select_xaxes(row = flattened_indices[i][0], col = flattened_indices[i][1])).update(xaxis_params)
         next(fig.select_yaxes(row = flattened_indices[i][0], col = flattened_indices[i][1])).update(yaxis_params)
         
         i += 1
@@ -331,11 +333,14 @@ def semantic_multiplot_plotly(count_features_results: dict, colors: list,
         width = 550 * n_cols, height = 300 * n_rows,
         font_family = 'Arial',
         margin_l = 10,
-        margin_t = 10,
+        margin_t = 20,
         margin_r = 10,
         margin_b = 10,
         showlegend = False
     )
+    
+    if savefile is not None:
+        fig.write_html(savefile)
     
     if show:
         fig.show()
@@ -348,21 +353,38 @@ def main():
     agg_col = args.agg_column
     annot_col = args.annot_column
     output_file = args.output
+    interactive_file = args.interactive
     exclude_words = args.exclude_words
     analysis_name = args.analysis_name
     colors = apc.Palettes['arcadia:AccentAllOrdered'].colors
     
-    apc.mpl_setup()
+    if output_file != '':
+        apc.mpl_setup()
+
+        plot_semantic_analysis(
+            features_file = features_file,
+            agg_col = agg_col,
+            annot_col = annot_col,
+            colors = colors,
+            savefile = output_file,
+            exclude_words = exclude_words,
+            analysis_name = analysis_name
+        )
     
-    plot_semantic_analysis(
-        features_file = features_file,
-        agg_col = agg_col,
-        annot_col = annot_col,
-        colors = colors,
-        savefile = output_file,
-        exclude_words = exclude_words,
-        analysis_name = analysis_name
-    )
+    if interactive_file != '':
+        results = count_features(
+            features_file = features_file,
+            agg_col = agg_col,
+            annot_col = annot_col,
+            colors = colors
+        )
+        
+        semantic_multiplot_plotly(
+            results, 
+            colors, 
+            analysis_name = analysis_name,
+            savefile = interactive_file
+        )
     
 if __name__ == "__main__":
     main()
