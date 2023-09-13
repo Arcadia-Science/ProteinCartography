@@ -109,7 +109,8 @@ def plot_group_similarity(group_similarity_file: str,
         paper_bgcolor = 'rgba(0,0,0,0)'
     )
 
-    fig.update_xaxes(side = "top")
+    fig.update_xaxes(side = "top", title = "target")
+    fig.update_yaxes(title = "query")
 
     try:
         fig.update_layout(font=dict(family="Arial"))
