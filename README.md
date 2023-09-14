@@ -11,6 +11,32 @@ Using the full list of matches, we can build a "map" of all the similar proteins
 Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
 
 ---
+## Quickstart
+
+1. Clone the GitHub repository.
+    ```
+    git clone https://github.com/Arcadia-Science/ProteinCartography.git
+    ```
+2. Install [`conda`](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) and/or [`mamba`](https://github.com/mamba-org/mamba) if you don't already have them installed.
+3. Create a conda environment containing the software needed to run the pipeline.  
+    Run this code from within the ProteinCartography repo.
+    ```
+    conda env create -f envs/cartography.yml
+    ```
+4. Run the Snakemake pipeline using a demo protein (human ACTB, [P60709](https://www.uniprot.org/uniprotkb/P60709/entry)).
+    Set n to be the number of cores you'd like to use for running the pipeline.
+    ```
+    snakemake --snakefile Snakefile --configfile demo/config_actin.yml --cores n
+    ```
+5. Inspect results.
+    In the `demo/output/clusteringresults/` directory, you should find the following files:
+    - `actin_aggregated_features.tsv`: metadata file containing protein feature hits
+    - `actin_aggregated_features_pca_umap.html`: interactive UMAP scatter plot of results
+    - `actin_aggregated_features_pca_tsne.html`: interactive t-SNE scatter plot of results
+    - `actin_leiden_similarity.html`: mean cluster TM-score similarity heatmap
+    - `actin_semantic_analysis.html` and `actin_semantic_analysis.pdf`: simple semantic analysis of clusters
+
+---
 ## Directory Structure
 - [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
 - [config.yml](config.yml): default config file for the pipeline.

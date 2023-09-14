@@ -1,4 +1,4 @@
-name: base
+name: cartography
 channels:
   - conda-forge
   - bioconda
@@ -441,8 +441,8 @@ dependencies:
   - platformdirs
   - wheel
   - jupyterlab_widgets
- - pip:
+  - pip:
       - bioservices==1.11.2
-      - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"
+      - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git@245ad0c#egg=arcadia_pycolor"
       - dash-bio
       - dash-daq
