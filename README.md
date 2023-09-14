@@ -22,9 +22,10 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
     Run this code from within the ProteinCartography repo.
     ```
     conda env create -f envs/cartography.yml
+    conda activate cartography
     ```
 4. Run the Snakemake pipeline using a demo protein (human ACTB, [P60709](https://www.uniprot.org/uniprotkb/P60709/entry)).
-    Set n to be the number of cores you'd like to use for running the pipeline.
+    Set `n` to be the number of cores you'd like to use for running the pipeline.
     ```
     snakemake --snakefile Snakefile --configfile demo/config_actin.yml --cores n
     ```
