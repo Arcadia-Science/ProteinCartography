@@ -1,0 +1,20 @@
+input_dir: "demo/"
+output_dir: "demo/output/"
+analysis_name: "actin"
+
+foldseek_databases:
+- "afdb50"
+- "afdb-swissprot"
+- "afdb-proteome"
+plotting_modes:
+- "pca_tsne"
+- "pca_umap"
+
+max_blasthits: 3000
+max_structures: 5000
+
+taxon_focus: 'euk'
+
+uniprot_additional_fields: []
+min_length: 0
+max_length: 0
