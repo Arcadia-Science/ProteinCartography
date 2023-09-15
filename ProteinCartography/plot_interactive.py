@@ -120,7 +120,7 @@ def parse_args():
     parser.add_argument("-f", "--features", required = True, help = "path to aggregated features file")
     parser.add_argument("-o", "--output", required = True, help = "path of destination HTML file")
     parser.add_argument("-t", "--dimensions-type", default = '', help = "dimensions data type (pca, tsne, umap, etc.)")
-    parser.add_argument("-k", "--keyids", nargs = "+", default = [], help = "keyids for plotting. Usually input protids.")
+    parser.add_argument("-k", "--keyids", nargs = "?", default = '', help = "keyids for plotting. Usually input protids.")
     parser.add_argument("-x", "--taxon_focus", default = "euk", help = "Coloring scheme/ taxonomic groups for broad taxon plot.\n'euk'(aryote) is default; 'bac'(teria) is another option.")
     parser.add_argument("-X", "--plot-width", default = '700', help = "width of resulting plot.")
     parser.add_argument("-Y", "--plot-height", default = '750', help = "width of resulting plot.")
@@ -1014,6 +1014,11 @@ def main():
     taxon_focus = args.taxon_focus
     plot_width = int(args.plot_width)
     plot_height = int(args.plot_height)
+    
+    if keyids == '' or keyids is None:
+        keyids = []
+    elif type(keyids) != list:
+        keyids = [keyids]
     
     # generate coordinates file for the plot
     coordinates_file = apply_coordinates(dimensions_file, features_file, save = True, prep_step = True, 
