@@ -12,7 +12,6 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
 
 ---
 ## Quickstart
-
 1. Clone the GitHub repository.
     ```
     git clone https://github.com/Arcadia-Science/ProteinCartography.git
@@ -20,11 +19,6 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
 2. Install [`conda`](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) and/or [`mamba`](https://github.com/mamba-org/mamba) if you don't already have them installed.
 3. Create a conda environment containing the software needed to run the pipeline.  
     Run this code from within the ProteinCartography repo.
-    ```
-    conda env create -f envs/cartography.yml
-    conda activate cartography
-    ```
-    
     ```
     conda env create -f envs/cartography_tidy.yml -n cartography_tidy
     conda activate cartography_tidy
