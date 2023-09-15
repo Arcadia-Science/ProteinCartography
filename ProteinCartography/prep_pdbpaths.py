@@ -16,19 +16,13 @@ def parse_args():
 def prep_pdbpaths(directories: list, output_file: str):
     output_text = []
     
-    print('works1')
-    
     for directory in directories:
         pdbpaths = [os.path.join(directory, i) + '\n' for i in os.listdir(directory) if i.lower().endswith('.pdb')]
         output_text = output_text + pdbpaths
-        
-    print('works2')
-    
+
     with open(output_file, 'w+') as f:
         f.writelines(output_text)
-        
-    print('works3')
-    
+
 def main():
     args = parse_args()
     directories = args.directories
