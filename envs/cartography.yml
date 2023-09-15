@@ -314,7 +314,6 @@ dependencies:
   - flask
   - backports
   - docutils
-  - pyobjc-core
   - kiwisolver
   - connection_pool
   - pysftp
@@ -344,7 +343,6 @@ dependencies:
   - perl-parent
   - google-auth
   - python-json-logger
-  - pyobjc-framework-cocoa
   - glpk
   - h5py
   - humanfriendly
