@@ -3,12 +3,9 @@ The ProteinCartography pipeline searches sequence and structure databases for ma
 
 ---
 ## Purpose
-The relationship between protein sequence, structure, and function has only been thoroughly investigated for a handful of gene families.  
-This repo takes an agnostic approach to characterizing groups of similar proteins using feature embedding spaces.  
+The relationship between protein sequence, structure, and function has only been thoroughly investigated for a handful of gene families. This repo takes an agnostic approach to characterizing groups of similar proteins using feature embedding spaces.  
 
-Our pipeline starts with user-provided protein(s) of interest and searches the available sequence and structure databases for matches.  
-Using the full list of matches, we can build a "map" of all the similar proteins and look for clusters of proteins with similar features.  
-Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
+Our pipeline starts with user-provided protein(s) of interest and searches the available sequence and structure databases for matches. Using the full list of matches, we can build a "map" of all the similar proteins and look for clusters of proteins with similar features. Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
 
 ---
 ## Quickstart
@@ -29,7 +26,7 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
     snakemake --snakefile Snakefile --configfile demo/config_actin.yml --use-conda --cores n
     ```
 5. Inspect results.
-    In the `demo/output/clusteringresults/` directory, you should find the following files:
+    In the `demo/output/clusteringresults/` directory, you should find the following files:  
     - `actin_aggregated_features.tsv`: metadata file containing protein feature hits
     - `actin_aggregated_features_pca_umap.html`: interactive UMAP scatter plot of results
     - `actin_aggregated_features_pca_tsne.html`: interactive t-SNE scatter plot of results
@@ -40,9 +37,10 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
 ## Directory Structure
 - [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
 - [config.yml](config.yml): default config file for the pipeline.
-- [envs/cartography.yml](envs/cartography.yml): the conda environment for this repo.
-- [ProteinCartography/](ProteinCartography/): helper scripts that are called by the Snakemake pipeline, pip-installable and importable in Python.
-- [examples/](examples/): example output files.
+- [envs/](envs/): the conda environments used for this repo.
+- [demo/](demo/): contains `config_actin.yml` as well as a FASTA and PDB for human actin, used for the demo.
+- [ProteinCartography/](ProteinCartography/): scripts that are called by Snakemake, importable in Python.
+- [pub/](pub/): files related to the ProteinCartography pub.
 
 ---
 ## Pipeline Overview
@@ -54,14 +52,12 @@ The steps of the pipeline have the following functionality:
 
 ### Protein Folding
 0. Fold input FASTA files using ESMFold.
-    - The workflow starts with input FASTA files, one entry per file, with a unique ID.
-    - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB.
+    - The pipeline starts with input FASTA and/or PDB files, one entry per file, with a unique protein identifier (`protid`).
+    - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB, if the FASTA is less than 400aa in length.
 
 ### Protein Search
 1. Search the Alphafold databases using queries to the FoldSeek webserver API for each provided `.pdb` file.  
     - Currently, we're limited to a maximum of 1000 hits per protein.  
-    - We should look for ways to increase this number of hits, potentially by hosting the full AlphaFold database ourselves and building a simple API to query it.
-    - This fails more often than we'd like because Foldseek rate limits our requests after a certain threshold. The actual threshold is unknown.  
 
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.  
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a Uniprot ID using `requests` and [the Uniprot REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob). 
@@ -72,17 +68,16 @@ The steps of the pipeline have the following functionality:
 
 4. Download a `.pdb` file from each protein from AlphaFold.  
     - This part is a bit slow, as it's currently limited to the number of cores provided to Snakemake.
-    - Hopefully the slowness will be fixed by Nextflow-izing?
 
 5. Download annotation and feature information for each protein from Uniprot.  
-    - This is working, but it's somewhat brittle. There can be issues with `bioservices UniProt` that seem to stem from memory allocation issues.
     
 ### Clustering
 
 6. Generate a similarity matrix and cluster all protein .pdb files using FoldSeek.  
 
 7. Perform dimensionality reduction and clustering on the similarity matrix.
-    - By default, we perform 30-component PCA and pass this to both TSNE and UMAP.
+    - By default, we perform 30-component PCA and pass this to both TSNE and UMAP for visualization.
+    - For clustering, we use the defaults of [`scanpy`'s Leiden clustering implementation](https://scanpy.readthedocs.io/en/latest/generated/scanpy.tl.leiden.html#scanpy-tl-leiden).
     
 ### Data Analysis and Aggregation
 
@@ -225,7 +220,7 @@ These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank,
     - [`extract_foldseekhits.py`](ProteinCartography/extract_foldseekhits.py)
     - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
     - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
-    
+
 ### Matrix File (MTX)
 These files end with `'.tsv'` and contain distance or similarity matrices, usually all-v-all.  
 
