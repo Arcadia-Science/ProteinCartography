@@ -1,0 +1,8 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - foldseek=6.29e2557
+  - python=3.9.16
+  - pandas=2.0.1

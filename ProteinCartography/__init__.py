@@ -37,6 +37,7 @@ from .get_source import *
 from .leiden_clustering import *
 from .make_dummies import *
 from .map_refseqids import *
+from .prep_pdbpaths import *
 from .pdb_tools import *
 from .plot_interactive import *
 from .py3dmol_plot import *

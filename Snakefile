@@ -55,6 +55,8 @@ blastresults_dir = Path('blastresults/')
 foldseekresults_dir = Path('foldseekresults/')
 foldseekclustering_dir = Path('foldseekclustering/')
 clusteringresults_dir = Path('clusteringresults/')
+benchmarks_dir = Path('benchmarks/')
+downloading_dir = Path('downloading/')
 
 # gets the protein ID based on FASTA file name
 # flexibly checks if fasta file is correct suffix
@@ -91,6 +93,8 @@ rule make_pdb:
         cds = input_dir / "{protid}.fasta"
     output:
         pdb = input_dir / "{protid}.pdb"
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.make_pdb.txt"
     shell:
         '''
         python ProteinCartography/esmfold_apiquery.py -i {input.cds}
@@ -128,6 +132,10 @@ rule run_blast:
     params:
         max_blasthits = MAX_BLASTHITS,
         blast_string = BLAST_DEFAULT_STRING
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.run_blast.txt"
+    conda:
+        "envs/run_blast.yml"
     shell:
         '''
         blastp -db nr -query {input.cds} -out {output.blastresults} -remote -max_target_seqs {params.max_blasthits} -outfmt {params.blast_string}
@@ -143,6 +151,8 @@ rule map_refseqids:
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     output:
         uniprothits = output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt"
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.map_refseqids.txt"
     shell:
         '''
         python ProteinCartography/map_refseqids.py -i {input.refseqhits} -o {output.uniprothits}
@@ -170,6 +180,8 @@ rule run_foldseek:
         foldseekhits = output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt"
     params:
         fs_databases = expand("{fs_databases}", fs_databases = FS_DATABASES)
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.run_foldseek.txt"
     shell:
         '''
         python ProteinCartography/foldseek_apiquery.py -i {input.cds} -o {output.targz} -d {params.fs_databases}
@@ -189,6 +201,8 @@ rule aggregate_foldseek_fident:
         fident_features = output_dir / clusteringresults_dir / "{protid}_fident_features.tsv"
     params:
         protid = "{protid}"
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.aggregate_foldseek_fident.txt"
     shell:
         '''
         python ProteinCartography/aggregate_fident.py -i {input.m8files} -o {output.fident_features} -p {params.protid}
@@ -207,6 +221,8 @@ rule aggregate_lists:
         expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid = PROTID)
     output:
         jointlist = output_dir / clusteringresults_dir / "jointhits.txt"
+    benchmark:
+        output_dir / benchmarks_dir / "aggregate_lists.txt"
     shell:
         '''
         python ProteinCartography/aggregate_lists.py -i {input} -o {output.jointlist}
@@ -220,6 +236,8 @@ rule get_uniprot_metadata:
     output: output_dir / clusteringresults_dir / "uniprot_features.tsv"
     params:
         additional_fields = UNIPROT_ADDITIONAL_FIELDS
+    benchmark:
+        output_dir / benchmarks_dir / "get_uniprot_metadata.txt"
     shell:
         '''
         python ProteinCartography/query_uniprot.py -i {input} -o {output} -a {params.additional_fields}
@@ -234,6 +252,8 @@ rule filter_uniprot_hits:
     params:
         min_length = MIN_LENGTH,
         max_length = MAX_LENGTH
+    benchmark:
+        output_dir / benchmarks_dir / "filter_uniprot_hits.txt"
     shell:
         '''
         python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length} -M {params.max_length}
@@ -263,6 +283,8 @@ rule download_pdbs:
         output_dir / foldseekclustering_dir / "{acc}.pdb"
     params:
         outdir = output_dir / foldseekclustering_dir
+    benchmark:
+        output_dir / benchmarks_dir / downloading_dir / "{acc}.download_pdbs.txt"
     shell:
         '''
         python ProteinCartography/fetch_accession.py -a {wildcards.acc} -o {params.outdir} -f pdb
@@ -281,7 +303,7 @@ def checkpoint_create_alphafold_wildcard(wildcards):
 
 rule assess_pdbs:
     '''
-    
+    Calculates the quality of all PDBs downloaded from AlphaFold.
     '''
     input: checkpoint_create_alphafold_wildcard
     output:
@@ -290,6 +312,8 @@ rule assess_pdbs:
     params:
         inputdir = input_dir,
         clusteringdir = output_dir / foldseekclustering_dir
+    benchmark:
+        output_dir / benchmarks_dir / "assess_pdbs.txt"
     shell:
         '''
         python ProteinCartography/prep_pdbpaths.py -d {params.clusteringdir} {params.inputdir} -o {output.pdb_paths}
@@ -311,6 +335,10 @@ rule foldseek_clustering:
     params:
         querydir = output_dir / foldseekclustering_dir,
         resultsdir = output_dir / clusteringresults_dir
+    conda:
+        "envs/foldseek.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "foldseek_clustering.txt"
     shell:
         '''
         python ProteinCartography/foldseek_clustering.py -q {params.querydir} -r {params.resultsdir}
@@ -326,6 +354,10 @@ rule dim_reduction:
     output: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted_{modes}.tsv'
     params:
         modes = '{modes}'
+    conda:
+        "envs/dim_reduction.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "{modes}.dim_reduction.txt"
     shell:
         '''
         python ProteinCartography/dim_reduction.py -i {input} -m {params.modes}
@@ -337,6 +369,10 @@ rule leiden_clustering:
     '''
     input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
     output: output_dir / clusteringresults_dir / 'leiden_features.tsv'
+    conda:
+        "envs/leiden_clustering.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "leiden_clustering.txt"
     shell:
         '''
         python ProteinCartography/leiden_clustering.py -i {input} -o {output}
@@ -348,9 +384,11 @@ rule input_distances:
     Adds them as options for the visualization plot.
     '''
     input: output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv'
+    output: output_dir / clusteringresults_dir / '{protid}_distance_features.tsv'
     params:
         protid = "{protid}"
-    output: output_dir / clusteringresults_dir / '{protid}_distance_features.tsv'
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.input_distances.txt"
     shell:
         '''
         python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
@@ -368,6 +406,8 @@ rule calculate_concordance:
     params:
         protid = "{protid}"
     output: output_dir / clusteringresults_dir / '{protid}_concordance_features.tsv'
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.calculate_concordance.txt"
     shell:
         '''
         python ProteinCartography/calculate_concordance.py -t {input.tmscore_file} -f {input.fident_file} -o {output} -p {params.protid}
@@ -385,6 +425,8 @@ rule get_source:
         pivot = output_dir / clusteringresults_dir / 'source_features.tsv'
     params:
         protid = PROTID
+    benchmark:
+        output_dir / benchmarks_dir / "get_source.txt"
     shell:
         '''
         python ProteinCartography/get_source.py -i {input.pivoted} -f {input.hitfiles} -o {output.pivot} -k {params.protid}
@@ -410,6 +452,8 @@ rule aggregate_features:
     output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
     params:
         override = OVERRIDE_FILE
+    benchmark:
+        output_dir / benchmarks_dir / "aggregate_features.txt"
     shell:
         '''
         python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
@@ -431,6 +475,10 @@ rule plot_interactive:
         modes = "{modes}",
         protid = expand("{protid}", protid = PROTID),
         taxon_focus = TAXON_FOCUS
+    conda:
+        "envs/plotting.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "{modes}.plot_interactive.txt"
     shell:
         '''
         python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid} -x {params.taxon_focus}
@@ -451,6 +499,10 @@ rule plot_similarity_leiden:
         html = output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html")
     params:
         column = 'LeidenCluster'
+    conda:
+        "envs/plotting.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "plot_similarity_leiden.txt"
     shell:
         '''
         python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
@@ -471,6 +523,10 @@ rule plot_similarity_strucluster:
         html = output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html")
     params:
         column = 'StruCluster'
+    conda:
+        "envs/plotting.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "plot_similarity_strucluster.txt"
     shell:
         '''
         python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
@@ -489,6 +545,10 @@ rule plot_semantic_analysis:
         agg_column = 'LeidenCluster',
         annot_column = "'Protein names'",
         analysis_name = analysis_name
+    conda:
+        "envs/plotting.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "plot_semantic_analysis.txt"
     shell:
         '''
         python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output.pdf} -i {output.interactive} -a {params.analysis_name}

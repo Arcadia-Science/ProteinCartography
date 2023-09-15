@@ -11,7 +11,7 @@ __all__ = [
     'fetch_atoms', 'fetch_dbref', 
     'fetch_experiment', 'fetch_title', 
     'extract_residue_confidence', 'assign_residue_colors',
-    'parse_chains', 'assign_origin',
+    'parse_chains', 'assign_origin', 'read_txtlist',
     'assess_pdbs'
 ]
 
@@ -159,6 +159,9 @@ def assess_pdbs(structures_list: list, output_file = None):
     collector_df = pd.DataFrame()
     
     for structure_file in structures_list:
+        if not os.path.exists(structure_file):
+            continue
+        
         with open(structure_file, 'r') as f:
             if '<Error>' in f.read():
                 continue

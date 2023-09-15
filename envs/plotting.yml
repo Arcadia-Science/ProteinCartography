@@ -1,0 +1,15 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - plotly=5.14.1
+  - jupyter-dash=0.4.2
+  - matplotlib=3.7.1
+  - wordcloud=1.9.1.1
+  - pillow=9.5.0
+  - pandas=2.0.1
+  - numpy=1.23.5
+  - ipython=8.13.2
+  - pip:
+      - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git@245ad0c#egg=arcadia_pycolor"
