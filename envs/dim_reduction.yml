@@ -1,0 +1,9 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - scikit-learn=1.2.2
+  - umap-learn=0.5.3
+  - pandas=2.0.1
+  - numpy=1.23.5

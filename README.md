@@ -24,10 +24,15 @@ Overlaying a variety of different parameters such as taxonomy, sequence divergen
     conda env create -f envs/cartography.yml
     conda activate cartography
     ```
+    
+    ```
+    conda env create -f envs/cartography_tidy.yml -n cartography_tidy
+    conda activate cartography_tidy
+    ```
 4. Run the Snakemake pipeline using a demo protein (human ACTB, [P60709](https://www.uniprot.org/uniprotkb/P60709/entry)).
     Set `n` to be the number of cores you'd like to use for running the pipeline.
     ```
-    snakemake --snakefile Snakefile --configfile demo/config_actin.yml --cores n
+    snakemake --snakefile Snakefile --configfile demo/config_actin.yml --use-conda --cores n
     ```
 5. Inspect results.
     In the `demo/output/clusteringresults/` directory, you should find the following files:
