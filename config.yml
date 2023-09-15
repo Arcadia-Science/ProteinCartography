@@ -1,8 +1,9 @@
-##############################
-# Pipeline Config Parameters #
-##############################
+#########################################
+# From-Query Pipeline Config Parameters #
+#########################################
 
-# Config parameters in this file are used as defaults by the pipeline.
+# Config parameters in this file are used as defaults by the 
+# From-Query version of the pipeline (Snakefile).
 # To override the defaults, we recommend creating a copy of this file
 # and passing your new file to Snakemake using the --configfile flag.
 # Any parameters in the new config file will overwrite the defaults
@@ -20,11 +21,6 @@ output_dir: "input/output/"
 # Provide a name for the analysis, which is set as a prefix for key output files
 analysis_name: "example"
 
-# For user-provided proteins, you can pass a file through this parameter
-# that contains protein metadata similar to that which would be pulled
-# from UniProt. See the README.md for an explanation of the expected columns.
-override_file: "features_override.tsv"
-
 #####################
 # Foldseek settings #
 #####################
@@ -35,27 +31,20 @@ foldseek_databases:
 - "afdb-swissprot"
 - "afdb-proteome"
 
-# Choose which plotting modes to use
-# Default is "pca_tsne" and "pca_umap"
-# Also accepts "pca", "tsne", and "umap" individually
-plotting_modes:
-- "pca_tsne"
-- "pca_umap"
+##################
+# BLAST settings #
+##################
 
 # Set maximum number of BLAST hits to retrieve
 max_blasthits: 3000
 
+######################
+# Structure settings #
+######################
+
 # Set maximum number of total structures to download (combined BLAST + Foldseek hits)
 # By default, we prioritize downloading structures from Foldseek
 max_structures: 5000
-
-# Set the broad taxonomic groups that will be categorized in plots
-# Also accepts 'bac' which displays some large bacterial taxonomic groups.
-# See README.md for more details
-taxon_focus: 'euk'
-
-# Specify any additional metadata fields to download from UniProt
-uniprot_additional_fields: []
 
 # Specify the maximum and minimum length of proteins to filter by
 # prior to downloading structures from AlphaFold.
@@ -69,3 +58,32 @@ max_length: 0
 # from UniProt. By default the pipeline removes proteins marked as fragments 
 # by UniProt, as well as proteins that have been deleted from UniProt.
 override_quality_check: False
+
+#####################
+# Features settings #
+#####################
+
+# Specify any additional metadata fields to download from UniProt
+uniprot_additional_fields: []
+
+# For user-provided proteins, you can pass a file through this parameter
+# that contains protein metadata similar to that which would be pulled
+# from UniProt. See the README.md for an explanation of the expected columns.
+# If this file doesn't exist, this parameter is ignored.
+override_file: "features_override.tsv"
+
+#####################
+# Plotting settings #
+#####################
+
+# Choose which plotting modes to use
+# Default is "pca_tsne" and "pca_umap"
+# Also accepts "pca", "tsne", and "umap"
+plotting_modes:
+- "pca_tsne"
+- "pca_umap"
+
+# Set the broad taxonomic groups that will be categorized in plots
+# Also accepts 'bac' which displays some large bacterial taxonomic groups.
+# See README.md for more details
+taxon_focus: 'euk'

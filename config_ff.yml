@@ -1,12 +1,60 @@
-input_dir: "input_salivacapsid/"
-output_dir: "output_salivacapsid/"
-analysis_name: "salivacapsid"
+##########################################
+# From-Folder Pipeline Config Parameters #
+##########################################
 
+# Config parameters in this file are used as defaults by the 
+# From-Folder version of the pipeline (Snakefile_ff).
+# To override the defaults, we recommend creating a copy of this file
+# and passing your new file to Snakemake using the --configfile flag.
+# Any parameters in the new config file will overwrite the defaults
+# listed here.
+
+###########
+# File IO #
+###########
+
+# Specify the input and output directories
+# Usually, we place the output directory inside the input directory
+input_dir: "input_ff/"
+output_dir: "input_ff/output/"
+
+# Provide a name for the analysis, which is set as a prefix for key output files
+analysis_name: "example_ff"
+
+#####################
+# Features settings #
+#####################
+
+# For user-provided proteins, you can pass a file through this parameter
+# that contains protein metadata similar to that which would be pulled
+# from UniProt. See the README.md for an explanation of the expected columns.
+# If this file doesn't exist, this parameter is ignored.
 override_file: "features_override.tsv"
+
+# A features file (usually retrieved from Uniprot) that contains
+# protein metadata for visualization. Uses the same columns as the
+# override_file.
 features_file: "uniprot_features.tsv"
 
+#####################
+# Plotting settings #
+#####################
+
+# Choose which plotting modes to use
+# Default is "pca_tsne" and "pca_umap"
+# Also accepts "pca", "tsne", and "umap"
 plotting_modes:
 - "pca_tsne"
 - "pca_umap"
 
+# Set the broad taxonomic groups that will be categorized in plots
+# Also accepts 'bac' which displays some large bacterial taxonomic groups.
+# See README.md for more details
 taxon_focus: 'euk'
+
+# You can specify key proteins to highlight in the analysis,
+# similar to the Input proteins in the From-Query mode of the pipeline,
+# by passing a list of protids below.
+# Un-comment the lines below to use this.
+#keyids:
+#  - 'Q9I2Q1'
