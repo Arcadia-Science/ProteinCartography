@@ -34,6 +34,70 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
     - `actin_semantic_analysis.html` and `actin_semantic_analysis.pdf`: simple semantic analysis of clusters
 
 ---
+## Modes
+The pipeline supports two modes: **From-Query** and **From-Folder**.
+
+### From-Query Mode
+In this mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).
+![rulegraph](rulegraph.png)
+
+**Inputs:**
+- Input protein files in FASTA and PDB format.
+    - Each protein should have a unique protein identifier (`protid`).
+    - The `protid` should be the prefix of the FASTA and PDB files (e.g. `P60709.fasta`, `P60709.pdb`).
+    - Proteins provided as FASTAs <400aa in length will be folde automatically by the pipeline using the ESMFold API.
+    - For proteins >400aa in length, we recommend using [ColabFold](https://github.com/sokrypton/ColabFold). 
+- `config.yml` file with custom settings.
+    - [`config.yml`](config.yml) is an example file that contains the defaults of the pipeline.
+    - We recommend making a copy of this file and adjusting the settings.
+    - A custom config file passed through the `--configfile` flag to Snakemake will overwrite the defaults.
+    - **Key Parameters:**
+        - `input`: directory containing input PDBs and FASTAs.
+        - `output`: directory where all pipeline outputs are placed.
+        - `analysis_name`: nickname for the analysis, appended to important output files.
+        - See [`config.yml`](config.yml) for additional parameters.
+- (Optional) `features_override.tsv` file.
+    - This file can be used to pass protein metadata for custom proteins not found in UniProt.
+    - These proteins will not automatically have metadata retrieved, so providing this information is useful for visualizing custom input proteins.
+    - The columns of this file are described in [Feature file main columns](#feature-file-main-columns).
+    - It can also be used to overwrite metadata values for specific proteins.
+        
+**Example Command:**
+```
+snakemake --snakefile Snakefile --configfile config.yml --use-conda --cores 8
+```
+
+
+### From-Folder Mode
+In this mode, the pipeline starts with a folder containing PDBs of interest and performs just the clustering and visualization steps of the pipeline, without performing any searches or downloads. The pipeline is implemented in [`Snakefile_ff`](Snakefile_ff).
+![rulegraph_ff](rulegraph_ff.png)
+
+**Inputs:**
+- Input protein structures in PDB format.
+    - Each protein should have a unique protein identifier (`protid`) which matches the PDB file prefix, as described for [From-Query mode](#from-query-mode).
+    - The pipeline does not yet support proteins with multiple chains.
+- `config_ff.yml` file with custom settings.
+    - [`config_ff.yml`](config_ff.yml) is an example file that contains the defaults of the pipeline.
+    - We recommend making a copy of this file and adjusting the settings.
+    - A custom config file passed through the `--configfile` flag to Snakemake will overwrite the defaults.
+    - **Key Parameters:**
+        - `input`: directory containing input PDBs and FASTAs.
+        - `output`: directory where all pipeline outputs are placed.
+        - `analysis_name`: nickname for the analysis, appended to important output files.
+        - `features_file`: path to features file (described below).
+        - See [`config_ff.yml`](config_ff.yml) for additional parameters.
+- Features file with protein metadata.
+    - Usually, we call this file `uniprot_features.tsv` but you can use any name.
+    - The file should be placed into the `input` directory.
+    - This file contains protein metadata for each protein used for visualization purposes.
+    - The columns of this file are described in [Feature file main columns](#feature-file-main-columns).
+    
+**Example Command:**
+```
+snakemake --snakefile Snakefile_ff --configfile config_ff.yml --use-conda --cores 8
+```
+
+---
 ## Directory Structure
 - [Snakefile](Snakefile): the Snakemake pipeline that orchestrates this repo's functions.
 - [config.yml](config.yml): default config file for the pipeline.
