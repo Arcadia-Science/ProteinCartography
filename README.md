@@ -38,7 +38,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
 The pipeline supports two modes: **From-Query** and **From-Folder**.
 
 ### From-Query Mode
-In this default mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).
+In this default mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).  
 ![rulegraph](rulegraph.png)
 
 #### Inputs
@@ -76,7 +76,7 @@ snakemake --snakefile Snakefile --configfile config.yml --use-conda --cores 8
 ```
 
 ### From-Folder Mode
-In this mode, the pipeline starts with a folder containing PDBs of interest and performs just the clustering and visualization steps of the pipeline, without performing any searches or downloads. The pipeline is implemented in [`Snakefile_ff`](Snakefile_ff).
+In this mode, the pipeline starts with a folder containing PDBs of interest and performs just the clustering and visualization steps of the pipeline, without performing any searches or downloads. The pipeline is implemented in [`Snakefile_ff`](Snakefile_ff).  
 ![rulegraph_ff](rulegraph_ff.png)
 
 #### Inputs
