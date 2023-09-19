@@ -41,8 +41,8 @@ The pipeline supports two modes: **From-Query** and **From-Folder**.
 In this mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).
 ![rulegraph](rulegraph.png)
 
-**Inputs:**
-- Input protein files in FASTA and PDB format.
+#### Inputs
+- Query protein files in FASTA and PDB format.
     - Each protein should have a unique protein identifier (`protid`).
     - The `protid` should be the prefix of the FASTA and PDB files (e.g. `P60709.fasta`, `P60709.pdb`).
     - Proteins provided as FASTAs <400aa in length will be folde automatically by the pipeline using the ESMFold API.
@@ -61,18 +61,25 @@ In this mode, the pipeline starts with a set of input proteins of interest in PD
     - These proteins will not automatically have metadata retrieved, so providing this information is useful for visualizing custom input proteins.
     - The columns of this file are described in [Feature file main columns](#feature-file-main-columns).
     - It can also be used to overwrite metadata values for specific proteins.
-        
-**Example Command:**
+
+#### Walkthrough
+0. Follow steps 1-3 in the [Quickstart](#quickstart) section above to set up and activate the conda environment.
+1. Set up a [`config.yml`](config.yml) file specifying input and output directories and an analysis name.
+2. Add query protein files in FASTA and PDB format to the input folder.
+    - You can pull down proteins with a Uniprot accession number and Alphafold structure using the following command.
+        Replace {accession} with your Uniprot accession (e.g. P24928).
+        `python ProteinCartography/fetch_accession.py -a {accession} -o input -f fasta pdb`
+        This saves a FASTA file from Uniprot and a PDB file from AlphaFold to the `input/` folder.
+3. Run this command, replacing the `config.yml` with your config file and `8` with the number of cores you want to allocate to Snakemake.
 ```
 snakemake --snakefile Snakefile --configfile config.yml --use-conda --cores 8
 ```
-
 
 ### From-Folder Mode
 In this mode, the pipeline starts with a folder containing PDBs of interest and performs just the clustering and visualization steps of the pipeline, without performing any searches or downloads. The pipeline is implemented in [`Snakefile_ff`](Snakefile_ff).
 ![rulegraph_ff](rulegraph_ff.png)
 
-**Inputs:**
+#### Inputs
 - Input protein structures in PDB format.
     - Each protein should have a unique protein identifier (`protid`) which matches the PDB file prefix, as described for [From-Query mode](#from-query-mode).
     - The pipeline does not yet support proteins with multiple chains.
@@ -85,6 +92,7 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
         - `output`: directory where all pipeline outputs are placed.
         - `analysis_name`: nickname for the analysis, appended to important output files.
         - `features_file`: path to features file (described below).
+        - (Optional) `keyids`: key `protid` values for proteins to highlight similar to input proteins in the From-Query mode.
         - See [`config_ff.yml`](config_ff.yml) for additional parameters.
 - Features file with protein metadata.
     - Usually, we call this file `uniprot_features.tsv` but you can use any name.
@@ -92,7 +100,23 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
     - This file contains protein metadata for each protein used for visualization purposes.
     - The columns of this file are described in [Feature file main columns](#feature-file-main-columns).
     
-**Example Command:**
+#### Walkthrough
+0. Follow steps 1-3 in the [Quickstart](#quickstart) section above to set up and activate the conda environment.
+1. Set up a [`config_ff.yml`](config_ff.yml) file specifying input and output directories and an analysis name.
+2. Add input protein structures in PDB format to your input folder.
+    - The pipeline does not yet support PDBs with multiple chains.
+3. Make a `uniprot_features.tsv` file.
+    You can generate this one of two ways. If you have a list of Uniprot accessions, you can provide that as a .txt file and automatically pull down the correct annotations. Alternatively, you can manually generate the file.  
+    **3.1 Generating the file using query_uniprot.py**
+    - Create a `uniprot_ids.txt` file that contains a list of Uniprot accessions, one per line.
+    - Run the following code from the base of the GitHub repository. Modify the input folder path to your input folder.
+        `python ProteinCartography/query_uniprot.py -i uniprot_ids.txt -o input_ff/uniprot_features.tsv`
+    **3.2 Manually generating the file.**
+    - For each protid in the dataset, you should gather relevant protein metadata.
+    - The first column of the file should be the unique protein identifer, with `protid` as the column name.
+    - You should have additional columns for relevant metadata as described in [Feature file main columns](#feature-file-main-columns).
+    - Default columns that are missing will be ignored.
+4. Run this command, replacing the `config_ff.yml` with your config file and `8` with the number of cores you want to allocate to Snakemake.
 ```
 snakemake --snakefile Snakefile_ff --configfile config_ff.yml --use-conda --cores 8
 ```
