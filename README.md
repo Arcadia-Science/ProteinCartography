@@ -110,7 +110,7 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
     **3.1 Generating the file using query_UniProt.py**
     - Create a `UniProt_ids.txt` file that contains a list of UniProt accessions, one per line.
     - Run the following code from the base of the GitHub repository. Modify the input folder path to your input folder.
-        `python ProteinCartography/query_UniProt.py -i UniProt_ids.txt -o input_ff/UniProt_features.tsv`
+        `python ProteinCartography/query_UniProt.py -i UniProt_ids.txt -o input_ff/UniProt_features.tsv`  
     **3.2 Manually generating the file.**
     - For each protid in the dataset, you should gather relevant protein metadata.
     - The first column of the file should be the unique protein identifer, with `protid` as the column name.
@@ -132,7 +132,7 @@ snakemake --snakefile Snakefile_ff --configfile config_ff.yml --use-conda --core
 
 ---
 ## Pipeline Overview
-The From-Query mode of the pipeline performs all of the following steps.
+The From-Query mode of the pipeline performs all of the following steps.  
 The From-Folder mode starts at the Clustering step.
 
 ### Protein Folding
