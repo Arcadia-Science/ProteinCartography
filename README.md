@@ -20,7 +20,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
     conda env create -f envs/cartography_tidy.yml -n cartography_tidy
     conda activate cartography_tidy
     ```
-4. Run the Snakemake pipeline using a demo protein (human ACTB, [P60709](https://www.uniprot.org/uniprotkb/P60709/entry)).
+4. Run the Snakemake pipeline using a demo protein (human ACTB, [P60709](https://www.UniProt.org/UniProtkb/P60709/entry)).
     Set `n` to be the number of cores you'd like to use for running the pipeline.
     ```
     snakemake --snakefile Snakefile --configfile demo/config_actin.yml --use-conda --cores n
@@ -38,7 +38,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
 The pipeline supports two modes: **From-Query** and **From-Folder**.
 
 ### From-Query Mode
-In this mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).
+In this default mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).
 ![rulegraph](rulegraph.png)
 
 #### Inputs
@@ -66,10 +66,10 @@ In this mode, the pipeline starts with a set of input proteins of interest in PD
 0. Follow steps 1-3 in the [Quickstart](#quickstart) section above to set up and activate the conda environment.
 1. Set up a [`config.yml`](config.yml) file specifying input and output directories and an analysis name.
 2. Add query protein files in FASTA and PDB format to the input folder.
-    - You can pull down proteins with a Uniprot accession number and Alphafold structure using the following command.
-        Replace {accession} with your Uniprot accession (e.g. P24928).
+    - You can pull down proteins with a UniProt accession number and Alphafold structure using the following command.
+        Replace {accession} with your UniProt accession (e.g. P24928).
         `python ProteinCartography/fetch_accession.py -a {accession} -o input -f fasta pdb`
-        This saves a FASTA file from Uniprot and a PDB file from AlphaFold to the `input/` folder.
+        This saves a FASTA file from UniProt and a PDB file from AlphaFold to the `input/` folder.
 3. Run this command, replacing the `config.yml` with your config file and `8` with the number of cores you want to allocate to Snakemake.
 ```
 snakemake --snakefile Snakefile --configfile config.yml --use-conda --cores 8
@@ -95,7 +95,7 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
         - (Optional) `keyids`: key `protid` values for proteins to highlight similar to input proteins in the From-Query mode.
         - See [`config_ff.yml`](config_ff.yml) for additional parameters.
 - Features file with protein metadata.
-    - Usually, we call this file `uniprot_features.tsv` but you can use any name.
+    - Usually, we call this file `UniProt_features.tsv` but you can use any name.
     - The file should be placed into the `input` directory.
     - This file contains protein metadata for each protein used for visualization purposes.
     - The columns of this file are described in [Feature file main columns](#feature-file-main-columns).
@@ -105,12 +105,12 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
 1. Set up a [`config_ff.yml`](config_ff.yml) file specifying input and output directories and an analysis name.
 2. Add input protein structures in PDB format to your input folder.
     - The pipeline does not yet support PDBs with multiple chains.
-3. Make a `uniprot_features.tsv` file.
-    You can generate this one of two ways. If you have a list of Uniprot accessions, you can provide that as a .txt file and automatically pull down the correct annotations. Alternatively, you can manually generate the file.  
-    **3.1 Generating the file using query_uniprot.py**
-    - Create a `uniprot_ids.txt` file that contains a list of Uniprot accessions, one per line.
+3. Make a `UniProt_features.tsv` file.
+    You can generate this one of two ways. If you have a list of UniProt accessions, you can provide that as a .txt file and automatically pull down the correct annotations. Alternatively, you can manually generate the file.  
+    **3.1 Generating the file using query_UniProt.py**
+    - Create a `UniProt_ids.txt` file that contains a list of UniProt accessions, one per line.
     - Run the following code from the base of the GitHub repository. Modify the input folder path to your input folder.
-        `python ProteinCartography/query_uniprot.py -i uniprot_ids.txt -o input_ff/uniprot_features.tsv`
+        `python ProteinCartography/query_UniProt.py -i UniProt_ids.txt -o input_ff/UniProt_features.tsv`
     **3.2 Manually generating the file.**
     - For each protid in the dataset, you should gather relevant protein metadata.
     - The first column of the file should be the unique protein identifer, with `protid` as the column name.
@@ -132,11 +132,8 @@ snakemake --snakefile Snakefile_ff --configfile config_ff.yml --use-conda --core
 
 ---
 ## Pipeline Overview
-This repo cotains a Snakemake pipeline that takes input `.fasta` and `.pdb` files of interest.
-The rulegraph for this pipeline is as follows:  
-![rulegraph](rulegraph.png)
-
-The steps of the pipeline have the following functionality:
+The From-Query mode of the pipeline performs all of the following steps.
+The From-Folder mode starts at the Clustering step.
 
 ### Protein Folding
 0. Fold input FASTA files using ESMFold.
@@ -144,67 +141,77 @@ The steps of the pipeline have the following functionality:
     - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB, if the FASTA is less than 400aa in length.
 
 ### Protein Search
-1. Search the Alphafold databases using queries to the FoldSeek webserver API for each provided `.pdb` file.  
-    - Currently, we're limited to a maximum of 1000 hits per protein.  
+1. Search the Alphafold databases using queries to the Foldseek webserver API for each provided `.pdb` file.  
+    - The pipeline searches `afdb50`, `afdb-proteome` and `afdb-swissprot` for each input protein and aggregate the results.
+    - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein.  
 
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.  
-    - Takes the resulting output hits and maps each GenBank/RefSeq hit to a Uniprot ID using `requests` and [the Uniprot REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob). 
-    - This can sometimes fail for unknown reasons.
+    - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.UniProt.org/docs/?urls.primaryName=idmapping#/job/submitJob).
     
 ### Download Data
-3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of Uniprot IDs.  
+3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of UniProt IDs. 
 
-4. Download a `.pdb` file from each protein from AlphaFold.  
+4. Download annotation and feature information for each hit protein from UniProt.  
+
+5. Filter proteins based on key UniProt metadata. The pipeline removes:
+    - Proteins marked as fragments by UniProt.
+    - Deleted or outdated proteins.
+    - Proteins larger than or smaller than user-specified maximum and minimum size parameters, specified in the `config.yml` file.
+
+6. Download a `.pdb` file from each remaining protein from AlphaFold.  
     - This part is a bit slow, as it's currently limited to the number of cores provided to Snakemake.
-
-5. Download annotation and feature information for each protein from Uniprot.  
+    - Sometimes this will fail, possibly due to rate limits. Restarting Snakemake with the `--rerun-incomplete` flag usually resolves this.
     
 ### Clustering
 
-6. Generate a similarity matrix and cluster all protein .pdb files using FoldSeek.  
+7. Generate a similarity matrix and cluster all protein .pdb files using Foldseek.
+    - Foldseek masks results with an e-value > 0.001 by default. We set these masked values to 0.
+    - In our experience, increasing the e-value threshold as high as `1000000` does not have a meaningful impact on downstream Leiden clustering.
+    - When all hit proteins are highly similar, this can result in artefactually steep cutoffs in TM-score in the visualization.
 
-7. Perform dimensionality reduction and clustering on the similarity matrix.
+8. Perform dimensionality reduction and clustering on the similarity matrix.
     - By default, we perform 30-component PCA and pass this to both TSNE and UMAP for visualization.
     - For clustering, we use the defaults of [`scanpy`'s Leiden clustering implementation](https://scanpy.readthedocs.io/en/latest/generated/scanpy.tl.leiden.html#scanpy-tl-leiden).
     
 ### Data Analysis and Aggregation
 
-8. Generate a variety of `_features.tsv` files.
+9. Generate a variety of `_features.tsv` files.
     - Each file has, as its first column, a list of protein ids (protid) that are shared between files.
-    - We query Uniprot to get all metadata from that service as a `uniprot_features.tsv` file.
+    - We query UniProt to get all metadata from that service as a `UniProt_features.tsv` file.
     - Foldseek generates a `struclusters_features.tsv` file.
     - We perform Leiden clustering to generate a `leiden_features.tsv` file.
     - We extract from Foldseek's all-v-all TMscore analysis a distance from every protid to our input protids as `<input_protid>_distance_features.tsv` files.
+    Not available in From-Folder mode:
     - We extract from Foldseek search a fraction sequence identy for every protid in our input protids as `<input_protid>_fident_features.tsv` files.
     - We subtract the fraction sequence identity from the TMscore to generate a `<input_protid>_convergence_features.tsv` file.
-    - We determine the source of each file in the analysis (whether it was found from blast or foldseek) as the `source_features.tsv` file.
+    - We determine the source of each file in the analysis (whether it was found from blast or Foldseek) as the `source_features.tsv` file.
     
-9. Aggregate features.
+10. Aggregate features.
     - All of the features.tsv files are combined into one large `aggregated_features.tsv` file.
 
 ### Plotting
 
-10. Calculate per-cluster structural similarities.
-    - For every cluster of proteins, get the mean sequence similarity within that cluster and between that cluster and every other cluster.
+11. Calculate per-cluster structural similarities.
+    - For every Leiden cluster of proteins, get the mean sequence similarity within that cluster and between that cluster and every other cluster.
     - Plot it as a heatmap with suffix `_leiden_similarity.html`.
 
-11. Perform simple semantic analysis on Uniprot annotations.
+12. Perform simple semantic analysis on UniProt annotations.
     - For the annotations in each cluster, aggregate them and count the frequency of every full annotation string.
     - Perform a word count analysis on all of the annotations and generate a word cloud.
     - Save as a PDF file with suffix `_semantic_analysis.pdf`.
     
-12. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
+13. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
     - An example can be found [here](examples/scatter.html)
-    - Each point has hover-over information
+    - Each point has hover-over information.
     - Default parameters include:
         - **Leiden Cluster:** Protein cluster as called by [scanpy's implementation of Leiden clustering](https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.leiden.html).
-        - **Annotation Score:** [Uniprot annotation score](https://www.uniprot.org/help/annotation_score) from 0 to 5 (5 being the best evidence).
+        - **Annotation Score:** [UniProt annotation score](https://www.UniProt.org/help/annotation_score) from 0 to 5 (5 being the best evidence).
         - **Broad Taxon:** the broad taxonomic category for the source organism. There are two modes: 'euk' and 'bac'.
             - Assigns the "smallest" taxonomic scope from the rankings below for each point. So, a mouse gene would get `Mammalia` but not `Vertebrata`.
             - For 'euk', uses the taxonomic groups `Mammalia, Vertebrata, Arthropoda, Ecdysozoa, Lophotrochozoa, Metazoa, Fungi, Viridiplantae, Sar, Excavata, Amoebazoa, Eukaryota, Bacteria, Archaea, Viruses`
             - For 'bac', uses the taxonomic groups `Pseudomonadota, Nitrospirae, Acidobacteria, Bacillota, Spirochaetes, Cyanobacteria, Actinomycetota, Deinococcota, Bacteria, Archaea, Viruses, Metazoa, Fungi, Viridiplantae, Eukaryota`
         - **Length:** length of the protein in amino acids.
-        - **Source:** how the protein was added to the clustering space (blast, foldseek or both).
+        - **Source:** how the protein was added to the clustering space (blast, Foldseek or both).
         
     - Power users can customize the plots using a variety of rules, described below.
 
@@ -286,7 +293,7 @@ Many of the pipeline's scripts accept these specific format conventions as input
 These are the primary formats and their descriptions.
 
 ### Accession list files (ACC)
-These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank, Uniprot), one per line.
+These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank, UniProt), one per line.
 
 - **Example:**
     ```
@@ -300,12 +307,12 @@ These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank,
     - [`aggregate_lists.py`](ProteinCartography/aggregate_lists.py)
     - [`get_source.py`](ProteinCartography/get_source.py)
     - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
-    - [`query_uniprot.py`](ProteinCartography/query_uniprot.py)
+    - [`query_UniProt.py`](ProteinCartography/query_UniProt.py)
     - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
 - **Output from:**
     - [`aggregate_lists.py`](ProteinCartography/aggregate_lists.py)
     - [`extract_blasthits.py`](ProteinCartography/extract_blasthits.py)
-    - [`extract_foldseekhits.py`](ProteinCartography/extract_foldseekhits.py)
+    - [`extract_Foldseekhits.py`](ProteinCartography/extract_Foldseekhits.py)
     - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
     - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
 
@@ -324,7 +331,7 @@ These files end with `'.tsv'` and contain distance or similarity matrices, usual
     - [`dim_reduction.py`](ProteinCartography/dim_reduction.py)
     - [`extract_input_distances.py`](ProteinCartography/extract_input_distances.py)
 - **Output from:**
-    - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
+    - [`Foldseek_clustering.py`](ProteinCartography/Foldseek_clustering.py)
 
 ### Features files (FTF)
 These files end with `'.tsv'` and contain a `protid` column, which is the unique identifier of each protein in the dataset.  
@@ -347,27 +354,27 @@ The remaining columns are annotations for each protein. These annotations can be
     - [`aggregate_fident.py`](ProteinCartography/aggregate_fident.py)
     - [`calculate_convergence.py`](ProteinCartography/calculate_convergence.py)
     - [`extract_input_distances.py`](ProteinCartography/extract_input_distances.py)
-    - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
+    - [`Foldseek_clustering.py`](ProteinCartography/Foldseek_clustering.py)
     - [`get_source.py`](ProteinCartography/get_source.py)
     - [`leiden_clustering.py`](ProteinCartography/leiden_clustering.py)
-    - [`query_uniprot.py`](ProteinCartography/query_uniprot.py)
+    - [`query_UniProt.py`](ProteinCartography/query_UniProt.py)
 
 #### Feature file main columns
 
-A variety of metadata features for each protein are usually pulled from Uniprot for visualization purposes.  
+A variety of metadata features for each protein are usually pulled from UniProt for visualization purposes.  
 The following table describes those features with examples.  
 
-If you are providing a set of custom proteins (such as those not fetched from Uniprot), you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map.  
+If you are providing a set of custom proteins (such as those not fetched from UniProt), you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map.  
 
 Features used for color schemes in the default plotting rules are marked with *(Plotting)* below. Features used only for hover-over description are marked with *(Hovertext)*.
 
 | feature | example | description | source |
 |--------:|:-------:|:------------|:-------|
-|`"protid"` | `"P42212"` | *(Required)* the unique identifier of the protein. Usually the Uniprot accession, but can be any alphanumeric string | User-provided or Uniprot |
-|`"Protein names"`| `"Green fluorescent protein"` | *(Hovertext)* a human-readable description of the protein | Uniprot |
-|`"Gene Names (primary)"` | `"GFP"` | *(Hovertext)* a gene symbol for the protein | Uniprot |
-|`"Annotation"`| `5` | *(Plotting)* Uniprot [Annotation Score](https://www.uniprot.org/help/annotation_score) (0 to 5) | Uniprot |
-|`"Organism"` | `"Aequorea victoria (Water jellyfish) (Mesonema victoria)"` | *(Hovertext)* Scientific name (common name) (synonyms) | Uniprot |
-|`"Taxonomic lineage"`|`"cellular organisms (no rank), Eukaryota (superkingdom), ... Aequoreidae (family), Aequorea (genus)"`| string of comma-separated `Lineage name (rank)` for the organism's full taxonomic lineage | Uniprot |
+|`"protid"` | `"P42212"` | *(Required)* the unique identifier of the protein. Usually the UniProt accession, but can be any alphanumeric string | User-provided or UniProt |
+|`"Protein names"`| `"Green fluorescent protein"` | *(Hovertext)* a human-readable description of the protein | UniProt |
+|`"Gene Names (primary)"` | `"GFP"` | *(Hovertext)* a gene symbol for the protein | UniProt |
+|`"Annotation"`| `5` | *(Plotting)* UniProt [Annotation Score](https://www.UniProt.org/help/annotation_score) (0 to 5) | UniProt |
+|`"Organism"` | `"Aequorea victoria (Water jellyfish) (Mesonema victoria)"` | *(Hovertext)* Scientific name (common name) (synonyms) | UniProt |
+|`"Taxonomic lineage"`|`"cellular organisms (no rank), Eukaryota (superkingdom), ... Aequoreidae (family), Aequorea (genus)"`| string of comma-separated `Lineage name (rank)` for the organism's full taxonomic lineage | UniProt |
 |`"Lineage"`|`["cellular organisms", "Eukaryota", ... "Aequoreidae", "Aequorea"]` | *(Plotting)* ordered list of lineage identifiers without rank information, generated from `"Taxonomic lineage"` | ProteinCartography |
-|`"Length"`| `238` | *(Plotting)* number of amino acids in protein | Uniprot |
+|`"Length"`| `238` | *(Plotting)* number of amino acids in protein | UniProt |
