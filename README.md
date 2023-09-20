@@ -95,7 +95,7 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
         - (Optional) `keyids`: key `protid` values for proteins to highlight similar to input proteins in the From-Query mode.
         - See [`config_ff.yml`](config_ff.yml) for additional parameters.
 - Features file with protein metadata.
-    - Usually, we call this file `UniProt_features.tsv` but you can use any name.
+    - Usually, we call this file `uniprot_features.tsv` but you can use any name.
     - The file should be placed into the `input` directory.
     - This file contains protein metadata for each protein used for visualization purposes.
     - The columns of this file are described in [Feature file main columns](#feature-file-main-columns).
@@ -105,12 +105,12 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
 1. Set up a [`config_ff.yml`](config_ff.yml) file specifying input and output directories and an analysis name.
 2. Add input protein structures in PDB format to your input folder.
     - The pipeline does not yet support PDBs with multiple chains.
-3. Make a `UniProt_features.tsv` file.
+3. Make a `uniprot_features.tsv` file.
     You can generate this one of two ways. If you have a list of UniProt accessions, you can provide that as a .txt file and automatically pull down the correct annotations. Alternatively, you can manually generate the file.  
     **3.1 Generating the file using query_UniProt.py**
-    - Create a `UniProt_ids.txt` file that contains a list of UniProt accessions, one per line.
+    - Create a `uniprot_ids.txt` file that contains a list of UniProt accessions, one per line.
     - Run the following code from the base of the GitHub repository. Modify the input folder path to your input folder.
-        `python ProteinCartography/query_UniProt.py -i UniProt_ids.txt -o input_ff/UniProt_features.tsv`  
+        `python ProteinCartography/query_uniprot.py -i uniprot_ids.txt -o input_ff/uniprot_features.tsv`  
     **3.2 Manually generating the file.**
     - For each protid in the dataset, you should gather relevant protein metadata.
     - The first column of the file should be the unique protein identifer, with `protid` as the column name.
@@ -177,7 +177,7 @@ The From-Folder mode starts at the Clustering step.
 
 9. Generate a variety of `_features.tsv` files.
     - Each file has, as its first column, a list of protein ids (protid) that are shared between files.
-    - We query UniProt to get all metadata from that service as a `UniProt_features.tsv` file.
+    - We query UniProt to get all metadata from that service as a `uniprot_features.tsv` file.
     - Foldseek generates a `struclusters_features.tsv` file.
     - We perform Leiden clustering to generate a `leiden_features.tsv` file.
     - We extract from Foldseek's all-v-all TMscore analysis a distance from every protid to our input protids as `<input_protid>_distance_features.tsv` files.
@@ -335,7 +335,7 @@ These files end with `'.tsv'` and contain distance or similarity matrices, usual
 
 ### Features files (FTF)
 These files end with `'.tsv'` and contain a `protid` column, which is the unique identifier of each protein in the dataset.  
-The remaining columns are annotations for each protein. These annotations can be of any data type.
+The remaining columns are metadata for each protein. These metadata can be of any data type.
 
 - **Example:**
     | protid | Length | LeidenCluster | Organism |
@@ -361,12 +361,15 @@ The remaining columns are annotations for each protein. These annotations can be
 
 #### Feature file main columns
 
-A variety of metadata features for each protein are usually pulled from UniProt for visualization purposes.  
-The following table describes those features with examples.  
+A variety of metadata features for each protein are usually pulled from UniProt for visualization purposes. An [example `features_file.tsv`](examples/features_file.tsv) is provided as part of the repo.  
 
-If you are providing a set of custom proteins (such as those not fetched from UniProt), you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map.  
+If you are providing a set of custom proteins (such as those not fetched from UniProt) when using the **From-Query** mode, you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map. You can specify the path to this file using the `override_file` parameter in [`config.yml`](config.yml).  
 
-Features used for color schemes in the default plotting rules are marked with *(Plotting)* below. Features used only for hover-over description are marked with *(Hovertext)*.
+When using **From-Folder** mode, you should provide protein metadata in a `uniprot_features.tsv` file. You can specify the path to this file using the `features_file` parameter in [`config_ff.yml`](config_ff.yml).  
+
+Note that the `override_file` parameter also exists in the **From-Folder** mode. The difference between `features_file` and `override_file` is that the former is used as the base metadata file (replacing the `uniprot_features.tsv` file normally retrieved from UniProt, whereas the latter is loaded after the base metadata file, *replacing* any information pulled from the `features_file`. In the **From-Query** mode, you can therefore use the `override_file` parameter to correct errors in metadata provided by UniProt or replace values for specific columns in the `uniprot_features.tsv` file that is retrieved by the pipeline.  
+
+For either custom proteins provided through `override_file` in either mode, or base metadata provided by `features_file` in **From-Folder** mode, you should strive to include the default columns in the table below. Features used for color schemes in the default plotting rules are marked with *(Plotting)* below. Features used only for hover-over description are marked with *(Hovertext)*.
 
 | feature | example | description | source |
 |--------:|:-------:|:------------|:-------|
