@@ -70,7 +70,7 @@ def aggregate_features(input_files: list, output_file = None, features_override 
                     if col not in agg_df.columns:
                         continue
                     
-                    # otherwise, replace the valule at that position
+                    # otherwise, replace the value at that position
                     agg_df.loc[agg_df['protid'] == entry, col] = entry_row[col].values[0]
                     
     agg_df.drop_duplicates(inplace = True)

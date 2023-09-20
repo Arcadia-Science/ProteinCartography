@@ -3,7 +3,7 @@ The ProteinCartography pipeline searches sequence and structure databases for ma
 
 ---
 ## Purpose
-The relationship between protein sequence, structure, and function has only been thoroughly investigated for a handful of gene families. This repo takes an agnostic approach to characterizing groups of similar proteins using feature embedding spaces.  
+Comparing protein structures across organisms can reveal interesting biological hypotheses. This pipeline allows users to build interactive maps of structurally similar proteins useful for discovery and exploration.
 
 Our pipeline starts with user-provided protein(s) of interest and searches the available sequence and structure databases for matches. Using the full list of matches, we can build a "map" of all the similar proteins and look for clusters of proteins with similar features. Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
 
@@ -66,7 +66,7 @@ In this default mode, the pipeline starts with a set of input proteins of intere
 0. Follow steps 1-3 in the [Quickstart](#quickstart) section above to set up and activate the conda environment.
 1. Set up a [`config.yml`](config.yml) file specifying input and output directories and an analysis name.
 2. Add query protein files in FASTA and PDB format to the input folder.
-    - You can pull down proteins with a UniProt accession number and Alphafold structure using the following command.
+    - You can pull down proteins with a UniProt accession number and AlphaFold structure using the following command.
         Replace {accession} with your UniProt accession (e.g. P24928).
         `python ProteinCartography/fetch_accession.py -a {accession} -o input -f fasta pdb`
         This saves a FASTA file from UniProt and a PDB file from AlphaFold to the `input/` folder.
@@ -141,9 +141,9 @@ The From-Folder mode starts at the Clustering step.
     - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB, if the FASTA is less than 400aa in length.
 
 ### Protein Search
-1. Search the Alphafold databases using queries to the Foldseek webserver API for each provided `.pdb` file.  
-    - The pipeline searches `afdb50`, `afdb-proteome` and `afdb-swissprot` for each input protein and aggregate the results.
-    - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein.  
+1. Search the AlphaFold databases using queries to the Foldseek webserver API for each provided `.pdb` file.  
+    - The pipeline searches `afdb50`, `afdb-proteome` and `afdb-swissprot` for each input protein and aggregate the results. You can customize to add or remove databases using the config file.
+    - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein, per database.  
 
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.  
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.UniProt.org/docs/?urls.primaryName=idmapping#/job/submitJob).
@@ -171,7 +171,7 @@ The From-Folder mode starts at the Clustering step.
     - When all hit proteins are highly similar, this can result in artefactually steep cutoffs in TM-score in the visualization.
 
 8. Perform dimensionality reduction and clustering on the similarity matrix.
-    - By default, we perform 30-component PCA and pass this to both TSNE and UMAP for visualization.
+    - By default, we perform 30-component PCA prior to running both TSNE and UMAP for visualization.
     - For clustering, we use the defaults of [`scanpy`'s Leiden clustering implementation](https://scanpy.readthedocs.io/en/latest/generated/scanpy.tl.leiden.html#scanpy-tl-leiden).
     
 ### Data Analysis and Aggregation
@@ -181,10 +181,10 @@ The From-Folder mode starts at the Clustering step.
     - We query UniProt to get all metadata from that service as a `uniprot_features.tsv` file.
     - Foldseek generates a `struclusters_features.tsv` file.
     - We perform Leiden clustering to generate a `leiden_features.tsv` file.
-    - We extract from Foldseek's all-v-all TMscore analysis a distance from every protid to our input protids as `<input_protid>_distance_features.tsv` files.
+    - We extract from Foldseek's all-v-all TM-score analysis a distance from every protid to our input protids as `<input_protid>_distance_features.tsv` files.
     Not available in From-Folder mode:
-    - We extract from Foldseek search a fraction sequence identy for every protid in our input protids as `<input_protid>_fident_features.tsv` files.
-    - We subtract the fraction sequence identity from the TMscore to generate a `<input_protid>_convergence_features.tsv` file.
+    - We extract from Foldseek search a fraction sequence identity for every protid in our input protids as `<input_protid>_fident_features.tsv` files.
+    - We subtract the fraction sequence identity from the TM-score to generate a `<input_protid>_convergence_features.tsv` file.
     - We determine the source of each file in the analysis (whether it was found from blast or Foldseek) as the `source_features.tsv` file.
     
 10. Aggregate features.
@@ -193,8 +193,8 @@ The From-Folder mode starts at the Clustering step.
 ### Plotting
 
 11. Calculate per-cluster structural similarities.
-    - For every Leiden cluster of proteins, get the mean sequence similarity within that cluster and between that cluster and every other cluster.
-    - Plot it as a heatmap with suffix `_leiden_similarity.html`.
+    - For every Leiden or Foldseek structural cluster of proteins, get the mean structural similarity within that cluster and between that cluster and every other cluster.
+    - Plot it as a heatmap with suffix `_leiden_similarity.html` or `_structural_similarity.html`.
 
 12. Perform simple semantic analysis on UniProt annotations.
     - For the annotations in each cluster, aggregate them and count the frequency of every full annotation string.

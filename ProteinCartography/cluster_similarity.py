@@ -22,7 +22,7 @@ def parse_args():
 
 def calculate_group_similarity(matrix_file: str, features_file: str, features_column: str, output_file = None):
     '''
-    Takes an all-v-all similiarity matrix_file and averages across a grouping found in a features_file.
+    Takes an all-v-all similarity matrix_file and averages across a grouping found in a features_file.
     The grouping is specified based on a column of the features file.
     
     Each row and column in the matrix_file should be a protid.
