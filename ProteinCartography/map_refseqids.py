@@ -11,6 +11,14 @@ __all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
 # check through these default databases
 DEFAULT_DBS = ['EMBL-GenBank-DDBJ_CDS', 'RefSeq_Protein']
 
+# id mapping link
+UNIPROT_IDMAPPING_API = 'https://rest.uniprot.org/idmapping'
+
+# requests constants
+REQUESTS_TRIES = 0
+REQUESTS_LIMIT = 10
+REQUESTS_SLEEP_TIME = 30
+
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -86,14 +94,14 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
     
     # open the input file to extract ids
     with open(input_file, 'r') as f:
-        input_lines = [i.replace('\n', '') for i in f.readlines()]
+        input_lines = f.read().splitlines()
         input_ids = list(set(input_lines))
         input_string = ','.join(input_ids)
     
     dummy_df = pd.DataFrame()
     
     for i, db in enumerate(query_dbs):
-        ticket = post('https://rest.uniprot.org/idmapping/run', {
+        ticket = post(f'{UNIPROT_IDMAPPING_API}/run', {
                     'ids': input_string,
                     'from': db,
                     'to': "UniProtKB"
@@ -101,11 +109,11 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
         
         # poll until the job was successful or failed
         repeat = True
-        tries = 0
-        limit = 10
-        sleep_time = 30
+        tries = REQUESTS_TRIES
+        limit = REQUESTS_LIMIT
+        sleep_time = REQUESTS_SLEEP_TIME
         while repeat and tries < limit:
-            status = get('https://rest.uniprot.org/idmapping/status/' + ticket['jobId']).json()
+            status = get(f'{UNIPROT_IDMAPPING_API}/status/{ticket['jobId']}').json()
 
             # wait a short time between poll requests
             sleep(sleep_time)
@@ -115,7 +123,7 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
         if tries == 10:
             sys.exit(f'The ticket failed to complete after {tries * sleep_time} seconds.')
         
-        results = get('https://rest.uniprot.org/idmapping/stream/' + ticket['jobId']).json()
+        results = get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket['jobId']}').json()
         results_df = pd.DataFrame(results['results'])
         
          # if there are no results, move on
@@ -154,7 +162,7 @@ def main():
     if service == "bioservices":
         # send to map_refseqids
         map_refseqids_bioservices(input_file, output_file, query_dbs)
-    elif service == "rest":
+    else:
         map_refseqids_rest(input_file, output_file, query_dbs)
 
 # check if called from interpreter

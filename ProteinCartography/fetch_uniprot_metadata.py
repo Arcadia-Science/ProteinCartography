@@ -194,11 +194,11 @@ def main():
     else:
         fields = DEFAULT_FIELDS
     
-    if service == 'rest':
-        query_uniprot_rest(input_file, output_file, fields = fields)
-    
-    elif service == 'bioservices':
+    if service == 'bioservices':
         query_uniprot_bioservices(input_file, output_file)
+    else:
+        query_uniprot_rest(input_file, output_file, fields = fields)
+
 
 # check if called from interpreter
 if __name__ == '__main__':

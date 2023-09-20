@@ -16,13 +16,13 @@ __all__ = [
 ]
 
 RESIDUE_CONFIDENCE_COLORS = {
-    'veryhigh': '#4A72B0',
+    'very_high': '#4A72B0',
     'confident': apc.All['arcadia:vitalblue'],
     'low': apc.All['arcadia:canary'],
-    'verylow': apc.All['arcadia:amber']
+    'very_low': apc.All['arcadia:amber']
 }
 
-RESIDUE_BINS = ['verylow', 'low', 'confident', 'veryhigh']
+RESIDUE_BINS = ['very_low', 'low', 'confident', 'very_high']
 
 # based on: https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html
 ATOM_SPEC_DICT = {
