@@ -33,7 +33,7 @@ def parse_args():
 # might make a more generalizable version of this and put it somewhere else
 def map_refseqids_bioservices(input_file: str, output_file: str, query_dbs: list, return_full = False):
     '''
-    Takes an input .txt file of accessions and maps to UniprotKB.
+    Takes an input .txt file of accessions and maps to UniProt accessions.
     
     Args:
         input_file (str): path to input .txt file containing one accession per line.
@@ -91,7 +91,17 @@ def map_refseqids_bioservices(input_file: str, output_file: str, query_dbs: list
 """
 
 def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, return_full = False):
+        '''
+    Takes an input .txt file of accessions and maps to UniProt accessions.
     
+    Args:
+        input_file (str): path to input .txt file containing one accession per line.
+        output_file (str): path to destination .txt file.
+        query_dbs (list): list of valid databases to query using the Uniprot ID mapping API.
+            Each database will be queried individually. 
+            The results are compiled and unique results are printed to output_file.
+        return_full (bool): whether to return all of the results as a dataframe
+    '''
     # open the input file to extract ids
     with open(input_file, 'r') as f:
         input_lines = f.read().splitlines()

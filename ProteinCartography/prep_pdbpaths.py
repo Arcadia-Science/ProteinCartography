@@ -14,6 +14,13 @@ def parse_args():
     return args
 
 def prep_pdbpaths(directories: list, output_file: str):
+    '''
+    Takes a list of directories and converts it into a text file containing all PDB file paths.
+    
+    Args:
+        directories (list): list of directory paths to scrape from
+        output_file (str): path of destination file
+    '''
     output_text = []
     
     for directory in directories:

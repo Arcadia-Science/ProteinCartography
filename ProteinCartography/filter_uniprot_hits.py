@@ -7,8 +7,8 @@ __all__ = ['filter_results']
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required = True, help = "path of input merged hits file")
-    parser.add_argument("-o", "--output", required = True, help = "path of destination uniprot_features.tsv file")
+    parser.add_argument("-i", "--input", required = True, help = "path of input uniprot_features.tsv file")
+    parser.add_argument("-o", "--output", required = True, help = "path of destination filtered hits list file")
     parser.add_argument("-m", "--min-length", default = "0", help = "minimum protein length of proteins to keep")
     parser.add_argument("-M", "--max-length", default = "0", help = "maximum protein length of proteins to keep. If set to 0, no upper limit is applied.")
     args = parser.parse_args()
@@ -18,6 +18,21 @@ def parse_args():
 def filter_results(input_file: str, output_file: str, 
                    filter_inactive = True, filter_fragment = True,
                    min_length = 0, max_length = 0):
+    '''
+    Takes an input uniprot_features.tsv file and filters the results based on fragment status, inactive status, and size.
+    
+    Args:
+        input_file (str): path of input tsv file with all uniprot features
+        output_file (str): path of destination list text file where each accession is on a new line
+        filter_inactive (bool): whether to remove inactive proteins
+        filter_fragment (bool): whether to remove fragmentary proteins
+        min_length (int): minimum length of proteins to keep
+        max_length (int): maximum length of proteins to keep
+    
+    Returns:
+        a pandas.DataFrame of the resulting features
+    '''
+    
     df = pd.read_csv(input_file, sep = '\t')
     
     filtered_df = df.copy(deep = True)

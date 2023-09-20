@@ -95,6 +95,21 @@ def query_uniprot_bioservices(input_file: str, output_file: str, save = True) ->
 ######################################
 
 def query_uniprot_rest(query_list: str, output_file: str, batch_size = 1000, sub_batch_size = 500, fmt = 'tsv', fields = DEFAULT_FIELDS):
+        '''
+    Takes an input list of accessions and gets the full information set from Uniprot for those proteins.
+    
+    Args:
+        input_file (str): path of input list text file where each accession is on a new line
+        output_file (str): path of destination tsv file with all uniprot features
+        batch_size (int): number of entries to query per batch.
+        sub_batch_size (int): number of entries to pull per page of batch.
+        fmt (str): output suffix format (default 'tsv')
+        fields (list): list of UniProt fields to retrieve.
+    
+    Returns:
+        a pandas.DataFrame of the resulting features
+    '''
+    
     temp_file = output_file + '.temp'
     
     if os.path.exists(output_file):

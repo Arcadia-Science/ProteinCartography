@@ -152,6 +152,17 @@ def plot_semantic_analysis(features_file: str, agg_col: str, annot_col: str, col
         
 def count_features(features_file: str, agg_col: str, annot_col: str, colors: list,
                    exclude_words = ['protein', 'None'], ignore_nan = True):
+    '''
+    Generate feature counts for a features file.
+    
+    Args:
+        features_file (str): path to a features file
+        agg_col (str): which column to group by
+        annot_col (str): which column's annotations to summarize
+        colors (list): list of HEX codes to use for the SVG images
+        exclude_words (list): words to mask out from annotations
+        ignore_nan (bool): whether to ignore NaN annotations
+    '''
     # read in features file
     features_df = pd.read_csv(features_file, sep = '\t')
 
@@ -209,7 +220,15 @@ def count_features(features_file: str, agg_col: str, annot_col: str, colors: lis
     return results
 
 def semantic_barchart_plotly(annotation_count: dict, group: str, color: str, top_n = 10):
+    '''
+    Generate a plotly barchart object for the top n annotations
     
+    Args:
+        annotation_count (dict): annotation count dictionary output of count_features()
+        group (str): which subgroup of agg_col to use for filtering
+        color (str): HEX color for that group
+        top_n (int): number of annotations to display
+    '''
     annotation_count_group = annotation_count[group]
     
     annotation_count_group_filtered = annotation_count_group.head(top_n)
@@ -234,6 +253,16 @@ def semantic_barchart_plotly(annotation_count: dict, group: str, color: str, top
     return bar
 
 def wordcloud_image(wordclouds: dict, group: str, color: str, mode = 'fig', savefile = None):
+    '''
+    Generate an SVG image or Plotly figure object from a wordcloud object
+    
+    Args:
+        wordclouds (dict): wordcloud list output of count_features()
+        group (str): which subgroup of agg_col to use for filtering
+        color (str): HEX color for that group
+        mode (str): 'fig' for Plotly object or 'svg'/'png' to save as an image
+        savefile (str): path of destination save file when using 'svg' or 'png'
+    '''
     
     if mode == 'fig':
         wc = wordclouds[group].to_array()
@@ -255,6 +284,18 @@ def wordcloud_image(wordclouds: dict, group: str, color: str, mode = 'fig', save
 
 def semantic_multiplot_plotly(count_features_results: dict, colors: list, n_cols = 3, 
                               analysis_name = '', savefile = None, show = False):
+    '''
+    Generate an multiple bar chart/ word cloud chart.
+    
+    Args:
+        count_features_results (dict): full dictionary output of count_features()
+        colors (list): list of HEX colors
+        n_cols (int): number of columns to use in plot
+        analysis_name (str): analysis name to include in title
+        savefile (str): path to destination file
+        show (bool): whether to show the result in an interactive session
+    '''
+    
     n_groups = len(count_features_results['annotation_count'].keys())
     
     # set plot row parameters based on number of groups and columns

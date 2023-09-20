@@ -57,7 +57,12 @@ def parse_args():
     return args
 
 def fetch_atoms(input_path: str) -> pd.DataFrame:
+    '''
+    Retrieves atoms as a dataframe from a PDB file.
     
+    Args:
+        input_path (str): path of PDB file.
+    '''
     with open(input_path, 'r') as f:
         atoms = [i for i in f.readlines() if 'ATOM' in i[0:6]]
     
@@ -69,6 +74,12 @@ def fetch_atoms(input_path: str) -> pd.DataFrame:
     return data
 
 def fetch_dbref(input_path: str) -> pd.DataFrame:
+    '''
+    Retrieves database references from a PDB file.
+    
+    Args:
+        input_path (str): path of PDB file.
+    '''
     with open(input_path, 'r') as f:
         dbref = [i for i in f.readlines() if 'DBREF' in i[0:6]]
         
@@ -79,7 +90,13 @@ def fetch_dbref(input_path: str) -> pd.DataFrame:
     
     return data
 
-def fetch_experiment(input_path: str):
+def fetch_experiment(input_path: str) -> str:
+    '''
+    Retrieves experimental data from a PDB file.
+    
+    Args:
+        input_path (str): path of PDB file.
+    '''
     with open(input_path, 'r') as f:
         expdta = [' '.join([i for i in i.split() if i != 'EXPDTA']) for i in f.readlines() if 'EXPDTA' in i]
         
@@ -87,7 +104,13 @@ def fetch_experiment(input_path: str):
     
     return expdta_out
 
-def fetch_title(input_path: str):
+def fetch_title(input_path: str) -> str:
+    '''
+    Retrieves title of a PDB file.
+    
+    Args:
+        input_path (str): path of PDB file.
+    '''
     with open(input_path, 'r') as f:
         title = [' '.join([i for i in i.split() if i != 'TITLE']) for i in f.readlines() if 'TITLE' in i]
         
@@ -96,11 +119,23 @@ def fetch_title(input_path: str):
     return title_out
 
 def extract_residue_confidence(input_path: str):
+    '''
+    Extracts residue confidence ("TEMP" or temperature) from a PDB file.
+    
+    Args:
+        input_path (str): path of PDB file.
+    '''
     data = fetch_atoms(input_path)
     
     return list(data['TEMP'].astype(float))
 
 def assign_residue_colors(lst: list):
+    '''
+    Assigns a color to each residue in a PDB based on the AlphaFold color scheme (converted to analogous Arcadia colors).
+    
+    Args:
+        lst (list): list of atoms temperatures.
+    '''
     bins = [0, 50, 70, 90, 100]
     result = np.digitize(lst, bins, right=True)
     colors = [RESIDUE_CONFIDENCE_COLORS[RESIDUE_BINS[i - 1]] for i in result]
@@ -108,13 +143,24 @@ def assign_residue_colors(lst: list):
     return colors
 
 def parse_chains(input_path: str):
+    '''
+    Extracts list of chains from a PDB file.
+    
+    Args:
+        input_path (str): path of PDB file.
+    '''
     data = fetch_atoms(input_path)
     chains = list(data['CHAIN'].unique())
     
     return chains
 
 def assign_origin(input_path: str):
+    '''
+    Assigns an origin to a PDB file based on presence/ absence of references to AlphaFold, PDB, or ESMfold.
     
+    Args:
+        input_path (str): path of PDB file.
+    '''
     AF_FLAG, AF_TITLE_FLAG = 0, 0
     PDB_FLAG, PDB_REF_FLAG = 0, 0
     ESM_FLAG, ESM_TITLE_FLAG = 0, 0
@@ -156,6 +202,13 @@ def assign_origin(input_path: str):
     return maxscore
 
 def assess_pdbs(structures_list: list, output_file = None):
+    '''
+    Assesses PDB quality, experimental information, origin, and lists chains for a list of PDB paths.
+    
+    Args:
+        structures_list (list): list of paths to assess.
+        output_file (str): path to output file, if saving results.
+    '''
     collector_df = pd.DataFrame()
     
     for structure_file in structures_list:
@@ -192,6 +245,12 @@ def assess_pdbs(structures_list: list, output_file = None):
     return collector_df
 
 def read_txtlist(input_file: str):
+    '''
+    Reads in a list of newline-separated file paths.
+    
+    Args:
+        input_file (str): path of input text file.
+    '''
     with open(input_file, 'r') as f:
         paths = [i.rstrip('\n') for i in f.readlines()]
         
