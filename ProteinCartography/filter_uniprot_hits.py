@@ -45,8 +45,15 @@ def main():
     args = parse_args()
     input_file = args.input
     output_file = args.output
-    min_length = int(args.min_length)
-    max_length = int(args.max_length)
+    
+    try:
+        min_length = int(args.min_length)
+    except:
+        min_length = 0
+    try:
+        max_length = int(args.max_length)
+    except:
+        max_length = 0
     
     filter_results(input_file, output_file, min_length = min_length, max_length = max_length)
     
