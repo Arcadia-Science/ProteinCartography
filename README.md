@@ -147,6 +147,7 @@ The From-Folder mode starts at the Clustering step.
 
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.  
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.UniProt.org/docs/?urls.primaryName=idmapping#/job/submitJob).
+    - TODO: This can fail for large proteins (>700aa) due to remote BLAST CPU limits. To overcome this error, you can manually run BLAST locally or via the webserver and create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blasthits.refseq.txt` in the `output/blastresults/` directory.
     
 ### Download Data
 3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of UniProt IDs. 
