@@ -18,7 +18,7 @@ def parse_args():
 
 def make_dummies(input_file: str, output_dir: str, maximum = 0):
     '''
-    Creates empty files matching the Alphafold accessions for Snakemake to create wildcards with.
+    Creates empty files matching the AlphaFold accessions for Snakemake to create wildcards with.
     
     Args:
         input_file (str): path to input .txt file with one accession per line.
