@@ -11,13 +11,13 @@ __all__ = ["linear_concordance", "calculate_concordance"]
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--tmscore-file", required = True, help = 'A TMscore-based distances TSV.')
+    parser.add_argument("-t", "--tmscore-file", required = True, help = 'A TM-score-based distances TSV.')
     parser.add_argument("-f", "--fident-file", required = True, help = 'A fraction sequence identity-based distances TSV.')
     parser.add_argument("-p", "--protid", required = True, help = 'Unique identifier of the input protein.')
     parser.add_argument("-o", "--output", required = True, help = 'Returns a .tsv file of concordance features as output.')
     parser.add_argument("-m", "--method", default = 'linear', help = 'The method to use to calculate concordance/ divergence.')
     parser.add_argument("-e", "--evalue-maximum", default = '0.001', help = 'Maximum evalue cutoff. Default = 0.001')
-    parser.add_argument("-T", "--tmscore-minimum", default = '0', help = 'Minimum tmscore cutoff. Default = 0')
+    parser.add_argument("-T", "--tmscore-minimum", default = '0', help = 'Minimum TM-score cutoff. Default = 0')
     args = parser.parse_args()
     
     return args
@@ -35,7 +35,7 @@ def calculate_concordance(tmscore_file: str, fident_file: str, protid: str, outp
                           method = 'linear', evalue_maximum = 0.001, tmscore_minimum = 0,
                           save = True):
     '''
-    Takes a TMscore 'distance_features.tsv' file and a sequence identity 'fident_features.tsv' file and calculates a concordance metric.
+    Takes a TM-score 'distance_features.tsv' file and a sequence identity 'fident_features.tsv' file and calculates a concordance metric.
     Filters results using user-provided cutoffs and saves filtered results to a 'concordance_features.tsv' file.
     
     Args:

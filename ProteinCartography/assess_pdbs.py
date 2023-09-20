@@ -149,7 +149,7 @@ def assign_origin(input_path: str):
     
     OTHER_SCORE = 3 - AF_SCORE - PDB_SCORE - ESM_SCORE
     
-    scores = {'Alphafold': AF_SCORE, 'ESMFold': ESM_SCORE, 'PDB': PDB_SCORE, 'Other': OTHER_SCORE}
+    scores = {'AlphaFold': AF_SCORE, 'ESMFold': ESM_SCORE, 'PDB': PDB_SCORE, 'Other': OTHER_SCORE}
     
     maxscore = max(zip(scores.values(), scores.keys()))[1]
     

@@ -326,7 +326,7 @@ rule assess_pdbs:
 
 rule foldseek_clustering:
     '''
-    Runs foldseek all-v-all tmscore comparison and foldseek clustering.
+    Runs foldseek all-v-all TM-score comparison and foldseek clustering.
     '''
     input: checkpoint_create_alphafold_wildcard
     output: 
@@ -396,7 +396,7 @@ rule input_distances:
 
 rule calculate_concordance:
     '''
-    Currently, this subtracts the fraction sequence identity from the TMscore to get a measure of whether something is more similar in sequence or structure.
+    Currently, this subtracts the fraction sequence identity from the TM-score to get a measure of whether something is more similar in sequence or structure.
     
     We're working on developing some kind of test statistic that evaluates the significance of this difference from some expectation.
     '''
@@ -487,7 +487,7 @@ rule plot_interactive:
 rule plot_similarity_leiden:
     '''
     Plots a similarity score matrix for Leiden clusters.
-    For each cluster, calculates the mean TMscore of all structures in that cluster versus all other clusters.
+    For each cluster, calculates the mean TM-score of all structures in that cluster versus all other clusters.
     The diagonal of the plot shows how similar proteins are within a given cluster.
     The other cells show how similar other clusters are to each other.
     '''
@@ -511,7 +511,7 @@ rule plot_similarity_leiden:
 rule plot_similarity_strucluster:
     '''
     Plots a similarity score matrix for Foldseek's structural clusters.
-    For each cluster, calculates the mean TMscore of all structures in that cluster versus all other clusters.
+    For each cluster, calculates the mean TM-score of all structures in that cluster versus all other clusters.
     The diagonal of the plot shows how similar proteins are within a given cluster.
     The other cells show how similar other clusters are to each other.
     '''
