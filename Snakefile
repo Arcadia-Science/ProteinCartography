@@ -189,7 +189,7 @@ rule run_foldseek:
         python ProteinCartography/extract_foldseekhits.py -i {output.m8files} -o {output.foldseekhits}
         '''
         
-rule aggregate_foldseek_fident:
+rule aggregate_foldseek_fraction_seq_identity:
     '''
     Pulls the foldseek fraction sequence identity (fident) from the Foldseek results files for each input protein.
     
@@ -205,7 +205,7 @@ rule aggregate_foldseek_fident:
         output_dir / benchmarks_dir / "{protid}.aggregate_foldseek_fident.txt"
     shell:
         '''
-        python ProteinCartography/aggregate_fident.py -i {input.m8files} -o {output.fident_features} -p {params.protid}
+        python ProteinCartography/aggregate_foldseek_fraction_seq_identity.py -i {input.m8files} -o {output.fident_features} -p {params.protid}
         '''
 
 #####################################################################
@@ -228,7 +228,7 @@ rule aggregate_lists:
         python ProteinCartography/aggregate_lists.py -i {input} -o {output.jointlist}
         '''
         
-rule get_uniprot_metadata:
+rule fetch_uniprot_metadata:
     '''
     Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
     '''
@@ -240,7 +240,7 @@ rule get_uniprot_metadata:
         output_dir / benchmarks_dir / "get_uniprot_metadata.txt"
     shell:
         '''
-        python ProteinCartography/query_uniprot.py -i {input} -o {output} -a {params.additional_fields}
+        python ProteinCartography/fetch_uniprot_metadata.py -i {input} -o {output} -a {params.additional_fields}
         '''
 
 rule filter_uniprot_hits:
@@ -317,7 +317,7 @@ rule assess_pdbs:
     shell:
         '''
         python ProteinCartography/prep_pdbpaths.py -d {params.clusteringdir} {params.inputdir} -o {output.pdb_paths}
-        python ProteinCartography/pdb_tools.py -t {output.pdb_paths} -o {output.pdb_features}
+        python ProteinCartography/assess_pdbs.py -t {output.pdb_paths} -o {output.pdb_features}
         '''
 
 #####################################################################

@@ -95,7 +95,7 @@ rule assess_pdbs:
     shell:
         '''
         python ProteinCartography/prep_pdbpaths.py -d {params.inputdir} -o {output.pdb_paths}
-        python ProteinCartography/pdb_tools.py -t {output.pdb_paths} -o {output.pdb_features}
+        python ProteinCartography/assess_pdbs.py -t {output.pdb_paths} -o {output.pdb_features}
         '''
 
 rule foldseek_clustering:
