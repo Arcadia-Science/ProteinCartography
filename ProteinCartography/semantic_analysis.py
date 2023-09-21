@@ -305,7 +305,12 @@ def semantic_multiplot_plotly(count_features_results: dict, colors: list, n_cols
     
     flattened_indices = [k for lst in [[(j + 1, i + 1) for i in np.arange(n_cols * 2)] for j in np.arange(n_rows)] for k in lst]
 
-    colors_dict = dict(zip(count_features_results['annotation_count'].keys(), colors))
+    used_colors = colors
+
+    if len(used_colors) < n_groups:
+        used_colors = used_colors + extend_colors([1] * n_groups, used_colors)
+    
+    colors_dict = dict(zip(count_features_results['annotation_count'].keys(), used_colors))
     
     xaxis_params = {
         'showline': True,
