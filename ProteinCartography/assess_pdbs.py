@@ -166,7 +166,7 @@ def assign_origin(input_path: str):
     ESM_FLAG, ESM_TITLE_FLAG = 0, 0
     
     with open(input_path, 'r') as f:
-        contents = f.read()
+        contents = f.read().upper()
         
         if 'ALPHAFOLD' in contents:
             AF_FLAG = 1
@@ -177,13 +177,12 @@ def assign_origin(input_path: str):
     try:
         dbref = fetch_dbref(input_path)[5].values
     except KeyError:
-        print(f'{input_path} failed')
         dbref = []
     
     if 'PDB' in dbref:
         PDB_REF_FLAG = 2
     
-    title = fetch_title(input_path)
+    title = fetch_title(input_path).upper()
     if 'ALPHAFOLD' in title:
         AF_TITLE_FLAG = 2
     elif 'ESMFOLD' in title:
