@@ -103,7 +103,7 @@ SOURCE_COLOR_DICT = {'blast': apc.All['arcadia:canary'],
                          'blast+foldseek': apc.All['arcadia:amber'], 
                          'None': apc.All['arcadia:brightgrey']}
 
-PDB_ORIGIN_COLOR_DICT = {'Alphafold': '#4A72B0',
+PDB_ORIGIN_COLOR_DICT = {'AlphaFold': '#4A72B0',
                         'ESMFold': apc.All['arcadia:vitalblue'],
                         'PDB': apc.All['arcadia:bluesky'],
                         'Other': apc.All['arcadia:marineblue'],
