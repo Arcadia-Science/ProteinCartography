@@ -166,13 +166,13 @@ def assign_origin(input_path: str):
     ESM_FLAG, ESM_TITLE_FLAG = 0, 0
     
     with open(input_path, 'r') as f:
-        contents = f.read().upper()
+        contents = f.read()
         
-        if 'ALPHAFOLD' in contents:
+        if re.search('ALPHAFOLD', contents, re.IGNORECASE):
             AF_FLAG = 1
-        if 'PDB' in contents:
+        if re.search('PDB', contents, re.IGNORECASE):
             PDB_FLAG = 1
-        if 'ESMFOLD' in contents:
+        if re.search('ESMFOLD', contents, re.IGNORECASE):
             ESM_FLAG = 1
     try:
         dbref = fetch_dbref(input_path)[5].values

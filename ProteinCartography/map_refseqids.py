@@ -91,7 +91,7 @@ def map_refseqids_bioservices(input_file: str, output_file: str, query_dbs: list
 """
 
 def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, return_full = False):
-        '''
+    '''
     Takes an input .txt file of accessions and maps to UniProt accessions.
     
     Args:
