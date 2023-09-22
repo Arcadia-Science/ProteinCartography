@@ -95,7 +95,7 @@ def query_uniprot_bioservices(input_file: str, output_file: str, save = True) ->
 ######################################
 
 def query_uniprot_rest(query_list: str, output_file: str, batch_size = 1000, sub_batch_size = 500, fmt = 'tsv', fields = DEFAULT_FIELDS):
-        '''
+    '''
     Takes an input list of accessions and gets the full information set from Uniprot for those proteins.
     
     Args:
