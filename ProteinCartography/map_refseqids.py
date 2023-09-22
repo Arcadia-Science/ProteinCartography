@@ -123,7 +123,7 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
         limit = REQUESTS_LIMIT
         sleep_time = REQUESTS_SLEEP_TIME
         while repeat and tries < limit:
-            status = get(f'{UNIPROT_IDMAPPING_API}/status/{ticket['jobId']}').json()
+            status = get(f'{UNIPROT_IDMAPPING_API}/status/{ticket["jobId"]}').json()
 
             # wait a short time between poll requests
             sleep(sleep_time)
@@ -133,7 +133,7 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
         if tries == 10:
             sys.exit(f'The ticket failed to complete after {tries * sleep_time} seconds.')
         
-        results = get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket['jobId']}').json()
+        results = get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket["jobId"]}').json()
         results_df = pd.DataFrame(results['results'])
         
          # if there are no results, move on
