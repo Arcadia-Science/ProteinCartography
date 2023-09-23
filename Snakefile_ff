@@ -6,7 +6,7 @@ from pathlib import Path
 ###########################################
 
 # Default pipeline configuration parameters are in this file
-# If you create a new yml file and use the --configfile flag, 
+# If you create a new yml file and use the --configfile flag,
 # options in that new file overwrite the defaults.
 configfile: './config_ff.yml'
 
@@ -23,19 +23,19 @@ output_dir = Path(config["output_dir"])
 # Check for an override file, setting a variable if it exists
 if "override_file" in config:
     OVERRIDE_FILE = input_dir / config["override_file"]
-    
+
     # If it isn't a real file, ignore it
     if not os.path.exists(OVERRIDE_FILE):
         OVERRIDE_FILE = ''
 else:
     OVERRIDE_FILE = ''
-    
+
 if "features_file" in config:
     FEATURES_FILE = input_dir / config["features_file"]
-    
+
     if not os.path.exists(FEATURES_FILE):
         FEATURES_FILE = ''
-    
+
 if "taxon_focus" in config:
     TAXON_FOCUS = config["taxon_focus"]
 else:
@@ -74,7 +74,7 @@ rule all:
         output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html"),
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf"),
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html")
-        
+
 
 #####################################################################
 ## clustering and dimensionality reduction
@@ -103,7 +103,7 @@ rule foldseek_clustering:
     Runs foldseek all-v-all tmscore comparison and foldseek clustering.
     '''
     input: expand(input_dir / "{protid}.pdb", protid = PROTID)
-    output: 
+    output:
         allvall_pivot = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
         struclusters_features = output_dir / clusteringresults_dir / 'struclusters_features.tsv'
     params:
@@ -151,7 +151,7 @@ rule leiden_clustering:
         '''
         python ProteinCartography/leiden_clustering.py -i {input} -o {output}
         '''
-        
+
 rule input_distances:
     '''
     Extracts the distances from input proteins to other proteins in the dataset.
@@ -170,7 +170,7 @@ rule input_distances:
 
 #####################################################################
 ## aggregate features into a big TSV and make a nice plot
-#####################################################################    
+#####################################################################
 
 aggregate_features_input_list = [
     output_dir / clusteringresults_dir / "struclusters_features.tsv",
@@ -180,7 +180,7 @@ aggregate_features_input_list = [
 
 if KEYIDS != []:
     aggregate_features_input_list = aggregate_features_input_list + expand(output_dir / clusteringresults_dir / "{keyid}_distance_features.tsv", keyid = KEYIDS)
-    
+
 if FEATURES_FILE != '':
     aggregate_features_input_list.append(FEATURES_FILE)
 
@@ -199,7 +199,7 @@ rule aggregate_features:
         '''
         python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
         '''
-    
+
 rule plot_interactive:
     '''
     Generate interactive scatter plot HTML programmatically based on user-input parameters
@@ -248,7 +248,7 @@ rule plot_similarity_leiden:
         '''
         python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
         '''
-        
+
 rule plot_similarity_strucluster:
     '''
     Plots a similarity score matrix for Foldseek's structural clusters.
