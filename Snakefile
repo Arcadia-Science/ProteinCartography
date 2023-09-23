@@ -6,7 +6,7 @@ from pathlib import Path
 ###########################################
 
 # Default pipeline configuration parameters are in this file
-# If you create a new yml file and use the --configfile flag, 
+# If you create a new yml file and use the --configfile flag,
 # options in that new file overwrite the defaults.
 configfile: './config.yml'
 
@@ -23,18 +23,18 @@ output_dir = Path(config["output_dir"])
 # Check for an override file, setting a variable if it exists
 if "override_file" in config:
     OVERRIDE_FILE = input_dir / config["override_file"]
-    
+
     # If it isn't a real file, ignore it
     if not os.path.exists(OVERRIDE_FILE):
         OVERRIDE_FILE = ''
 else:
     OVERRIDE_FILE = ''
-    
+
 if "taxon_focus" in config:
     TAXON_FOCUS = config["taxon_focus"]
 else:
     TAXON_FOCUS = 'euk'
-    
+
 UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 
 MAX_BLASTHITS = int(config["max_blasthits"])
@@ -102,7 +102,7 @@ rule make_pdb:
 
 # Prioritize copying an existing PDB to the folder if the ID is also a blast/foldseek hit.
 ruleorder: copy_pdb > download_pdbs
-        
+
 rule copy_pdb:
     '''
     Copies existing or generated PDBs to the Foldseek clustering folder.
@@ -121,7 +121,7 @@ rule copy_pdb:
 rule run_blast:
     '''
     Using files located in the input directory, perform BLAST using the web API.
-    
+
     Large proteins will cause remote BLAST to fail; you can still perform a manual BLAST search to get around this.
     '''
     input:
@@ -188,11 +188,11 @@ rule run_foldseek:
         tar -xvf {output.targz} -C {output.unpacked}
         python ProteinCartography/extract_foldseekhits.py -i {output.m8files} -o {output.foldseekhits}
         '''
-        
+
 rule aggregate_foldseek_fraction_seq_identity:
     '''
     Pulls the foldseek fraction sequence identity (fident) from the Foldseek results files for each input protein.
-    
+
     This will probably be replaced in the future by an all-v-all sequence identity comparison using FAMSA, WITCH, or other approach.
     '''
     input:
@@ -217,7 +217,7 @@ rule aggregate_lists:
     Take all Uniprot ID lists and make them one big ID list, removing duplicates.
     '''
     input:
-        expand(output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid = PROTID), 
+        expand(output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid = PROTID),
         expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid = PROTID)
     output:
         jointlist = output_dir / clusteringresults_dir / "jointhits.txt"
@@ -227,7 +227,7 @@ rule aggregate_lists:
         '''
         python ProteinCartography/aggregate_lists.py -i {input} -o {output.jointlist}
         '''
-        
+
 rule fetch_uniprot_metadata:
     '''
     Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
@@ -272,7 +272,7 @@ checkpoint create_alphafold_wildcard:
         '''
         python ProteinCartography/make_dummies.py -i {input.jointlist} -o {output} -M {params.max_structures}
         '''
-    
+
 rule download_pdbs:
     '''
     Use a checkpoint to parse all of the items in the output.jointlist file from aggregate lists and download all the PDBs.
@@ -289,11 +289,11 @@ rule download_pdbs:
         '''
         python ProteinCartography/fetch_accession.py -a {wildcards.acc} -o {params.outdir} -f pdb
         '''
-        
+
 def checkpoint_create_alphafold_wildcard(wildcards):
     # expand checkpoint to get acc values
     checkpoint_output = checkpoints.create_alphafold_wildcard.get(**wildcards).output[0]
-    
+
     # trawls the checkpoint_output file for .txt files
     # and generates expected .pdb file names for foldseekclustering_dir
     file_names = expand(output_dir / foldseekclustering_dir / "{acc}.pdb",
@@ -329,7 +329,7 @@ rule foldseek_clustering:
     Runs foldseek all-v-all TM-score comparison and foldseek clustering.
     '''
     input: checkpoint_create_alphafold_wildcard
-    output: 
+    output:
         allvall_pivot = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
         struclusters_features = output_dir / clusteringresults_dir / 'struclusters_features.tsv'
     params:
@@ -397,10 +397,10 @@ rule input_distances:
 rule calculate_concordance:
     '''
     Currently, this subtracts the fraction sequence identity from the TM-score to get a measure of whether something is more similar in sequence or structure.
-    
+
     We're working on developing some kind of test statistic that evaluates the significance of this difference from some expectation.
     '''
-    input: 
+    input:
         tmscore_file = output_dir / clusteringresults_dir / '{protid}_distance_features.tsv',
         fident_file = output_dir / clusteringresults_dir / '{protid}_fident_features.tsv'
     params:
@@ -412,13 +412,13 @@ rule calculate_concordance:
         '''
         python ProteinCartography/calculate_concordance.py -t {input.tmscore_file} -f {input.fident_file} -o {output} -p {params.protid}
         '''
-        
+
 rule get_source:
     '''
     Checks the blasthits and foldseekhits files to determine the source of each protein.
     Adds this info to the visualization plot.
     '''
-    input: 
+    input:
         pivoted = output_dir / clusteringresults_dir / 'all_by_all_tmscore_pivoted.tsv',
         hitfiles = expand(output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid = PROTID) + expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid = PROTID)
     output:
@@ -434,7 +434,7 @@ rule get_source:
 
 #####################################################################
 ## aggregate features into a big TSV and make a nice plot
-#####################################################################    
+#####################################################################
 
 rule aggregate_features:
     '''
@@ -458,7 +458,7 @@ rule aggregate_features:
         '''
         python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
         '''
-    
+
 rule plot_interactive:
     '''
     Generate interactive scatter plot HTML programmatically based on user-input parameters
@@ -507,7 +507,7 @@ rule plot_similarity_leiden:
         '''
         python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
         '''
-        
+
 rule plot_similarity_strucluster:
     '''
     Plots a similarity score matrix for Foldseek's structural clusters.
