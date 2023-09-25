@@ -7,7 +7,7 @@ You can find a general overview of the pipeline in the Pub [![Arcadia Pub](https
 
 ---
 ## Purpose
-Comparing protein structures across organisms can reveal interesting biological hypotheses. This pipeline allows users to build interactive maps of structurally similar proteins useful for discovery and exploration.
+Comparing protein structures across organisms can help us generate interesting biological hypotheses. This pipeline allows users to build interactive maps of structurally similar proteins useful for discovery and exploration.
 
 Our pipeline starts with user-provided protein(s) of interest and searches the available sequence and structure databases for matches. Using the full list of matches, we can build a "map" of all the similar proteins and look for clusters of proteins with similar features. Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
 
@@ -39,9 +39,9 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
 
 ---
 ## Modes
-The pipeline supports two modes: **From-Query** and **From-Folder**.
+The pipeline supports two modes: **Search** and **Cluster**.
 
-### From-Query Mode
+### Search Mode
 In this default mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).  
 ![rulegraph](rulegraph.png)
 
@@ -51,10 +51,10 @@ In this default mode, the pipeline starts with a set of input proteins of intere
     - The `protid` should be the prefix of the FASTA and PDB files (e.g. `P60709.fasta`, `P60709.pdb`).
     - Proteins provided as FASTAs <400aa in length will be folde automatically by the pipeline using the ESMFold API.
     - For proteins >400aa in length, we recommend using [ColabFold](https://github.com/sokrypton/ColabFold). 
-- `config.yml` file with custom settings.
-    - [`config.yml`](config.yml) is an example file that contains the defaults of the pipeline.
-    - We recommend making a copy of this file and adjusting the settings.
-    - A custom config file passed through the `--configfile` flag to Snakemake will overwrite the defaults.
+- Custom `config.yml` file.
+    - [`config.yml`](config.yml) contains the default parameters of the pipeline, which are used if a custom file is not provided.
+    - We recommend making a copy of this file and customizing the file to fit your search parameters.
+    - Passing the path of the custom config file through the `--configfile` flag to Snakemake will overwrite the defaults in [`config.yml`](config.yml).
     - **Key Parameters:**
         - `input`: directory containing input PDBs and FASTAs.
         - `output`: directory where all pipeline outputs are placed.
@@ -74,18 +74,21 @@ In this default mode, the pipeline starts with a set of input proteins of intere
         Replace {accession} with your UniProt accession (e.g. P24928).
         `python ProteinCartography/fetch_accession.py -a {accession} -o input -f fasta pdb`
         This saves a FASTA file from UniProt and a PDB file from AlphaFold to the `input/` folder.
+    - For non-UniProt proteins, users can provide a FASTA file (one entry per file).
+        - If the protein is <400aa, the pipeline can generate a custom PDB file using the ESMFold API.
+        - If the protein is >400aa, you should provide a PDB file with a matching prefix, which you can generate using ColabFold or other software.
 3. Run this command, replacing the `config.yml` with your config file and `8` with the number of cores you want to allocate to Snakemake.
 ```
 snakemake --snakefile Snakefile --configfile config.yml --use-conda --cores 8
 ```
 
-### From-Folder Mode
+### Cluster Mode
 In this mode, the pipeline starts with a folder containing PDBs of interest and performs just the clustering and visualization steps of the pipeline, without performing any searches or downloads. The pipeline is implemented in [`Snakefile_ff`](Snakefile_ff).  
 ![rulegraph_ff](rulegraph_ff.png)
 
 #### Inputs
 - Input protein structures in PDB format.
-    - Each protein should have a unique protein identifier (`protid`) which matches the PDB file prefix, as described for [From-Query mode](#from-query-mode).
+    - Each protein should have a unique protein identifier (`protid`) which matches the PDB file prefix, as described for [Search mode](#search-mode).
     - The pipeline does not yet support proteins with multiple chains.
 - `config_ff.yml` file with custom settings.
     - [`config_ff.yml`](config_ff.yml) is an example file that contains the defaults of the pipeline.
@@ -96,7 +99,7 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
         - `output`: directory where all pipeline outputs are placed.
         - `analysis_name`: nickname for the analysis, appended to important output files.
         - `features_file`: path to features file (described below).
-        - (Optional) `keyids`: key `protid` values for proteins to highlight similar to input proteins in the From-Query mode.
+        - (Optional) `keyids`: key `protid` values for proteins to highlight similar to input proteins in the Search mode.
         - See [`config_ff.yml`](config_ff.yml) for additional parameters.
 - Features file with protein metadata.
     - Usually, we call this file `uniprot_features.tsv` but you can use any name.
@@ -136,13 +139,13 @@ snakemake --snakefile Snakefile_ff --configfile config_ff.yml --use-conda --core
 
 ---
 ## Pipeline Overview
-The From-Query mode of the pipeline performs all of the following steps.  
-The From-Folder mode starts at the Clustering step.
+The Search mode of the pipeline performs all of the following steps.  
+The Cluster mode starts at the Clustering step.
 
 ### Protein Folding
 0. Fold input FASTA files using ESMFold.
     - The pipeline starts with input FASTA and/or PDB files, one entry per file, with a unique protein identifier (`protid`).
-    - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB, if the FASTA is less than 400aa in length.
+    - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB file for FASTA sequences shorter than 400aa.
 
 ### Protein Search
 1. Search the AlphaFold databases using queries to the Foldseek webserver API for each provided `.pdb` file.  
@@ -186,7 +189,7 @@ The From-Folder mode starts at the Clustering step.
     - Foldseek generates a `struclusters_features.tsv` file.
     - We perform Leiden clustering to generate a `leiden_features.tsv` file.
     - We extract from Foldseek's all-v-all TM-score analysis a distance from every protid to our input protids as `<input_protid>_distance_features.tsv` files.
-    Not available in From-Folder mode:
+    Not available in Cluster mode:
     - We extract from Foldseek search a fraction sequence identity for every protid in our input protids as `<input_protid>_fident_features.tsv` files.
     - We subtract the fraction sequence identity from the TM-score to generate a `<input_protid>_convergence_features.tsv` file.
     - We determine the source of each file in the analysis (whether it was found from blast or Foldseek) as the `source_features.tsv` file.
@@ -216,7 +219,7 @@ The From-Folder mode starts at the Clustering step.
             - For 'euk', uses the taxonomic groups `Mammalia, Vertebrata, Arthropoda, Ecdysozoa, Lophotrochozoa, Metazoa, Fungi, Viridiplantae, Sar, Excavata, Amoebazoa, Eukaryota, Bacteria, Archaea, Viruses`
             - For 'bac', uses the taxonomic groups `Pseudomonadota, Nitrospirae, Acidobacteria, Bacillota, Spirochaetes, Cyanobacteria, Actinomycetota, Deinococcota, Bacteria, Archaea, Viruses, Metazoa, Fungi, Viridiplantae, Eukaryota`
         - **Length:** length of the protein in amino acids.
-        - **Source:** how the protein was added to the clustering space (blast, Foldseek or both).
+        - **Source:** how the protein was added to the clustering space (`blast`, `foldseek` or `blast+foldseek`).
         
     - Power users can customize the plots using a variety of rules, described below.
 
@@ -368,13 +371,13 @@ The remaining columns are metadata for each protein. These metadata can be of an
 
 A variety of metadata features for each protein are usually pulled from UniProt for visualization purposes. An [example `features_file.tsv`](examples/features_file.tsv) is provided as part of the repo.  
 
-If you are providing a set of custom proteins (such as those not fetched from UniProt) when using the **From-Query** mode, you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map. You can specify the path to this file using the `override_file` parameter in [`config.yml`](config.yml).  
+If you are providing a set of custom proteins (such as those not fetched from UniProt) when using the **Search** mode, you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map. You can specify the path to this file using the `override_file` parameter in [`config.yml`](config.yml).  
 
-When using **From-Folder** mode, you should provide protein metadata in a `uniprot_features.tsv` file. You can specify the path to this file using the `features_file` parameter in [`config_ff.yml`](config_ff.yml).  
+When using **Cluster** mode, you should provide protein metadata in a `uniprot_features.tsv` file. You can specify the path to this file using the `features_file` parameter in [`config_ff.yml`](config_ff.yml).  
 
-Note that the `override_file` parameter also exists in the **From-Folder** mode. The difference between `features_file` and `override_file` is that the former is used as the base metadata file (replacing the `uniprot_features.tsv` file normally retrieved from UniProt, whereas the latter is loaded after the base metadata file, *replacing* any information pulled from the `features_file`. In the **From-Query** mode, you can therefore use the `override_file` parameter to correct errors in metadata provided by UniProt or replace values for specific columns in the `uniprot_features.tsv` file that is retrieved by the pipeline.  
+Note that the `override_file` parameter also exists in the **Cluster** mode. The difference between `features_file` and `override_file` is that the former is used as the base metadata file (replacing the `uniprot_features.tsv` file normally retrieved from UniProt, whereas the latter is loaded after the base metadata file, *replacing* any information pulled from the `features_file`. In the **Search** mode, you can therefore use the `override_file` parameter to correct errors in metadata provided by UniProt or replace values for specific columns in the `uniprot_features.tsv` file that is retrieved by the pipeline.  
 
-For either custom proteins provided through `override_file` in either mode, or base metadata provided by `features_file` in **From-Folder** mode, you should strive to include the default columns in the table below. Features used for color schemes in the default plotting rules are marked with *(Plotting)* below. Features used only for hover-over description are marked with *(Hovertext)*.
+For either custom proteins provided through `override_file` in either mode, or base metadata provided by `features_file` in **Cluster** mode, you should strive to include the default columns in the table below. Features used for color schemes in the default plotting rules are marked with *(Plotting)* below. Features used only for hover-over description are marked with *(Hovertext)*.
 
 | feature | example | description | source |
 |--------:|:-------:|:------------|:-------|
