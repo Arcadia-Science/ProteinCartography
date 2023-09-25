@@ -1,0 +1,26 @@
+	protid	protein	Length	pdb_origin	pdb_confidence	pdb_chains	Length_bin	pdb_confidence_bin	combined	combined_weight
+94	Q9UM73	ALK tyrosine kinase receptor	1620	AlphaFold	67.27646608050335	['A']	10	1	(10, 1)	0.0374331550802139
+17	P98170	E3 ubiquitin-protein ligase XIAP	497	AlphaFold	74.87434422110553	['A']	7	2	(7, 2)	0.0106951871657754
+26	P49841	Glycogen synthase kinase-3 beta	420	AlphaFold	89.04565917375454	['A']	5	6	(5, 6)	0.0213903743315508
+19	Q93009	Ubiquitin carboxyl-terminal hydrolase 7	1102	AlphaFold	86.43655367231639	['A']	9	5	(9, 5)	0.0106951871657754
+96	O75530	Polycomb protein EED	441	AlphaFold	87.33782473057286	['A']	6	5	(6, 5)	0.016042780748663103
+152	P53779	Mitogen-activated protein kinase 10	464	AlphaFold	80.35888286334058	['A']	6	3	(6, 3)	0.026737967914438502
+56	Q13451	Peptidyl-prolyl cis-trans isomerase FKBP5	457	AlphaFold	92.87844054580896	['A']	6	8	(6, 8)	0.0106951871657754
+178	P00441	Superoxide dismutase [cu-Zn]	154	AlphaFold	97.82121645796065	['A']	2	10	(2, 10)	0.0374331550802139
+65	Q15596	Nuclear receptor coactivator 2	1464	AlphaFold	48.45926182341306	['A']	10	1	(10, 1)	0.0374331550802139
+50	P19793	Retinoic acid receptor RXR-alpha	462	AlphaFold	76.51226441631505	['A']	6	3	(6, 3)	0.026737967914438502
+3	P14174	Macrophage migration inhibitory factor	115	AlphaFold	98.59430857142856	['A']	1	10	(1, 10)	0.026737967914438502
+38	P68871	Hemoglobin subunit beta	147	AlphaFold	96.96972590627765	['A']	2	10	(2, 10)	0.0374331550802139
+1	P40337	von Hippel–Lindau disease tumor suppressor	213	AlphaFold	85.59088719153937	['A']	3	5	(3, 5)	0.0053475935828877
+0	P08603	Complement factor H	1231	AlphaFold	79.11214594039055	['A']	10	3	(10, 3)	0.03208556149732621
+44	P00374	Dihydrofolate reductase	187	AlphaFold	96.33975496688741	['A']	2	10	(2, 10)	0.0374331550802139
+120	P01112	GTPase HRas	189	AlphaFold	92.56108724832217	['A']	2	8	(2, 8)	0.0213903743315508
+18	Q99497	Parkinson disease protein 7	189	AlphaFold	98.41917385057472	['A']	2	10	(2, 10)	0.0374331550802139
+88	P62937	Peptidyl-prolyl cis-trans isomerase A	165	AlphaFold	98.02497630331754	['A']	2	10	(2, 10)	0.0374331550802139
+36	P50120	Retinol-binding protein 2	134	AlphaFold	96.45409420289856	['A']	1	10	(1, 10)	0.026737967914438502
+35	P04439	HLA class I histocompatibility antigen, A alpha chain	365	AlphaFold	88.27429415855354	['A']	5	6	(5, 6)	0.0213903743315508
+143	P01834	Immunoglobulin kappa constant	107	AlphaFold	96.85217654171704	['A']	1	10	(1, 10)	0.026737967914438502
+165	P43235	Cathepsin K	329	AlphaFold	95.09400769230768	['A']	4	9	(4, 9)	0.026737967914438502
+138	P27986	Phosphatidylinositol 3-kinase regulatory subunit alpha	724	AlphaFold	83.7874189716613	['A']	8	4	(8, 4)	0.0213903743315508
+2	P28074	Proteasome subunit beta type-5	263	AlphaFold	83.01464071856287	['A']	4	4	(4, 4)	0.0106951871657754
+173	Q96RI1	Bile acid receptor	486	AlphaFold	69.7652944188428	['A']	6	2	(6, 2)	0.0106951871657754
