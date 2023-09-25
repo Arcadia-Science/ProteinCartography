@@ -1,0 +1,188 @@
+	protid	protein	Length	pdb_origin	pdb_confidence	pdb_chains	Length_bin	pdb_confidence_bin	combined	combined_weight	sampled
+0	P08603	Complement factor H	1231	AlphaFold	79.11214594039055	['A']	10	3	(10, 3)	0.03208556149732621	yes
+1	P40337	von Hippel–Lindau disease tumor suppressor	213	AlphaFold	85.59088719153937	['A']	3	5	(3, 5)	0.0053475935828877	yes
+2	P28074	Proteasome subunit beta type-5	263	AlphaFold	83.01464071856287	['A']	4	4	(4, 4)	0.0106951871657754	yes
+3	P14174	Macrophage migration inhibitory factor	115	AlphaFold	98.59430857142856	['A']	1	10	(1, 10)	0.026737967914438502	yes
+4	P62753	40S ribosomal protein S6	249	AlphaFold	94.00538996522603	['A']	3	9	(3, 9)	0.0213903743315508	no
+5	Q6PL18	ATPase family AAA domain-containing protein 2	1390	AlphaFold	62.52127447458236	['A']	10	1	(10, 1)	0.0374331550802139	no
+6	P61925	cAMP-dependent protein kinase inhibitor alpha	76	AlphaFold	65.37391771019679	['A']	1	1	(1, 1)	0.0106951871657754	no
+7	P23280	Carbonic anhydrase 2	308	AlphaFold	89.63792000000001	['A']	4	7	(4, 7)	0.0213903743315508	no
+8	P04818	Thymidylate synthase	313	AlphaFold	94.1360612082671	['A']	4	9	(4, 9)	0.026737967914438502	no
+9	A0A5B9	T cell receptor beta constant 2	178	AlphaFold	93.88093039772728	['A']	2	9	(2, 9)	0.0213903743315508	no
+10	Q9H2K2	Poly [ADP-ribose] polymerase tankyrase-2	1166	AlphaFold	83.10920049338417	['A']	9	4	(9, 4)	0.016042780748663103	no
+11	P52732	Kinesin-like protein KIF11	1056	AlphaFold	74.76863848640882	['A']	9	2	(9, 2)	0.026737967914438502	no
+12	P15121	Aldo-keto reductase family 1 member B1	316	AlphaFold	98.30981782178218	['A']	4	10	(4, 10)	0.0106951871657754	no
+13	Q9Y233	cAMP and cAMP-inhibited cGMP 3′,5′-cyclic phosphodiesterase 10A	779	AlphaFold	84.5129247866001	['A']	8	4	(8, 4)	0.0213903743315508	no
+14	Q07889	Son of seven less homolog 1	1333	AlphaFold	76.87428770949721	['A']	10	3	(10, 3)	0.03208556149732621	no
+15	P04629	High affinity nerve growth factor receptor	796	AlphaFold	78.95310154346059	['A']	8	3	(8, 3)	0.0053475935828877	no
+16	P15056	Serine/threonine-protein kinase B-raf	766	AlphaFold	68.03876347708895	['A']	8	2	(8, 2)	0.016042780748663103	no
+17	P98170	E3 ubiquitin-protein ligase XIAP	497	AlphaFold	74.87434422110553	['A']	7	2	(7, 2)	0.0106951871657754	yes
+18	Q99497	Parkinson disease protein 7	189	AlphaFold	98.41917385057472	['A']	2	10	(2, 10)	0.0374331550802139	yes
+19	Q93009	Ubiquitin carboxyl-terminal hydrolase 7	1102	AlphaFold	86.43655367231639	['A']	9	5	(9, 5)	0.0106951871657754	yes
+20	P56817	Beta-secretase 1	501	AlphaFold	87.75677879714577	['A']	7	5	(7, 5)	0.016042780748663103	no
+21	P37231	Peroxisome proliferator-activated receptor gamma	505	AlphaFold	76.15011124845488	['A']	7	3	(7, 3)	0.016042780748663103	no
+22	P06239	Tyrosine-protein kinase Lck	509	AlphaFold	84.33331457925635	['A']	7	4	(7, 4)	0.016042780748663103	no
+23	P10275	Androgen receptor	920	AlphaFold	58.791559356136815	['A']	9	1	(9, 1)	0.0213903743315508	no
+24	P43405	Tyrosine-protein kinase SYK	635	AlphaFold	84.3303645320197	['A']	8	4	(8, 4)	0.0213903743315508	no
+25	P23497	Nuclear autoantigen Sp-100	879	AlphaFold	57.35561550475649	['A']	9	1	(9, 1)	0.0213903743315508	no
+26	P49841	Glycogen synthase kinase-3 beta	420	AlphaFold	89.04565917375454	['A']	5	6	(5, 6)	0.0213903743315508	yes
+27	P62805	Histone H4	103	AlphaFold	90.43752500000001	['A']	1	7	(1, 7)	0.0106951871657754	no
+28	Q9UIF8	Bromodomain adjacent to zinc finger domain protein 2B	2168	AlphaFold	55.871607926901625	['A']	10	1	(10, 1)	0.0374331550802139	no
+29	P01024	Complement C3	1663	AlphaFold	79.81248879094156	['A']	10	3	(10, 3)	0.03208556149732621	no
+30	O75164	Lysine-specific demethylase 4A	1064	AlphaFold	72.5644811710542	['A']	9	2	(9, 2)	0.026737967914438502	no
+31	P12931	Proto-oncogene tyrosine-protein kinase Src	536	AlphaFold	84.51330327479829	['A']	7	4	(7, 4)	0.016042780748663103	no
+32	P09874	Poly [ADP-ribose] polymerase 1	1014	AlphaFold	83.28744712990937	['A']	9	4	(9, 4)	0.016042780748663103	no
+33	Q9Y3Z3	Deoxynucleoside triphosphate triphosphohydrolase SAMHD1	626	AlphaFold	88.52570894788593	['A']	8	6	(8, 6)	0.0106951871657754	no
+34	P42336	Phosphatidylinositol 4,5-bisphosphate 3-kinase catalytic subunit alpha isoform	1068	AlphaFold	92.61457807842237	['A']	9	8	(9, 8)	0.0106951871657754	no
+35	P04439	HLA class I histocompatibility antigen, A alpha chain	365	AlphaFold	88.27429415855354	['A']	5	6	(5, 6)	0.0213903743315508	yes
+36	P50120	Retinol-binding protein 2	134	AlphaFold	96.45409420289856	['A']	1	10	(1, 10)	0.026737967914438502	yes
+37	O15530	3-phosphoinositide-dependent protein kinase 1	556	AlphaFold	80.12313496519201	['A']	7	3	(7, 3)	0.016042780748663103	no
+38	P68871	Hemoglobin subunit beta	147	AlphaFold	96.96972590627765	['A']	2	10	(2, 10)	0.0374331550802139	yes
+39	P55201	Peregrin	1214	AlphaFold	68.84826474551674	['A']	10	2	(10, 2)	0.0213903743315508	no
+40	Q13526	Peptidyl-prolyl cis-trans isomerase NIMA-interacting 1	163	AlphaFold	92.65670046801873	['A']	2	8	(2, 8)	0.0213903743315508	no
+41	P01308	Insulin	110	AlphaFold	53.44164481525626	['A']	1	1	(1, 1)	0.0106951871657754	no
+42	Q15369	Elongin-C	112	AlphaFold	89.09082474226805	['A']	1	6	(1, 6)	0.0106951871657754	no
+43	Q6NXT2	Histone H3.3	135	AlphaFold	86.47041198501871	['A']	1	5	(1, 5)	0.0213903743315508	no
+44	P00374	Dihydrofolate reductase	187	AlphaFold	96.33975496688741	['A']	2	10	(2, 10)	0.0374331550802139	yes
+45	P05230	Fibroblast growth factor 1	155	AlphaFold	91.17677235772358	['A']	2	7	(2, 7)	0.016042780748663103	no
+46	P01730	T-cell surface glycoprotein CD4	458	AlphaFold	85.57181058495823	['A']	6	5	(6, 5)	0.016042780748663103	no
+47	P01903	HLA class II histocompatibility antigen, DR alpha chain	254	AlphaFold	89.58586547972304	['A']	3	7	(3, 7)	0.016042780748663103	no
+48	Q07817	Bcl-2-like protein 1	233	AlphaFold	73.63605005440697	['A']	3	2	(3, 2)	0.0053475935828877	no
+49	P0CG48	Polyubiquitin-C	685	AlphaFold	88.88354070518737	['A']	8	6	(8, 6)	0.0106951871657754	no
+50	P19793	Retinoic acid receptor RXR-alpha	462	AlphaFold	76.51226441631505	['A']	6	3	(6, 3)	0.026737967914438502	yes
+51	P01889	HLA class I histocompatibility antigen, B alpha chain	362	AlphaFold	89.42012276394249	['A']	5	7	(5, 7)	0.016042780748663103	no
+52	P01848	T cell receptor alpha constant	140	AlphaFold	92.04940217391305	['A']	2	8	(2, 8)	0.0213903743315508	no
+53	Q99436	Proteasome subunit beta type-7	277	AlphaFold	89.77271210676837	['A']	4	7	(4, 7)	0.0213903743315508	no
+54	P06276	Cholinesterase	602	AlphaFold	93.21271354705274	['A']	7	8	(7, 8)	0.016042780748663103	no
+55	P24941	Cyclin-dependent kinase 2	298	AlphaFold	88.379011676397	['A']	4	6	(4, 6)	0.016042780748663103	no
+56	Q13451	Peptidyl-prolyl cis-trans isomerase FKBP5	457	AlphaFold	92.87844054580896	['A']	6	8	(6, 8)	0.0106951871657754	yes
+57	Q9VNX1	DNA polymerase eta	885	AlphaFold	70.76685603336689	['A']	9	2	(9, 2)	0.026737967914438502	no
+58	P51449	Nuclear receptor ROR-gamma	518	AlphaFold	75.84376225490197	['A']	7	2	(7, 2)	0.0106951871657754	no
+59	P68431	Histone H3.1	136	AlphaFold	87.28691951896393	['A']	1	5	(1, 5)	0.0213903743315508	no
+60	P13726	Tissue factor	295	AlphaFold	85.29561080154306	['A']	4	5	(4, 5)	0.0106951871657754	no
+61	P48736	Phosphatidylinositol 4,5-bisphosphate 3-kinase catalytic subunit gamma isoform	1102	AlphaFold	88.42051538288794	['A']	9	6	(9, 6)	0.0106951871657754	no
+62	P12821	Angiotensin-converting enzyme	1306	AlphaFold	91.63364821462308	['A']	10	7	(10, 7)	0.0053475935828877	no
+63	P27695	DNA endonuclease	318	AlphaFold	90.81160415003991	['A']	4	7	(4, 7)	0.0213903743315508	no
+64	P27487	Dipeptidyl peptidase 4	766	AlphaFold	96.40634818852195	['A']	8	10	(8, 10)	0.0053475935828877	no
+65	Q15596	Nuclear receptor coactivator 2	1464	AlphaFold	48.45926182341306	['A']	10	1	(10, 1)	0.0374331550802139	yes
+66	P01911	HLA class II histocompatibility antigen, DRB1 beta chain	266	AlphaFold	89.12496920890572	['A']	4	6	(4, 6)	0.016042780748663103	no
+67	P63165	Small ubiquitin-related modifier 1	101	AlphaFold	79.66773794808405	['A']	1	3	(1, 3)	0.0053475935828877	no
+68	Q16539	Mitogen-activated protein kinase 14	360	AlphaFold	89.27592707258341	['A']	5	6	(5, 6)	0.0213903743315508	no
+69	P25440	Bromodomain-containing protein 2	801	AlphaFold	66.03078054298642	['A']	8	1	(8, 1)	0.0106951871657754	no
+70	P02766	Transthyretin	147	AlphaFold	88.93219642857144	['A']	2	6	(2, 6)	0.0053475935828877	no
+71	P39900	Macrophage metalloelastase	470	AlphaFold	88.02213127615063	['A']	6	6	(6, 6)	0.0106951871657754	no
+72	P80188	Neutrophil gelatinase-associated lipocalin	198	AlphaFold	91.9916917293233	['A']	3	8	(3, 8)	0.0106951871657754	no
+73	Q9BY41	Histone deacetylase 8	377	AlphaFold	95.37996253405994	['A']	5	9	(5, 9)	0.0053475935828877	no
+74	Q00987	E3 ubiquitin-protein ligase Mdm2	491	AlphaFold	62.99806685669862	['A']	6	1	(6, 1)	0.0053475935828877	no
+75	P04908	Histone H2A type 1-B/E	130	AlphaFold	91.08902610441767	['A']	1	7	(1, 7)	0.0106951871657754	no
+76	P00749	Urokinase-type plasminogen activator	431	AlphaFold	82.30347467608951	['A']	5	4	(5, 4)	0.0213903743315508	no
+77	P20248	Cyclin-A2	432	AlphaFold	74.74787240269242	['A']	5	2	(5, 2)	0.0106951871657754	no
+78	Q9NWT6	Hypoxia-inducible factor 1-alpha inhibitor	349	AlphaFold	92.63983140147523	['A']	5	8	(5, 8)	0.0106951871657754	no
+79	P0DOX5	Immunoglobulin gamma-1 heavy chain	449	AlphaFold	92.0892084052965	['A']	6	8	(6, 8)	0.0106951871657754	no
+80	Q08499	cAMP-specific 3′,5′-cyclic phosphodiesterase 4D	809	AlphaFold	68.2083984375	['A']	9	2	(9, 2)	0.026737967914438502	no
+81	P62873	Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1	340	AlphaFold	97.21364435946462	['A']	4	10	(4, 10)	0.0106951871657754	no
+82	P11309	Serine/threonine-protein kinase pim-1	313	AlphaFold	90.32981738785232	['A']	4	7	(4, 7)	0.0213903743315508	no
+83	P09211	Glutathione S-transferase P	210	AlphaFold	98.07011543134871	['A']	3	10	(3, 10)	0.0106951871657754	no
+84	P02768	Serum albumin	609	AlphaFold	92.63976945244957	['A']	7	8	(7, 8)	0.016042780748663103	no
+85	P08709	Coagulation factor VII	466	AlphaFold	82.73957376141709	['A']	6	4	(6, 4)	0.0106951871657754	no
+86	P61769	Beta-2-microglobulin	119	AlphaFold	94.29887280248188	['A']	1	9	(1, 9)	0.0053475935828877	no
+87	P08708	40S ribosomal protein S17	135	AlphaFold	86.71813015582036	['A']	1	5	(1, 5)	0.0213903743315508	no
+88	P62937	Peptidyl-prolyl cis-trans isomerase A	165	AlphaFold	98.02497630331754	['A']	2	10	(2, 10)	0.0374331550802139	yes
+89	P27338	Amine oxidase [flavin-containing] B	520	AlphaFold	95.70283986453799	['A']	7	9	(7, 9)	0.0053475935828877	no
+90	P09012	U1 small nuclear ribonucleoprotein A	282	AlphaFold	80.62831435079727	['A']	4	3	(4, 3)	0.0053475935828877	no
+91	P01857	Immunoglobulin heavy constant gamma 1	399	AlphaFold	92.00645948072383	['A']	5	8	(5, 8)	0.0106951871657754	no
+92	P01116	GTPase KRas	189	AlphaFold	92.2809756097561	['A']	2	8	(2, 8)	0.0213903743315508	no
+93	P16442	Histo-blood group ABO system transferase	354	AlphaFold	89.28207279029462	['A']	5	6	(5, 6)	0.0213903743315508	no
+94	Q9UM73	ALK tyrosine kinase receptor	1620	AlphaFold	67.27646608050335	['A']	10	1	(10, 1)	0.0374331550802139	yes
+95	P29317	Ephrin type-A receptor 2	976	AlphaFold	82.31539786926213	['A']	9	4	(9, 4)	0.016042780748663103	no
+96	O75530	Polycomb protein EED	441	AlphaFold	87.33782473057286	['A']	6	5	(6, 5)	0.016042780748663103	yes
+97	Q07820	Induced myeloid leukemia cell differentiation protein Mcl-1	350	AlphaFold	65.1675866006852	['A']	5	1	(5, 1)	0.0053475935828877	no
+98	P02794	Ferritin heavy chain	183	AlphaFold	95.7672654155496	['A']	2	10	(2, 10)	0.0374331550802139	no
+99	P61964	WD repeat-containing protein 5	334	AlphaFold	93.82450698757764	['A']	4	9	(4, 9)	0.026737967914438502	no
+100	Q9NWZ3	Interleukin-1 receptor-associated kinase 4	460	AlphaFold	83.86365145228216	['A']	6	4	(6, 4)	0.0106951871657754	no
+101	P10636	Microtubule-associated protein tau	758	AlphaFold	49.34218073593073	['A']	8	1	(8, 1)	0.0106951871657754	no
+102	P42574	Caspase-3	277	AlphaFold	86.35735772357724	['A']	4	5	(4, 5)	0.0106951871657754	no
+103	Q06124	Tyrosine-protein phosphatase non-receptor type 11	593	AlphaFold	86.22193224592222	['A']	7	5	(7, 5)	0.016042780748663103	no
+104	P61626	Lysozyme C	148	AlphaFold	94.45464131374246	['A']	2	9	(2, 9)	0.0213903743315508	no
+105	P01850	T cell receptor beta constant 1	176	AlphaFold	94.02379211469534	['A']	2	9	(2, 9)	0.0213903743315508	no
+106	P69905	Hemoglobin subunit alpha	142	AlphaFold	98.02990714948932	['A']	2	10	(2, 10)	0.0374331550802139	no
+107	P68400	Casein kinase II subunit alpha	391	AlphaFold	90.96023255813954	['A']	5	7	(5, 7)	0.016042780748663103	no
+108	Q16531	DNA damage-binding protein 1	1140	AlphaFold	91.96357815653734	['A']	9	8	(9, 8)	0.0106951871657754	no
+109	Q9UKL0	REST corepressor 1	485	AlphaFold	71.035336	['A']	6	2	(6, 2)	0.0106951871657754	no
+110	P27707	Deoxycytidine kinase	260	AlphaFold	89.4789855746859	['A']	3	7	(3, 7)	0.016042780748663103	no
+111	Q15788	Nuclear receptor coactivator 1	1441	AlphaFold	47.38976372924649	['A']	10	1	(10, 1)	0.0374331550802139	no
+112	P62266	40S ribosomal protein S23	143	AlphaFold	94.51653189577719	['A']	2	9	(2, 9)	0.0213903743315508	no
+113	P16083	Ribosyldihydronicotinamide dehydrogenase [quinone]	231	AlphaFold	98.17440131219244	['A']	3	10	(3, 10)	0.0106951871657754	no
+114	P61586	Transforming protein RhoA	193	AlphaFold	93.72214566929134	['A']	3	9	(3, 9)	0.0213903743315508	no
+115	P0CG47	Polyubiquitin-B	229	AlphaFold	93.71150276243094	['A']	3	9	(3, 9)	0.0213903743315508	no
+116	P29475	Nitric oxide synthase, brain	1434	AlphaFold	80.82927739544732	['A']	10	3	(10, 3)	0.03208556149732621	no
+117	P00742	Coagulation factor X	488	AlphaFold	79.84792428198433	['A']	6	3	(6, 3)	0.026737967914438502	no
+118	Q92793	CREB-binding protein	2442	AlphaFold	54.295474767059844	['A']	10	1	(10, 1)	0.0374331550802139	no
+119	P11473	Vitamin D3 receptor	427	AlphaFold	84.69541110121699	['A']	5	4	(5, 4)	0.0213903743315508	no
+120	P01112	GTPase HRas	189	AlphaFold	92.56108724832217	['A']	2	8	(2, 8)	0.0213903743315508	yes
+121	P31947	14–3-3 protein sigma	248	AlphaFold	93.38504365690807	['A']	3	8	(3, 8)	0.0106951871657754	no
+122	P06899	Histone H2B type 1-J	126	AlphaFold	85.69804503582394	['A']	1	5	(1, 5)	0.0213903743315508	no
+123	P43490	Nicotinamide phosphoribosyltransferase	491	AlphaFold	94.10414777070065	['A']	6	9	(6, 9)	0.0053475935828877	no
+124	P14735	Insulin-degrading enzyme	1019	AlphaFold	93.79620884402789	['A']	9	9	(9, 9)	0.0053475935828877	no
+125	P00797	Renin	406	AlphaFold	85.6055127800568	['A']	5	5	(5, 5)	0.0053475935828877	no
+126	P02751	Fibronectin	2477	AlphaFold	70.33275732414226	['A']	10	2	(10, 2)	0.0213903743315508	no
+127	P33981	Dual specificity protein kinase TTK	857	AlphaFold	63.95435178387901	['A']	9	1	(9, 1)	0.0213903743315508	no
+128	P14324	Farnesyl pyrophosphate synthase	419	AlphaFold	84.64945668135096	['A']	5	4	(5, 4)	0.0213903743315508	no
+129	P02787	Serotransferrin	698	AlphaFold	93.3936923076923	['A']	8	8	(8, 8)	0.0053475935828877	no
+130	Q02750	Dual specificity mitogen-activated protein kinase 1	393	AlphaFold	83.71248359580053	['A']	5	4	(5, 4)	0.0213903743315508	no
+131	P59768	Guanine nucleotide-binding protein G(I)/G(S)/G(O) subunit gamma-2	71	AlphaFold	89.40757299270074	['A']	1	6	(1, 6)	0.0106951871657754	no
+132	O60674	Tyrosine-protein kinase JAK2	1132	AlphaFold	87.78213120104438	['A']	9	6	(9, 6)	0.0106951871657754	no
+133	Q15370	Elongin-B	118	AlphaFold	93.16773072747014	['A']	1	8	(1, 8)	0.0106951871657754	no
+134	P23458	Tyrosine-protein kinase JAK1	1154	AlphaFold	86.15966114377338	['A']	9	5	(9, 5)	0.0106951871657754	no
+135	P03950	Angiogenin	147	AlphaFold	90.44002583979328	['A']	2	7	(2, 7)	0.016042780748663103	no
+136	P17931	Galectin-3	250	AlphaFold	76.1192071197411	['A']	3	3	(3, 3)	0.0053475935828877	no
+137	O14757	Serine/threonine-protein kinase Chk1	476	AlphaFold	78.13441107338731	['A']	6	3	(6, 3)	0.026737967914438502	no
+138	P27986	Phosphatidylinositol 3-kinase regulatory subunit alpha	724	AlphaFold	83.7874189716613	['A']	8	4	(8, 4)	0.0213903743315508	yes
+139	P04637	Cellular tumor antigen p53	393	AlphaFold	75.12907189542484	['A']	5	2	(5, 2)	0.0106951871657754	no
+140	P06746	DNA polymerase beta	335	AlphaFold	94.32347971715669	['A']	4	9	(4, 9)	0.026737967914438502	no
+141	P03372	Estrogen receptor	595	AlphaFold	66.90446409316368	['A']	7	1	(7, 1)	0.0053475935828877	no
+142	Q9NP87	DNA-directed DNA/RNA polymerase mu	494	AlphaFold	89.4463582166926	['A']	7	7	(7, 7)	0.0106951871657754	no
+143	P01834	Immunoglobulin kappa constant	107	AlphaFold	96.85217654171704	['A']	1	10	(1, 10)	0.026737967914438502	yes
+144	P03951	Coagulation factor XI	625	AlphaFold	86.15252492370296	['A']	8	5	(8, 5)	0.0106951871657754	no
+145	P00519	Tyrosine-protein kinase ABL1	1130	AlphaFold	63.122447066990624	['A']	9	1	(9, 1)	0.0213903743315508	no
+146	P00533	Epidermal growth factor receptor	1210	AlphaFold	76.52090928449745	['A']	10	3	(10, 3)	0.03208556149732621	no
+147	P53355	Death-associated protein kinase 1	1430	AlphaFold	82.80539932408395	['A']	10	4	(10, 4)	0.0053475935828877	no
+148	P05067	Amyloid-beta precursor protein	770	AlphaFold	68.15729929404039	['A']	8	2	(8, 2)	0.016042780748663103	no
+149	Q95460	Major histocompatibility complex class I-related gene protein	341	AlphaFold	88.45604609290602	['A']	4	6	(4, 6)	0.016042780748663103	no
+150	P62942	Peptidyl-prolyl cis-trans isomerase FKBP1A	108	AlphaFold	96.44111904761904	['A']	1	10	(1, 10)	0.026737967914438502	no
+151	Q9UGP5	DNA polymerase lambda	575	AlphaFold	80.63982766338407	['A']	7	3	(7, 3)	0.016042780748663103	no
+152	P53779	Mitogen-activated protein kinase 10	464	AlphaFold	80.35888286334058	['A']	6	3	(6, 3)	0.026737967914438502	yes
+153	Q04609	Glutamate carboxypeptidase 2	750	AlphaFold	94.01397117962466	['A']	8	9	(8, 9)	0.0053475935828877	no
+154	P34913	Bifunctional epoxide hydrolase 2	555	AlphaFold	93.60608745160555	['A']	7	8	(7, 8)	0.016042780748663103	no
+155	P08581	Hepatocyte growth factor receptor	1390	AlphaFold	79.58763198828804	['A']	10	3	(10, 3)	0.03208556149732621	no
+156	Q9UNA4	DNA polymerase iota	740	AlphaFold	70.68244806866953	['A']	8	2	(8, 2)	0.016042780748663103	no
+157	P29375	Lysine-specific histone demethylase 1A	1690	AlphaFold	70.56570196952806	['A']	10	2	(10, 2)	0.0213903743315508	no
+158	P06396	Gelsolin	782	AlphaFold	89.71282594308404	['A']	8	7	(8, 7)	0.0053475935828877	no
+159	P05106	Integrin beta-3	788	AlphaFold	87.49597524752475	['A']	8	5	(8, 5)	0.0106951871657754	no
+160	Q02127	Dihydroorotate dehydrogenase (quinone), mitochondrial	395	AlphaFold	95.82511250827267	['A']	5	10	(5, 10)	0.0053475935828877	no
+161	P02679	Fibrinogen gamma chain	453	AlphaFold	85.74063929457151	['A']	6	5	(6, 5)	0.016042780748663103	no
+162	P53350	Serine/threonine-protein kinase PLK1	603	AlphaFold	85.16988967527061	['A']	7	5	(7, 5)	0.016042780748663103	no
+163	P00734	Prothrombin	622	AlphaFold	84.75164971521562	['A']	7	4	(7, 4)	0.016042780748663103	no
+164	P45452	Collagenase 3	471	AlphaFold	89.15264705882353	['A']	6	6	(6, 6)	0.0106951871657754	no
+165	P43235	Cathepsin K	329	AlphaFold	95.09400769230768	['A']	4	9	(4, 9)	0.026737967914438502	yes
+166	P04156	Major prion protein	253	AlphaFold	66.2645711350796	['A']	3	1	(3, 1)	0.0053475935828877	no
+167	P62826	GTP-binding nuclear protein ran	216	AlphaFold	88.83214617169374	['A']	3	6	(3, 6)	0.0106951871657754	no
+168	P25774	Cathepsin S	331	AlphaFold	94.54173632218846	['A']	4	9	(4, 9)	0.026737967914438502	no
+169	P20618	Proteasome subunit beta type-1	241	AlphaFold	91.63680301399354	['A']	3	7	(3, 7)	0.016042780748663103	no
+170	Q15648	Mediator of RNA polymerase II transcription subunit 1	1581	AlphaFold	51.29562335791168	['A']	10	1	(10, 1)	0.0374331550802139	no
+171	Q14568	Heat shock protein HSP 90-alpha	343	AlphaFold	82.90607155764366	['A']	4	4	(4, 4)	0.0106951871657754	no
+172	P11362	Fibroblast growth factor receptor 1	822	AlphaFold	76.04377133105802	['A']	9	2	(9, 2)	0.026737967914438502	no
+173	Q96RI1	Bile acid receptor	486	AlphaFold	69.7652944188428	['A']	6	2	(6, 2)	0.0106951871657754	yes
+174	Q06187	Tyrosine-protein kinase BTK	659	AlphaFold	84.98775149031296	['A']	8	4	(8, 4)	0.0213903743315508	no
+175	P35968	Vascular endothelial growth factor receptor 2	1356	AlphaFold	72.17869773560085	['A']	10	2	(10, 2)	0.0213903743315508	no
+176	P62993	Growth factor receptor-bound protein 2	217	AlphaFold	88.12695457094783	['A']	3	6	(3, 6)	0.0106951871657754	no
+177	P62987	Ubiquitin-60S ribosomal protein L40	128	AlphaFold	93.48034951456312	['A']	1	8	(1, 8)	0.0106951871657754	no
+178	P00441	Superoxide dismutase [cu-Zn]	154	AlphaFold	97.82121645796065	['A']	2	10	(2, 10)	0.0374331550802139	yes
+179	P28482	Mitogen-activated protein kinase 1	360	AlphaFold	90.9899382504288	['A']	5	7	(5, 7)	0.016042780748663103	no
+180	Q14145	Keltch-like ECH-associated protein 1	624	AlphaFold	90.32855970455479	['A']	7	7	(7, 7)	0.0106951871657754	no
+181	P62979	Ubiquitin-40S ribosomal protein S27a	156	AlphaFold	89.51078633836377	['A']	2	7	(2, 7)	0.016042780748663103	no
+182	P18031	Tyrosine-protein phosphatase non-receptor type 1	435	AlphaFold	82.03060933940775	['A']	6	3	(6, 3)	0.026737967914438502	no
+183	P29373	Cellular retinoic acid-binding protein 2	138	AlphaFold	96.7101000909918	['A']	1	10	(1, 10)	0.026737967914438502	no
+184	P0DP23	Calmodulin-1	149	AlphaFold	85.08794718909711	['A']	2	5	(2, 5)	0.0053475935828877	no
+185	P25788	Proteasome subunit alpha type-3	255	AlphaFold	94.69395488721804	['A']	3	9	(3, 9)	0.0213903743315508	no
+186	P04746	Pancreatic alpha-amylase	511	AlphaFold	96.66332188420019	['A']	7	10	(7, 10)	0.0053475935828877	no
