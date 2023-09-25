@@ -65,7 +65,7 @@ def extract_blasthits(input_file: str, output_file: str, names=BLAST_DEFAULTS):
     hits = df["sacc"].unique()
 
     if len(hits) == 0:
-        raise Exception("No hits were returned. Check to see if remote BLAST died.")
+        raise Exception("No hits were returned. Check to see if remote BLAST failed.")
 
     with open(output_file, "w+") as f:
         f.writelines(hit + "\n" for hit in hits)
@@ -77,11 +77,6 @@ def main():
     input_file = args.input
     output_file = args.output
     blast_format_string = args.blast_format_string
-
-    if blast_format_string == BLAST_DEFAULT_STRING:
-        blast_format_list = BLAST_DEFAULTS
-    else:
-        blast_format_list = [i for i in blast_format_string.split(" ") if i != "6"]
 
     extract_blasthits(input_file, output_file, names=blast_format_list)
 
