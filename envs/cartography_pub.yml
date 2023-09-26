@@ -1,0 +1,19 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9.16
+  - jupyter=1.0.0
+  - requests=2.29.0
+  - pandas=2.0.1
+  - numpy=1.23.5
+  - ipython=8.13.2
+  - matplotlib=3.7.1
+  - plotly=5.14.1
+  - tqdm=4.65.0
+  - pip=23.2.1
+  - seaborn=0.12.2
+  - pip:
+      - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git@245ad0c#egg=arcadia_pycolor"
+      - bioservices==1.11.2
