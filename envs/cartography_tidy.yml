@@ -1,0 +1,16 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9.16
+  - snakemake-minimal=7.25.3
+  - requests=2.29.0
+  - pandas=2.0.1
+  - numpy=1.23.5
+  - ipython=8.13.2
+  - mamba=1.4.2
+  - pip=23.2.1
+  - pip:
+      - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git@245ad0c#egg=arcadia_pycolor"
+      - bioservices==1.11.2
