@@ -90,7 +90,7 @@ def run_foldseek_clustering(
             foldseek_out,
             foldseek_tmp,
             "-a",
-            "max-seqs",
+            "--max-seqs",
             str(max_seqs),
         ]
     )

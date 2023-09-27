@@ -24,7 +24,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
     conda env create -f envs/cartography_tidy.yml -n cartography_tidy
     conda activate cartography_tidy
     ```
-4. Run the Snakemake pipeline using a demo protein (human ACTB, [P60709](https://www.UniProt.org/UniProtkb/P60709/entry)).
+4. Run the Snakemake pipeline using a demo protein (human ACTB, [P60709](https://www.uniprot.org/UniProtkb/P60709/entry)).
     Set `n` to be the number of cores you'd like to use for running the pipeline.
     ```
     snakemake --snakefile Snakefile --configfile demo/config_actin.yml --use-conda --cores n
@@ -153,7 +153,7 @@ The Cluster mode starts at the Clustering step.
     - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein, per database.  
 
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.  
-    - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.UniProt.org/docs/?urls.primaryName=idmapping#/job/submitJob).
+    - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob).
     - TODO: This can fail for large proteins (>700aa) due to remote BLAST CPU limits. To overcome this error, you can manually run BLAST locally or via the webserver and create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blasthits.refseq.txt` in the `output/blastresults/` directory.
     
 ### Download Data
@@ -213,7 +213,7 @@ The Cluster mode starts at the Clustering step.
     - Each point has hover-over information.
     - Default parameters include:
         - **Leiden Cluster:** Protein cluster as called by [scanpy's implementation of Leiden clustering](https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.leiden.html).
-        - **Annotation Score:** [UniProt annotation score](https://www.UniProt.org/help/annotation_score) from 0 to 5 (5 being the best evidence).
+        - **Annotation Score:** [UniProt annotation score](https://www.uniprot.org/help/annotation_score) from 0 to 5 (5 being the best evidence).
         - **Broad Taxon:** the broad taxonomic category for the source organism. There are two modes: 'euk' and 'bac'.
             - Assigns the "smallest" taxonomic scope from the rankings below for each point. So, a mouse gene would get `Mammalia` but not `Vertebrata`.
             - For 'euk', uses the taxonomic groups `Mammalia, Vertebrata, Arthropoda, Ecdysozoa, Lophotrochozoa, Metazoa, Fungi, Viridiplantae, Sar, Excavata, Amoebazoa, Eukaryota, Bacteria, Archaea, Viruses`
@@ -384,7 +384,7 @@ For either custom proteins provided through `override_file` in either mode, or b
 |`"protid"` | `"P42212"` | *(Required)* the unique identifier of the protein. Usually the UniProt accession, but can be any alphanumeric string | User-provided or UniProt |
 |`"Protein names"`| `"Green fluorescent protein"` | *(Hovertext)* a human-readable description of the protein | UniProt |
 |`"Gene Names (primary)"` | `"GFP"` | *(Hovertext)* a gene symbol for the protein | UniProt |
-|`"Annotation"`| `5` | *(Plotting)* UniProt [Annotation Score](https://www.UniProt.org/help/annotation_score) (0 to 5) | UniProt |
+|`"Annotation"`| `5` | *(Plotting)* UniProt [Annotation Score](https://www.uniprot.org/help/annotation_score) (0 to 5) | UniProt |
 |`"Organism"` | `"Aequorea victoria (Water jellyfish) (Mesonema victoria)"` | *(Hovertext)* Scientific name (common name) (synonyms) | UniProt |
 |`"Taxonomic lineage"`|`"cellular organisms (no rank), Eukaryota (superkingdom), ... Aequoreidae (family), Aequorea (genus)"`| string of comma-separated `Lineage name (rank)` for the organism's full taxonomic lineage | UniProt |
 |`"Lineage"`|`["cellular organisms", "Eukaryota", ... "Aequoreidae", "Aequorea"]` | *(Plotting)* ordered list of lineage identifiers without rank information, generated from `"Taxonomic lineage"` | ProteinCartography |
