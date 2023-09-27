@@ -61,9 +61,6 @@ def run_foldseek_clustering(
     query_Path = Path(query_folder)
     results_Path = Path(results_folder)
 
-    # count number of PDBs in query folder
-    max_seqs = len([f for f in os.listdir(query_Path) if f.lower().endswith(".pdb")])
-
     # Generate Path object for temp folder
     if temp_folder is None:
         temp_Path = results_Path / "temp"
