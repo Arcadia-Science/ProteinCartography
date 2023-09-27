@@ -9,6 +9,11 @@ from pathlib import Path
 __all__ = ["fetch_fasta", "fetch_pdb"]
 
 
+REQUESTS_HEADER_FLAG = (
+    "'ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1'"
+)
+
+
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -63,7 +68,7 @@ def fetch_pdb(accession: str, output_dir: str):
 
     if not os.path.exists(output_path):
         subprocess.run(
-            ["curl", "-JLo", output_path, source],
+            ["curl", "-JLo", output_path, source, "--user-agent", REQUESTS_HEADER_FLAG],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )

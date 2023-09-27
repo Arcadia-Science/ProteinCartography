@@ -31,6 +31,10 @@ SET_DATABASES = [
 ]
 DEFAULT_DATABASES = ["afdb50", "afdb-swissprot", "afdb-proteome"]
 
+REQUESTS_HEADER = {
+    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1",
+}
+
 
 # parse command line arguments
 def parse_args():
@@ -130,6 +134,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     ticket = post(
         "https://search.foldseek.com/api/ticket",
         {"q": pdb, "database[]": query_databases, "mode": mode},
+        headers=REQUESTS_HEADER,
     ).json()
 
     # check to see if the ticket failed to be posted
@@ -150,7 +155,10 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     limit = 10
     sleep_time = 30
     while repeat and tries < limit:
-        status = get("https://search.foldseek.com/api/ticket/" + ticket["id"]).json()
+        status = get(
+            "https://search.foldseek.com/api/ticket/" + ticket["id"],
+            headers=REQUESTS_HEADER,
+        ).json()
         if status["status"] == "ERROR":
             # handle error
             sys.exit("The ticket returned with status ERROR.")
@@ -165,7 +173,9 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
     # download blast compatible result archive
     download = get(
-        "https://search.foldseek.com/api/result/download/" + ticket["id"], stream=True
+        "https://search.foldseek.com/api/result/download/" + ticket["id"],
+        stream=True,
+        headers=REQUESTS_HEADER,
     )
     with open(output_file, "wb") as fd:
         for chunk in download.iter_content(chunk_size=128):

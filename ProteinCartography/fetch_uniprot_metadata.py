@@ -41,6 +41,10 @@ DEFAULT_FIELDS_DICT = REQUIRED_FIELDS_DICT | OTHER_FIELDS_DICT
 REQUIRED_FIELDS = list(REQUIRED_FIELDS_DICT.values())
 DEFAULT_FIELDS = list(DEFAULT_FIELDS_DICT.values())
 
+REQUESTS_HEADER = {
+    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1",
+}
+
 
 # parse command line arguments
 def parse_args():
@@ -163,7 +167,7 @@ def query_uniprot_rest(
     def get_batch(batch_url):
         # Generator function to fetch data in batches
         while batch_url:
-            response = session.get(batch_url)
+            response = session.get(batch_url, headers=REQUESTS_HEADER)
             response.raise_for_status()
             total = response.headers["x-total-results"]
             yield response, total

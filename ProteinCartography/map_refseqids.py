@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 from requests import get, post
 from time import sleep
+import sys
 
 # only import these functions when using import *
 __all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
@@ -18,6 +19,10 @@ UNIPROT_IDMAPPING_API = "https://rest.uniprot.org/idmapping"
 REQUESTS_TRIES = 0
 REQUESTS_LIMIT = 10
 REQUESTS_SLEEP_TIME = 30
+
+REQUESTS_HEADER = {
+    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1",
+}
 
 
 # parse command line arguments
@@ -138,6 +143,7 @@ def map_refseqids_rest(
         ticket = post(
             f"{UNIPROT_IDMAPPING_API}/run",
             {"ids": input_string, "from": db, "to": "UniProtKB"},
+            headers=REQUESTS_HEADER,
         ).json()
 
         # poll until the job was successful or failed
@@ -146,7 +152,10 @@ def map_refseqids_rest(
         limit = REQUESTS_LIMIT
         sleep_time = REQUESTS_SLEEP_TIME
         while repeat and tries < limit:
-            status = get(f'{UNIPROT_IDMAPPING_API}/status/{ticket["jobId"]}').json()
+            status = get(
+                f'{UNIPROT_IDMAPPING_API}/status/{ticket["jobId"]}',
+                headers=REQUESTS_HEADER,
+            ).json()
 
             # wait a short time between poll requests
             sleep(sleep_time)
