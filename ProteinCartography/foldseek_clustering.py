@@ -82,17 +82,7 @@ def run_foldseek_clustering(
     foldseek_out = temp_Path / "all_by_all"
     foldseek_tmp = temp_Path / "tmp"
     subprocess.run(
-        [
-            "foldseek",
-            "search",
-            db_prefix,
-            db_prefix,
-            foldseek_out,
-            foldseek_tmp,
-            "-a",
-            "--max-seqs",
-            str(max_seqs),
-        ]
+        ["foldseek", "search", db_prefix, db_prefix, foldseek_out, foldseek_tmp, "-a"]
     )
 
     foldseek_tmscore = temp_Path / "all_by_all_tmscore"
