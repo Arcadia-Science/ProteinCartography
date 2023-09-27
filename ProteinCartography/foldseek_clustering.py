@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 import argparse
+from collections import defaultdict
+import concurrent.futures
+from functools import partial
 import pandas as pd
 import subprocess
 import os
@@ -27,6 +30,13 @@ def parse_args():
         "--results-folder",
         required=True,
         help="Path to destination folder to save results.",
+    )
+    parser.add_argument(
+        "-c",
+        "--ncores",
+        type=int,
+        default=os.cpu_count(),
+        help="The number of cores to use when generating the similarity matrix.",
     )
     args = parser.parse_args()
 
@@ -184,36 +194,72 @@ def make_struclusters_file(foldseek_clustertsv: str, output_file: str):
     return df_exploded
 
 
-def pivot_foldseek_results(input_file: str, output_file: str):
+def reading_data(input_file: str):
     """
-    Takes a df containing cleaned foldseek results and creates a similarity matrix.
+    Read in a cleaned foldseek results file.
+    Return a dictionary whose keys are protids and whose entries
+    are another dictionary of all the targets to their corresponding
+    tmscore. This partitioning by protid allows for easier parallelization.
+
+    Args:
+        input_file (str): input cleaned foldseek results filepath
+    """
+    targets = set()
+    entries = defaultdict(dict)
+
+    with open(input_file) as fh:
+        for line in fh:
+            protid, target, score, *_ = [e.strip() for e in line.split()]
+            protid = protid.replace(".pdb", "")
+            target = target.replace(".pdb", "")
+
+            if target in entries[protid]:
+                if entries[protid][target] != score:
+                    raise ValueError(
+                        f"Multiple values supplied for protid={protid}, target={target} with different scores.")
+            else:
+                entries[protid][target] = score
+            targets.add(target)
+
+    return entries, targets
+
+
+def get_line_for_protid(protid_and_targets, targets):
+    """
+    Given a protid_and_targets tuple and a list of all possible targets, this function returns
+    the line of the similarity matrix file for the given protid in the entry.
+
+    Args:
+        protid_and_targets (tuple): the first entry is a protid and the second entry is a target to score dictionary.
+        targets (set): A set of all targets seen in the data set. This allows setting 0.0 as fillna(0.0) did with pandas.
+    """
+    protid, targets_to_scores = protid_and_targets
+    scores = []
+    for target in targets:
+        scores.append(targets_to_scores.get(target, "0.0"))
+    line = "\t".join([protid] + scores)
+    return f"{line}\n"
+
+
+def pivot_foldseek_results(input_file: str, output_file: str, ncores: int):
+    """
+    Takes a file with the first three columns being protid, target, and the tmscore.
+    It then saves a similarity matrix to a csv. There is no return value.
 
     Args:
         input_file (str): input cleaned foldseek results filepath
         output_file (str): output similarity matrix filepath
     """
-    import pandas as pd
-    import os
+    entries, targets = reading_data(input_file)
 
-    # read the foldseek output with delimited whitespace
-    tmscore_df = pd.read_csv(input_file, delim_whitespace=True, header=None)
-    tmscore_df = tmscore_df[[0, 1, 2]]
-    foldseek_df = tmscore_df.rename(columns={0: "protid", 1: "target", 2: "tmscore"})
-    foldseek_df.drop_duplicates(["protid", "target"], inplace=True)
+    with open(output_file, "w") as fh:
+        header = "\t".join(["protid"] + list(targets))
+        fh.write(f"{header}\n")
 
-    # pivot the data so that it's a square matrix, filling empty comparisons with 0
-    pivoted_table = pd.pivot(
-        foldseek_df, index="protid", columns="target", values="tmscore"
-    ).fillna(0)
-
-    # remove .pdb from row and column indices
-    pivoted_table.columns = pivoted_table.columns.str.removesuffix(".pdb")
-    pivoted_table.index = pivoted_table.index.str.removesuffix(".pdb")
-
-    # save to file
-    pivoted_table.to_csv(output_file, sep="\t")
-
-    return pivoted_table
+        scores_mapper = partial(get_line_for_protid, targets=targets)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncores) as executor:
+            for line in executor.map(scores_mapper, entries.items(), chunksize=100):
+                fh.write(line)
 
 
 # run this if called from the interpreter
@@ -221,11 +267,12 @@ def main():
     args = parse_args()
     query_folder = args.query_folder
     results_folder = args.results_folder
+    ncores = args.ncores
 
     distancestsv, clusterstsv = run_foldseek_clustering(query_folder, results_folder)
 
     pivotedtsv = distancestsv.replace(".tsv", "_pivoted.tsv")
-    pivot_foldseek_results(distancestsv, pivotedtsv)
+    pivot_foldseek_results(distancestsv, pivotedtsv, ncores)
 
     featurestsv = clusterstsv.replace(".tsv", "_features.tsv")
     make_struclusters_file(clusterstsv, featurestsv)
