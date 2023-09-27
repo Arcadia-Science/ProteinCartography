@@ -26,6 +26,8 @@ analysis_name: "example"
 #####################
 
 # Choose which Foldseek databases to query
+# To avoid overloading the Foldseek server, we recommend limiting your search
+# to only the databases relevant to your query.
 foldseek_databases:
 - "afdb50"
 - "afdb-swissprot"
