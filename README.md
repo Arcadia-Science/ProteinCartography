@@ -175,7 +175,7 @@ The Cluster mode starts at the Clustering step.
 7. Generate a similarity matrix and cluster all protein .pdb files using Foldseek.
     - By default, `foldseek search` masks results with an e-value > 0.001. We set these masked values to 0.
     - By default, `foldseek search` returns at most 1000 hits per protein. For spaces where there are >1000 proteins, this results in missing comparisons. We also set missing values to 0.
-    - When all hit proteins are highly similar, these settings can result in artefactually steep cutoffs in TM-score in the visualization. A TM-score of 0 in the scatter plot does not mean that there is no structural similarity - it instead means that the protein's structural similarity was not within the top 1000 hits. In the future, we plan to perform this filtering via e-value, and to re-calculate the TM-score for every input protein versus every hit to more accurately display in the visualization.
+    - When all hit proteins are highly similar, these settings can result in artefactually steep cutoffs in TM-score in the visualization. A TM-score of 0 in the scatter plot does not mean that there is no structural similarity - it instead is likely that the protein's structural similarity was not within the top 1000 hits. In the future, we plan to perform this filtering via e-value, and to re-calculate the TM-score for every input protein versus every hit to more accurately display in the visualization.
 
 8. Perform dimensionality reduction and clustering on the similarity matrix.
     - By default, we perform 30-component PCA prior to running both TSNE and UMAP for visualization.
