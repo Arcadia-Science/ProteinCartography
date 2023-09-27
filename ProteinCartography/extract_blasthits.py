@@ -78,6 +78,11 @@ def main():
     output_file = args.output
     blast_format_string = args.blast_format_string
 
+    if blast_format_string == BLAST_DEFAULT_STRING:
+        blast_format_list = BLAST_DEFAULTS
+    else:
+        blast_format_list = [i for i in blast_format_string.split(" ") if i != "6"]
+
     extract_blasthits(input_file, output_file, names=blast_format_list)
 
 
