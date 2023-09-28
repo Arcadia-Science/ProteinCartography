@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 from collections import defaultdict
+import csv
 import pandas as pd
 import subprocess
 import os
@@ -229,14 +230,13 @@ def get_line_for_protid(protid_and_targets: tuple, targets: set):
         protid_and_targets (tuple): the first entry is a protid and the second entry is a target to score dictionary.
         targets (set): A set of all targets seen in the data set. This allows setting 0.0 as fillna(0.0) did with pandas.
     Return:
-        A string that is a single line in the similarity matrix with formatting so it can be directly written to a file.
+        A list with the protid as the first element and then scores for each target.
     """
     protid, targets_to_scores = protid_and_targets
     scores = []
     for target in targets:
         scores.append(targets_to_scores.get(target, "0.0"))
-    line = "\t".join([protid] + scores)
-    return f"{line}\n"
+    return [protid] + scores
 
 
 def pivot_foldseek_results(input_file: str, output_file: str):
@@ -252,12 +252,14 @@ def pivot_foldseek_results(input_file: str, output_file: str):
     """
     entries, targets = reading_data(input_file)
 
-    with open(output_file, "w") as fh:
-        header = "\t".join(["protid"] + list(targets))
-        fh.write(f"{header}\n")
+    with open(output_file, "w", newline='') as fh:
+        csv_writer = csv.writer(fh, delimiter='\t')
+
+        header = ["protid"] + list(targets)
+        csv_writer.writerow(header)
 
         for entry in sorted(entries.items()):
-            fh.write(get_line_for_protid(entry, targets))
+            csv_writer.writerow(get_line_for_protid(entry, targets))
 
 
 # run this if called from the interpreter
