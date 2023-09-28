@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import argparse
 from collections import defaultdict
-import concurrent.futures
-from functools import partial
 import pandas as pd
 import subprocess
 import os
@@ -30,13 +28,6 @@ def parse_args():
         "--results-folder",
         required=True,
         help="Path to destination folder to save results.",
-    )
-    parser.add_argument(
-        "-c",
-        "--ncores",
-        type=int,
-        default=os.cpu_count(),
-        help="The number of cores to use when generating the similarity matrix.",
     )
     args = parser.parse_args()
 
@@ -203,12 +194,17 @@ def reading_data(input_file: str):
 
     Args:
         input_file (str): input cleaned foldseek results filepath
+    Return:
+        A tuple containing protid to target mappings and all targets in dataset.
     """
     targets = set()
     entries = defaultdict(dict)
 
     with open(input_file) as fh:
         for line in fh:
+            # Getting the first three entries in the output from Foldseek using
+            # the parameters specified in `run_foldseek_clustering`, the full
+            # list of params avail is specified https://github.com/steineggerlab/foldseek#output-search
             protid, target, score, *_ = [e.strip() for e in line.split()]
             protid = protid.replace(".pdb", "")
             target = target.replace(".pdb", "")
@@ -224,7 +220,7 @@ def reading_data(input_file: str):
     return entries, targets
 
 
-def get_line_for_protid(protid_and_targets, targets):
+def get_line_for_protid(protid_and_targets: tuple, targets: set):
     """
     Given a protid_and_targets tuple and a list of all possible targets, this function returns
     the line of the similarity matrix file for the given protid in the entry.
@@ -232,6 +228,8 @@ def get_line_for_protid(protid_and_targets, targets):
     Args:
         protid_and_targets (tuple): the first entry is a protid and the second entry is a target to score dictionary.
         targets (set): A set of all targets seen in the data set. This allows setting 0.0 as fillna(0.0) did with pandas.
+    Return:
+        A string that is a single line in the similarity matrix with formatting so it can be directly written to a file.
     """
     protid, targets_to_scores = protid_and_targets
     scores = []
@@ -241,7 +239,7 @@ def get_line_for_protid(protid_and_targets, targets):
     return f"{line}\n"
 
 
-def pivot_foldseek_results(input_file: str, output_file: str, ncores: int):
+def pivot_foldseek_results(input_file: str, output_file: str):
     """
     Takes a file with the first three columns being protid, target, and the tmscore.
     It then saves a similarity matrix to a csv. There is no return value.
@@ -249,6 +247,8 @@ def pivot_foldseek_results(input_file: str, output_file: str, ncores: int):
     Args:
         input_file (str): input cleaned foldseek results filepath
         output_file (str): output similarity matrix filepath
+    Return:
+        None
     """
     entries, targets = reading_data(input_file)
 
@@ -256,10 +256,8 @@ def pivot_foldseek_results(input_file: str, output_file: str, ncores: int):
         header = "\t".join(["protid"] + list(targets))
         fh.write(f"{header}\n")
 
-        scores_mapper = partial(get_line_for_protid, targets=targets)
-        with concurrent.futures.ProcessPoolExecutor(max_workers=ncores) as executor:
-            for line in executor.map(scores_mapper, entries.items(), chunksize=100):
-                fh.write(line)
+        for entry in sorted(entries.items()):
+            fh.write(get_line_for_protid(entry, targets))
 
 
 # run this if called from the interpreter
@@ -267,12 +265,11 @@ def main():
     args = parse_args()
     query_folder = args.query_folder
     results_folder = args.results_folder
-    ncores = args.ncores
 
     distancestsv, clusterstsv = run_foldseek_clustering(query_folder, results_folder)
 
     pivotedtsv = distancestsv.replace(".tsv", "_pivoted.tsv")
-    pivot_foldseek_results(distancestsv, pivotedtsv, ncores)
+    pivot_foldseek_results(distancestsv, pivotedtsv)
 
     featurestsv = clusterstsv.replace(".tsv", "_features.tsv")
     make_struclusters_file(clusterstsv, featurestsv)
