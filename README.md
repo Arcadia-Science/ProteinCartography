@@ -38,6 +38,11 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
     - `actin_semantic_analysis.html` and `actin_semantic_analysis.pdf`: simple semantic analysis of clusters
 
 ---
+## Compute Specifications
+We have been able to successfully run the pipeline on macOS and Amazon Linux 2 machines with at least 8GB RAM and 8 cores.  
+For the data generated for our pub, we ran the pipeline on an AWS EC2 instance of type `t2.2xlarge` (32 GiB RAM + 8 vCPU).
+
+---
 ## Modes
 The pipeline supports two modes: **Search** and **Cluster**.
 
