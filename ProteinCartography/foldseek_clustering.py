@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import argparse
+from collections import defaultdict
+import csv
 import pandas as pd
 import subprocess
 import os
@@ -184,36 +186,80 @@ def make_struclusters_file(foldseek_clustertsv: str, output_file: str):
     return df_exploded
 
 
+def reading_data(input_file: str):
+    """
+    Read in a cleaned foldseek results file.
+    Return a dictionary whose keys are protids and whose entries
+    are another dictionary of all the targets to their corresponding
+    tmscore. This partitioning by protid allows for easier parallelization.
+
+    Args:
+        input_file (str): input cleaned foldseek results filepath
+    Return:
+        A tuple containing protid to target mappings and all targets in dataset.
+    """
+    targets = set()
+    entries = defaultdict(dict)
+
+    with open(input_file) as fh:
+        for line in fh:
+            # Getting the first three entries in the output from Foldseek using
+            # the parameters specified in `run_foldseek_clustering`, the full
+            # list of params avail is specified https://github.com/steineggerlab/foldseek#output-search
+            protid, target, score, *_ = [e.strip() for e in line.split()]
+            protid = protid.replace(".pdb", "")
+            target = target.replace(".pdb", "")
+
+            if target in entries[protid]:
+                if entries[protid][target] != score:
+                    raise ValueError(
+                        f"Multiple values supplied for protid={protid}, target={target} with different scores.")
+            else:
+                entries[protid][target] = score
+            targets.add(target)
+
+    return entries, targets
+
+
+def get_line_for_protid(protid_and_targets: tuple, targets: set):
+    """
+    Given a protid_and_targets tuple and a list of all possible targets, this function returns
+    the line of the similarity matrix file for the given protid in the entry.
+
+    Args:
+        protid_and_targets (tuple): the first entry is a protid and the second entry is a target to score dictionary.
+        targets (set): A set of all targets seen in the data set. This allows setting 0.0 as fillna(0.0) did with pandas.
+    Return:
+        A list with the protid as the first element and then scores for each target.
+    """
+    protid, targets_to_scores = protid_and_targets
+    scores = []
+    for target in targets:
+        scores.append(targets_to_scores.get(target, "0.0"))
+    return [protid] + scores
+
+
 def pivot_foldseek_results(input_file: str, output_file: str):
     """
-    Takes a df containing cleaned foldseek results and creates a similarity matrix.
+    Takes a file with the first three columns being protid, target, and the tmscore.
+    It then saves a similarity matrix to a csv. There is no return value.
 
     Args:
         input_file (str): input cleaned foldseek results filepath
         output_file (str): output similarity matrix filepath
+    Return:
+        None
     """
-    import pandas as pd
-    import os
+    entries, targets = reading_data(input_file)
 
-    # read the foldseek output with delimited whitespace
-    tmscore_df = pd.read_csv(input_file, delim_whitespace=True, header=None)
-    tmscore_df = tmscore_df[[0, 1, 2]]
-    foldseek_df = tmscore_df.rename(columns={0: "protid", 1: "target", 2: "tmscore"})
-    foldseek_df.drop_duplicates(["protid", "target"], inplace=True)
+    with open(output_file, "w", newline='') as fh:
+        csv_writer = csv.writer(fh, delimiter='\t')
 
-    # pivot the data so that it's a square matrix, filling empty comparisons with 0
-    pivoted_table = pd.pivot(
-        foldseek_df, index="protid", columns="target", values="tmscore"
-    ).fillna(0)
+        header = ["protid"] + list(targets)
+        csv_writer.writerow(header)
 
-    # remove .pdb from row and column indices
-    pivoted_table.columns = pivoted_table.columns.str.removesuffix(".pdb")
-    pivoted_table.index = pivoted_table.index.str.removesuffix(".pdb")
-
-    # save to file
-    pivoted_table.to_csv(output_file, sep="\t")
-
-    return pivoted_table
+        for entry in sorted(entries.items()):
+            csv_writer.writerow(get_line_for_protid(entry, targets))
 
 
 # run this if called from the interpreter
