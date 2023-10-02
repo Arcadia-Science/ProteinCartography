@@ -2,7 +2,9 @@
 import sys
 import os
 import argparse
-from requests import post
+
+from api_utils import session_with_retry
+
 
 ### NOTES
 # ESMFold API example from website:
@@ -15,10 +17,6 @@ __all__ = ["post_esmfold_apiquery", "esmfold_apiquery"]
 
 # set acceptable fasta format suffixes
 FASTA_FORMATS = ["fa", "fna", "fasta", "faa", "ffa"]
-
-REQUESTS_HEADER = {
-    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1",
-}
 
 
 # parse command line arguments
@@ -48,10 +46,9 @@ def post_esmfold_apiquery(fasta: str):
     Args:
         fasta (str): string of valid amino acids for query.
     """
-    result = post(
+    result = session_with_retry().post(
         "https://api.esmatlas.com/foldSequence/v1/pdb/",
         data=fasta,
-        headers=REQUESTS_HEADER,
     )
     if result.status_code == 200:
         return result.text

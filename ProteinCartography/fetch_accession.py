@@ -1,17 +1,14 @@
 #!/usr/bin/env python
-from bioservices import UniProt
 import argparse
 import os
-import subprocess
 from pathlib import Path
+import subprocess
+
+from api_utils import UniProtWithExpBackoff, USER_AGENT_HEADER
+
 
 # only import these functions when using import *
 __all__ = ["fetch_fasta", "fetch_pdb"]
-
-
-REQUESTS_HEADER_FLAG = (
-    "'ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1'"
-)
 
 
 # parse command line arguments
@@ -46,7 +43,7 @@ def fetch_fasta(accession: str, output_dir: str):
         accession (str): a valid UniprotKB accession.
         output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.fasta".
     """
-    u = UniProt()
+    u = UniProtWithExpBackoff()
     output_path = Path(output_dir) / (accession + ".fasta")
 
     if not os.path.exists(output_path):
@@ -67,8 +64,9 @@ def fetch_pdb(accession: str, output_dir: str):
     source = "https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v4.pdb".format(accession)
 
     if not os.path.exists(output_path):
+        user_agent = USER_AGENT_HEADER["User-Agent"]
         subprocess.run(
-            ["curl", "-JLo", output_path, source, "--user-agent", REQUESTS_HEADER_FLAG],
+            ["curl", "-JLo", output_path, source, "--user-agent", f"'{user_agent}'"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )

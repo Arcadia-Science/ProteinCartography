@@ -1,9 +1,10 @@
-__all__ = ["aggregate_features",
-           "aggregate_lists", 
+__all__ = ["api_utils",
+           "aggregate_features",
+           "aggregate_lists",
            "calculate_concordance",
            "cluster_similarity",
            "dim_reduction",
-           "esmfold_apiquery", 
+           "esmfold_apiquery",
            "extract_blasthits",
            "extract_foldseekhits",
            "extract_input_distances",
@@ -19,6 +20,7 @@ __all__ = ["aggregate_features",
            "rescue_mapping",
            "run_blast"]
 
+from .api_utils import *
 from .aggregate_features import *
 from .aggregate_foldseek_fraction_seq_identity import *
 from .aggregate_lists import *
