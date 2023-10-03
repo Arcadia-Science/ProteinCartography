@@ -2,10 +2,12 @@
 import argparse
 import os
 from pathlib import Path
-import subprocess
 
-from api_utils import UniProtWithExpBackoff, USER_AGENT_HEADER
-
+from api_utils import (
+    session_with_retry,
+    UniProtWithExpBackoff,
+    USER_AGENT_HEADER
+)
 
 # only import these functions when using import *
 __all__ = ["fetch_fasta", "fetch_pdb"]
@@ -64,12 +66,12 @@ def fetch_pdb(accession: str, output_dir: str):
     source = "https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v4.pdb".format(accession)
 
     if not os.path.exists(output_path):
-        user_agent = USER_AGENT_HEADER["User-Agent"]
-        subprocess.run(
-            ["curl", "-JLo", output_path, source, "--user-agent", f"'{user_agent}'"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        result = session_with_retry().get(source)
+
+        # Write an output file regardless of the return code and message. The pipeline will filter
+        # any error results when processing.
+        with open(output_path, "w") as fh:
+            fh.write(result.text)
 
 
 # run this if called from the interpreter
