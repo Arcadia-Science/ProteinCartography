@@ -5,10 +5,7 @@ import numpy as np
 import os
 import re
 
-from api_utils import (
-    session_with_retry,
-    UniProtWithExpBackoff,
-)
+from api_utils import session_with_retry, UniProtWithExpBackoff
 
 
 # only import these functions when using import *

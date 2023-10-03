@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
