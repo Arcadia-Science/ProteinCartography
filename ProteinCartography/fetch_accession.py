@@ -1,17 +1,16 @@
 #!/usr/bin/env python
-from bioservices import UniProt
 import argparse
 import os
-import subprocess
 from pathlib import Path
+
+from api_utils import (
+    session_with_retry,
+    UniProtWithExpBackoff,
+    USER_AGENT_HEADER
+)
 
 # only import these functions when using import *
 __all__ = ["fetch_fasta", "fetch_pdb"]
-
-
-REQUESTS_HEADER_FLAG = (
-    "'ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1'"
-)
 
 
 # parse command line arguments
@@ -46,7 +45,7 @@ def fetch_fasta(accession: str, output_dir: str):
         accession (str): a valid UniprotKB accession.
         output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.fasta".
     """
-    u = UniProt()
+    u = UniProtWithExpBackoff()
     output_path = Path(output_dir) / (accession + ".fasta")
 
     if not os.path.exists(output_path):
@@ -67,11 +66,12 @@ def fetch_pdb(accession: str, output_dir: str):
     source = "https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v4.pdb".format(accession)
 
     if not os.path.exists(output_path):
-        subprocess.run(
-            ["curl", "-JLo", output_path, source, "--user-agent", REQUESTS_HEADER_FLAG],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        result = session_with_retry().get(source)
+
+        # Write an output file regardless of the return code and message. The pipeline will filter
+        # any error results when processing.
+        with open(output_path, "w") as fh:
+            fh.write(result.text)
 
 
 # run this if called from the interpreter

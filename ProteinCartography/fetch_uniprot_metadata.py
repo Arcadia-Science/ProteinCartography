@@ -2,11 +2,11 @@
 import argparse
 import pandas as pd
 import numpy as np
-from bioservices import UniProt
 import os
 import re
-import requests
-from requests.adapters import HTTPAdapter, Retry
+
+from api_utils import session_with_retry, UniProtWithExpBackoff
+
 
 # only import these functions when using import *
 __all__ = ["query_uniprot_bioservices", "query_uniprot_rest"]
@@ -40,10 +40,6 @@ OTHER_FIELDS_DICT = {
 DEFAULT_FIELDS_DICT = REQUIRED_FIELDS_DICT | OTHER_FIELDS_DICT
 REQUIRED_FIELDS = list(REQUIRED_FIELDS_DICT.values())
 DEFAULT_FIELDS = list(DEFAULT_FIELDS_DICT.values())
-
-REQUESTS_HEADER = {
-    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1",
-}
 
 
 # parse command line arguments
@@ -96,7 +92,7 @@ def query_uniprot_bioservices(
 
     # perform ID mapping using bioservices UniProt
     # should probably do this differently in the future because it often results in weird memory leaks
-    u = UniProt()
+    u = UniProtWithExpBackoff()
     results = u.mapping("UniProtKB_AC-ID", "UniProtKB", query=" ".join(id_list))
 
     # read the results as a normalized json
@@ -150,12 +146,7 @@ def query_uniprot_rest(
     # Define regular expression pattern to extract the next URL from the response headers
     re_next_link = re.compile(r'<(.+)>; rel="next"')
 
-    # Configure the retry behavior for the HTTP requests
-    retries = Retry(total=5, backoff_factor=0.25, status_forcelist=[500, 502, 503, 504])
-
-    # Create a session object and mount the HTTPAdapter with retry settings
-    session = requests.Session()
-    session.mount("https://", HTTPAdapter(max_retries=retries))
+    session = session_with_retry()
 
     def get_next_link(headers):
         # Extract the next URL from the "Link" header if present
@@ -167,7 +158,7 @@ def query_uniprot_rest(
     def get_batch(batch_url):
         # Generator function to fetch data in batches
         while batch_url:
-            response = session.get(batch_url, headers=REQUESTS_HEADER)
+            response = session.get(batch_url)
             response.raise_for_status()
             total = response.headers["x-total-results"]
             yield response, total

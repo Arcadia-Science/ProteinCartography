@@ -2,8 +2,10 @@
 import sys
 import os
 import argparse
-from requests import get, post
 from time import sleep
+
+from api_utils import session_with_retry
+
 
 ### NOTES
 # FoldSeek API example from website:
@@ -30,10 +32,6 @@ SET_DATABASES = [
     "gmgcl_id",
 ]
 DEFAULT_DATABASES = ["afdb50", "afdb-swissprot", "afdb-proteome"]
-
-REQUESTS_HEADER = {
-    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1",
-}
 
 
 # parse command line arguments
@@ -131,10 +129,9 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     # submit a new job via the API
     post_successful = False
 
-    ticket = post(
+    ticket = session_with_retry().post(
         "https://search.foldseek.com/api/ticket",
         {"q": pdb, "database[]": query_databases, "mode": mode},
-        headers=REQUESTS_HEADER,
     ).json()
 
     # check to see if the ticket failed to be posted
@@ -155,9 +152,8 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     limit = 10
     sleep_time = 30
     while repeat and tries < limit:
-        status = get(
+        status = session_with_retry().get(
             "https://search.foldseek.com/api/ticket/" + ticket["id"],
-            headers=REQUESTS_HEADER,
         ).json()
         if status["status"] == "ERROR":
             # handle error
@@ -172,10 +168,9 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
         sys.exit(f"The ticket failed to complete after {tries * sleep_time} seconds.")
 
     # download blast compatible result archive
-    download = get(
+    download = session_with_retry().get(
         "https://search.foldseek.com/api/result/download/" + ticket["id"],
         stream=True,
-        headers=REQUESTS_HEADER,
     )
     with open(output_file, "wb") as fd:
         for chunk in download.iter_content(chunk_size=128):
