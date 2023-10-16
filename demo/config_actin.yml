@@ -18,3 +18,11 @@ taxon_focus: 'euk'
 uniprot_additional_fields: []
 min_length: 0
 max_length: 0
+
+# Resource execution settings
+resources:
+    mem_mb: 16 * 1000
+cores: 8
+max-jobs-per-second: 1
+max-status-checks-per-second: 10
+local-cores: 10
