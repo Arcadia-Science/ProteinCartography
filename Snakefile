@@ -156,7 +156,7 @@ rule map_refseqids:
     benchmark:
         output_dir / benchmarks_dir / "{protid}.map_refseqids.txt"
     conda:
-        "envs/map_refseqids.yml"
+        "envs/map_refseq_ids.yml"
     shell:
         '''
         python ProteinCartography/map_refseqids.py -i {input.refseqhits} -o {output.uniprothits}
