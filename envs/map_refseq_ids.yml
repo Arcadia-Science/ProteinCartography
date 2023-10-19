@@ -3,7 +3,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - foldseek=6.29e2557
   - python=3.9.16
   - pandas=2.0.1
   - requests=2.29.0
