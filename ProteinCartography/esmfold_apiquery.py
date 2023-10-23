@@ -3,6 +3,9 @@ import sys
 import os
 import argparse
 
+from Bio import SeqIO
+
+# depends on api_utils.py
 from api_utils import session_with_retry
 
 
@@ -80,22 +83,24 @@ def esmfold_apiquery(input_file: str, output_file=None):
     else:
         output_filepath = output_file
 
-    # Open input file and collect text as string
-    with open(input_file, "r") as f:
-        content = f.read()
+    # parse input_file and assign it to the variable records
+    records = list(SeqIO.parse(input_file, "fasta"))
 
-        entries = content.split(">")[1:]
-        if len(entries) > 1:
-            raise Exception(
-                "This script expects a single FASTA entry in the input file. Please try again."
-            )
+    if len(records) > 1:
+        raise Exception(
+            "This script expects a single FASTA entry in the input file. Please try again."
+        )
 
-        lines = entries[0].strip().split("\n")
-        fasta = "".join(lines[1:])
-
-    if (prot_len := len(fasta)) > 400:
+    record = records[0]
+    fasta = str(record.seq)
+    
+    prot_len = len(fasta)
+    if prot_len > 400:
         print(
-            f"The input protein is {prot_len} AA long.\nESMFold API query only allows proteins up to 400 AA long.\nTry using ColabFold instead.\nSkipping..."
+            f"The input protein is {prot_len} AA long.\n"
+            f"ESMFold API query only allows proteins up to 400 AA long.\n"
+            f"Try using ColabFold instead.\n"
+            f"Skipping..."
         )
         return
 
