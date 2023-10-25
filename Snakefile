@@ -60,7 +60,7 @@ downloading_dir = Path('downloading/')
 
 # gets the protein ID based on FASTA file name
 # flexibly checks if fasta file is correct suffix
-FASTA_FORMATS = ['.fa', '.fasta', '.fna']
+FASTA_FORMATS = ['.fa', '.fasta', '.fna', '.faa']
 PROTID = []
 for file in os.listdir(input_dir):
     if any(file.lower().endswith(suffix) for suffix in FASTA_FORMATS):
