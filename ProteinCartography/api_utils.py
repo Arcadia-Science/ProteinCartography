@@ -6,7 +6,9 @@ from requests.packages.urllib3.util.retry import Retry
 from bioservices import UniProt
 
 
-USER_AGENT_HEADER = {"User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1"}
+USER_AGENT_HEADER = {
+    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1"
+}
 
 
 def session_with_retry():
@@ -15,11 +17,11 @@ def session_with_retry():
     giving back a session with exponential backoff.
     """
     session = Session()
-    retry  = DefaultExpBackoffRetry()
+    retry = DefaultExpBackoffRetry()
     session.headers.update(USER_AGENT_HEADER)
     adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
     return session
 
 
@@ -32,6 +34,7 @@ class DefaultExpBackoffRetry(Retry):
     Note that if you provide an argument by position and there is a kwds value,
     either by user of default, an error will be raised by Python.
     """
+
     def __init__(self, *args, **kwds):
         defaults = {
             "total": 5,
@@ -39,7 +42,7 @@ class DefaultExpBackoffRetry(Retry):
             "connect": 5,
             "backoff_factor": 2,
             "status_forcelist": (500, 502, 503, 504),
-            "allowed_methods": frozenset({'GET', 'PUT', 'POST'}),
+            "allowed_methods": frozenset({"GET", "PUT", "POST"}),
         }
 
         # Update kwds to default values if not already provided.
@@ -54,6 +57,7 @@ class UniProtWithExpBackoff(UniProt):
     Specialize the UniProt class to set the MAX_RETRIES to be a DefaultExpBackoffRetry
     object.
     """
+
     def __init__(self, *args, **kwargs):
-        u = super().__init__(*args, **kwargs)
-        u.services.settings.MAX_RETRIES = DefaultExpBackoffRetry()
+        super().__init__(*args, **kwargs)
+        self.services.settings.MAX_RETRIES = DefaultExpBackoffRetry()
