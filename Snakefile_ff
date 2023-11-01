@@ -22,7 +22,7 @@ output_dir = Path(config["output_dir"])
 
 # Check for an override file, setting a variable if it exists
 if "override_file" in config:
-    OVERRIDE_FILE = input_dir / config["override_file"]
+    OVERRIDE_FILE = config["override_file"]
 
     # If it isn't a real file, ignore it
     if not os.path.exists(OVERRIDE_FILE):
@@ -30,8 +30,9 @@ if "override_file" in config:
 else:
     OVERRIDE_FILE = ''
 
+# Check for a features file, setting a variable if it exists
 if "features_file" in config:
-    FEATURES_FILE = input_dir / config["features_file"]
+    FEATURES_FILE = config["features_file"]
 
     if not os.path.exists(FEATURES_FILE):
         FEATURES_FILE = ''
@@ -181,6 +182,7 @@ aggregate_features_input_list = [
 if KEYIDS != []:
     aggregate_features_input_list = aggregate_features_input_list + expand(output_dir / clusteringresults_dir / "{keyid}_distance_features.tsv", keyid = KEYIDS)
 
+# Add features file to aggregate features input list
 if FEATURES_FILE != '':
     aggregate_features_input_list.append(FEATURES_FILE)
 
