@@ -155,8 +155,8 @@ def parse_args():
     parser.add_argument(
         "-k",
         "--keyids",
-        nargs="?",
-        default="",
+        nargs="*",
+        default=[],
         help="keyids for plotting. Usually input protids.",
     )
     parser.add_argument(
@@ -1148,7 +1148,7 @@ def main():
     plot_width = int(args.plot_width)
     plot_height = int(args.plot_height)
 
-    if keyids == "" or keyids is None:
+    if keyids == "" or keyids is None or keyids == []:
         keyids = []
     elif type(keyids) != list:
         keyids = [keyids]
