@@ -1,0 +1,31 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython=1.81
+  - bioservices=1.11.2
+  - blast=2.14.0
+  - foldseek=6.29e2557
+  - ipython=8.13.2
+  - jupyter=1.0.0
+  - jupyter-dash=0.4.2
+  - leidenalg=0.9.1
+  - mamba=1.4.2
+  - nltk=3.8.1
+  - numpy=1.23.5
+  - pandas=2.0.1
+  - pip=23.2.1
+  - plotly=5.14.1
+  - python=3.9.16
+  - pytorch=2.1.0
+  - requests=2.31.0
+  - scanpy=1.9.6
+  - scikit-learn=1.3.2
+  - umap-learn=0.5.3
+  - seaborn=0.12.2
+  - snakemake-minimal=7.25.3
+  - tqdm=4.65.0
+  - wordcloud=1.9.2
+  - pip:
+      - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"

@@ -398,3 +398,25 @@ For either custom proteins provided through `override_file` in either mode, or b
 |`"Taxonomic lineage"`|`"cellular organisms (no rank), Eukaryota (superkingdom), ... Aequoreidae (family), Aequorea (genus)"`| string of comma-separated `Lineage name (rank)` for the organism's full taxonomic lineage | UniProt |
 |`"Lineage"`|`["cellular organisms", "Eukaryota", ... "Aequoreidae", "Aequorea"]` | *(Plotting)* ordered list of lineage identifiers without rank information, generated from `"Taxonomic lineage"` | ProteinCartography |
 |`"Length"`| `238` | *(Plotting)* number of amino acids in protein | UniProt |
+
+---
+### For Developers
+A minimal development environment can be created using the `cartography_dev.yml` file in the `envs/` directory.
+
+```
+conda env create -n cartography_dev --file envs/cartography_dev.yml
+```
+
+---
+### `conda` Environments
+
+The pipeline uses a variety of conda environments to manage software dependencies.
+The major conda environments are:
+- `cartography_tidy`: used to run the pipeline. Includes only dependencies necessary to start the snakemake pipeline, which builds additional environments as needed based on each rule.
+- `cartography_dev`: used for development. Includes all dependencies for every of the snakemake pipeline and Python package dependencies together in one environment, plus dependencies for development support (e.g. `jupyter`, `ipython`) and experimental features not yet implemented in the main pipeline (e.g. `pytorch`).
+- `cartography_pub`: used to run the Jupyter notebooks in the `pub/` directory. Includes just the dependencies needed to run the notebooks.
+
+---
+## Contributing
+
+See how we recognize [feedback and contributions to our code](https://github.com/Arcadia-Science/arcadia-software-handbook/blob/main/guides-and-standards/guide-credit-for-contributions.md).
