@@ -11,6 +11,7 @@ __all__ = [
     "fetch_atoms",
     "fetch_dbref",
     "fetch_experiment",
+    "fetch_remark",
     "fetch_title",
     "extract_residue_confidence",
     "assign_residue_colors",
@@ -144,6 +145,7 @@ def fetch_title(input_path: str) -> str:
 
     return title_out
 
+
 def fetch_remark(input_path: str) -> str:
     """
     Retrieves remarks from a PDB file and returns the contents as a concatenated string.
@@ -161,6 +163,7 @@ def fetch_remark(input_path: str) -> str:
     remark_out = " ".join(remark)
 
     return remark_out
+
 
 def extract_residue_confidence(input_path: str):
     """
@@ -234,14 +237,14 @@ def assign_origin(input_path: str):
         AF_TITLE_FLAG = 1
     elif "ESMFOLD" in title:
         ESM_TITLE_FLAG = 1
-    
+
     remark = fetch_remark(input_path).upper()
     if "ALPHAFOLD" in remark:
         AF_REMARK_FLAG = 1
     elif "ESMFOLD" in remark:
         ESM_REMARK_FLAG = 1
     elif "RCSB" in remark:
-        PDB_REMARK_FLAG = 1      
+        PDB_REMARK_FLAG = 1
 
     AF_SCORE = AF_FLAG + AF_TITLE_FLAG + AF_REMARK_FLAG
     PDB_SCORE = PDB_FLAG + PDB_REF_FLAG + PDB_REMARK_FLAG
@@ -287,7 +290,9 @@ def assess_pdbs(structures_list: list, output_file=None):
             max_confidence = np.max(extract_residue_confidence(structure_file))
             min_confidence = np.min(extract_residue_confidence(structure_file))
             if max_confidence <= 1 and min_confidence <= 1:
-                confidence = np.average(extract_residue_confidence(structure_file)) * 100
+                confidence = (
+                    np.average(extract_residue_confidence(structure_file)) * 100
+                )
             elif max_confidence >= 1 and min_confidence >= 1:
                 confidence = np.average(extract_residue_confidence(structure_file))
         else:

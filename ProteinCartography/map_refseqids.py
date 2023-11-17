@@ -141,10 +141,14 @@ def map_refseqids_rest(
     dummy_df = pd.DataFrame()
 
     for i, db in enumerate(query_dbs):
-        ticket = session_with_retry().post(
-            f"{UNIPROT_IDMAPPING_API}/run",
-            {"ids": input_string, "from": db, "to": "UniProtKB"},
-        ).json()
+        ticket = (
+            session_with_retry()
+            .post(
+                f"{UNIPROT_IDMAPPING_API}/run",
+                {"ids": input_string, "from": db, "to": "UniProtKB"},
+            )
+            .json()
+        )
 
         # poll until the job was successful or failed
         repeat = True
@@ -152,9 +156,13 @@ def map_refseqids_rest(
         limit = REQUESTS_LIMIT
         sleep_time = REQUESTS_SLEEP_TIME
         while repeat and tries < limit:
-            status = session_with_retry().get(
-                f'{UNIPROT_IDMAPPING_API}/status/{ticket["jobId"]}',
-            ).json()
+            status = (
+                session_with_retry()
+                .get(
+                    f'{UNIPROT_IDMAPPING_API}/status/{ticket["jobId"]}',
+                )
+                .json()
+            )
 
             # wait a short time between poll requests
             sleep(sleep_time)
@@ -166,7 +174,11 @@ def map_refseqids_rest(
                 f"The ticket failed to complete after {tries * sleep_time} seconds."
             )
 
-        results = session_with_retry().get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket["jobId"]}').json()
+        results = (
+            session_with_retry()
+            .get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket["jobId"]}')
+            .json()
+        )
         results_df = pd.DataFrame(results["results"])
 
         # if there are no results, move on

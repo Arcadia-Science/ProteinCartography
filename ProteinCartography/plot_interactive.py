@@ -15,6 +15,8 @@ __all__ = [
     "apply_coordinates",
     "assign_taxon",
     "extend_colors",
+    "rescale_list",
+    "generate_plotting_rules",
     "plot_interactive",
     "ANNOTATION_SCORE_COLORS",
     "EUK_COLOR_DICT",

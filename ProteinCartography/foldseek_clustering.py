@@ -11,6 +11,8 @@ from pathlib import Path
 __all__ = [
     "run_foldseek_clustering",
     "make_struclusters_file",
+    "reading_data",
+    "get_line_for_protid",
     "pivot_foldseek_results",
 ]
 
@@ -213,7 +215,8 @@ def reading_data(input_file: str):
             if target in entries[protid]:
                 if entries[protid][target] != score:
                     raise ValueError(
-                        f"Multiple values supplied for protid={protid}, target={target} with different scores.")
+                        f"Multiple values supplied for protid={protid}, target={target} with different scores."
+                    )
             else:
                 entries[protid][target] = score
             targets.add(target)
@@ -252,8 +255,8 @@ def pivot_foldseek_results(input_file: str, output_file: str):
     """
     entries, targets = reading_data(input_file)
 
-    with open(output_file, "w", newline='') as fh:
-        csv_writer = csv.writer(fh, delimiter='\t')
+    with open(output_file, "w", newline="") as fh:
+        csv_writer = csv.writer(fh, delimiter="\t")
 
         header = ["protid"] + list(targets)
         csv_writer.writerow(header)

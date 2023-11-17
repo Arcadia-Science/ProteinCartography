@@ -93,7 +93,7 @@ def esmfold_apiquery(input_file: str, output_file=None):
 
     record = records[0]
     fasta = str(record.seq)
-    
+
     prot_len = len(fasta)
     if prot_len > 400:
         print(

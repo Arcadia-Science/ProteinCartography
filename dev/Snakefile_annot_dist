@@ -79,6 +79,8 @@ rule all:
         output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html"),
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf"),
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html"),
+        output_dir / clusteringresults_dir / (analysis_name + "_annotation_leiden_similarity.html"),
+        output_dir / clusteringresults_dir / (analysis_name + "_annotation_semantic_analysis.html"),
 
 ###########################################
 ## make .pdb files using esmfold API query
@@ -608,4 +610,84 @@ rule calculate_annotation_distance:
     shell:
         '''
         python ProteinCartography/calculate_annotation_distance.py -i {input.features_file} -d {params.id_column} -a {params.annot_column} -o {output.distances_file} -f {params.filter_columns}
+        '''
+
+rule annotation_leiden_clustering:
+    '''
+    Performs Leiden clustering on the annotation data using scanpy's implementation.
+    '''
+    input: output_dir / clusteringresults_dir / "annotation_distances.tsv"
+    output: output_dir / clusteringresults_dir / "annotation_leiden_features.tsv"
+    conda:
+        "envs/leiden_clustering.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "leiden_clustering.txt"
+    shell:
+        '''
+        python ProteinCartography/leiden_clustering.py -i {input} -o {output}
+        '''
+
+rule plot_annotation_similarity_leiden:
+    '''
+    Plots a similarity score matrix for Leiden clusters.
+    For each cluster, calculates the mean TM-score of all structures in that cluster versus all other clusters.
+    The diagonal of the plot shows how similar proteins are within a given cluster.
+    The other cells show how similar other clusters are to each other.
+    '''
+    input:
+        matrix = output_dir / clusteringresults_dir / "annotation_distances.tsv",
+        features = output_dir / clusteringresults_dir / "annotation_leiden_features.tsv",
+    output:
+        tsv = output_dir / clusteringresults_dir / (analysis_name + "_annotation_leiden_similarity.tsv"),
+        html = output_dir / clusteringresults_dir / (analysis_name + "_annotation_leiden_similarity.html")
+    params:
+        column = 'LeidenCluster'
+    conda:
+        "envs/plotting.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "plot_annotation_similarity_leiden.txt"
+    shell:
+        '''
+        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
+        '''
+
+rule aggregate_features_again:
+    '''
+    Aggregate all TSV features provided by user in some specific directory, making one big TSV
+    '''
+    input:
+        output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv"),
+        output_dir / clusteringresults_dir / "annotation_leiden_features.tsv",
+    output: output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
+    params:
+        override = OVERRIDE_FILE
+    benchmark:
+        output_dir / benchmarks_dir / "aggregate_features_again.txt"
+    conda:
+        "envs/pandas.yml"
+    shell:
+        '''
+        python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
+        '''
+
+rule plot_annotation_semantic_analysis:
+    '''
+    Plots a semantic analysis chart for groups within the data.
+    '''
+    input:
+        features_file = output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv")
+    output:
+        pdf = output_dir / clusteringresults_dir / (analysis_name + "_annotation_semantic_analysis.pdf"),
+        interactive = output_dir / clusteringresults_dir / (analysis_name + "_annotation_semantic_analysis.html")
+    params:
+        agg_column = 'LeidenCluster',
+        annot_column = "'Protein names'",
+        analysis_name = analysis_name
+    conda:
+        "envs/plotting.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "plot_annotation_semantic_analysis.txt"
+    shell:
+        '''
+        python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output.pdf} -i {output.interactive} -a {params.analysis_name}
         '''

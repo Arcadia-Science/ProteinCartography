@@ -6,10 +6,11 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import arcadia_pycolor as apc
-from plot_interactive import extend_colors
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import textwrap
+
+from plot_interactive import extend_colors
 
 __all__ = [
     "plot_semantic_analysis",

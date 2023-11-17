@@ -3,11 +3,7 @@ import argparse
 import os
 from pathlib import Path
 
-from api_utils import (
-    session_with_retry,
-    UniProtWithExpBackoff,
-    USER_AGENT_HEADER
-)
+from api_utils import session_with_retry, UniProtWithExpBackoff, USER_AGENT_HEADER
 
 # only import these functions when using import *
 __all__ = ["fetch_fasta", "fetch_pdb"]

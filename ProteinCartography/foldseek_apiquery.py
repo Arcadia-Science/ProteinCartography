@@ -129,10 +129,14 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     # submit a new job via the API
     post_successful = False
 
-    ticket = session_with_retry().post(
-        "https://search.foldseek.com/api/ticket",
-        {"q": pdb, "database[]": query_databases, "mode": mode},
-    ).json()
+    ticket = (
+        session_with_retry()
+        .post(
+            "https://search.foldseek.com/api/ticket",
+            {"q": pdb, "database[]": query_databases, "mode": mode},
+        )
+        .json()
+    )
 
     # check to see if the ticket failed to be posted
     # tickets can fail to be posted because of ratelimits
@@ -152,9 +156,13 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     limit = 10
     sleep_time = 30
     while repeat and tries < limit:
-        status = session_with_retry().get(
-            "https://search.foldseek.com/api/ticket/" + ticket["id"],
-        ).json()
+        status = (
+            session_with_retry()
+            .get(
+                "https://search.foldseek.com/api/ticket/" + ticket["id"],
+            )
+            .json()
+        )
         if status["status"] == "ERROR":
             # handle error
             sys.exit("The ticket returned with status ERROR.")

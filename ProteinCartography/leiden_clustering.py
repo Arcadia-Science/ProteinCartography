@@ -32,12 +32,30 @@ def parse_args():
         default="30",
         help="Number of n_pcs to pass to sc.pp.neighbors().",
     )
+    parser.add_argument(
+        "-l",
+        "--cluster-name",
+        default="LeidenCluster",
+        help="Name of cluster column. Defaults to 'LeidenCluster'.",
+    )
+    parser.add_argument(
+        "-a",
+        "--cluster-abbrev",
+        default="LC",
+        help="Abbreviation to add as prefix for cluster labels. Defaults to 'LC'.",
+    )
     args = parser.parse_args()
     return args
 
 
 def scanpy_leiden_cluster(
-    input_file: str, savefile=None, n_neighbors=10, n_pcs=30, **kwargs
+    input_file: str,
+    savefile=None,
+    n_neighbors=10,
+    n_pcs=30,
+    cluster_name="LeidenCluster",
+    cluster_abbrev="LC",
+    **kwargs
 ):
     """
     Uses Scanpy's Leiden clustering implementation to perform clustering.
@@ -69,11 +87,9 @@ def scanpy_leiden_cluster(
 
     # Extract leiden cluster assignment
     membership = pd.DataFrame(adata.obs["leiden"]).reset_index()
-    membership.rename(
-        columns={"index": "protid", "leiden": "LeidenCluster"}, inplace=True
-    )
-    max_chars = len(str(membership["LeidenCluster"].astype(int).max()))
-    membership["LeidenCluster"] = "LC" + membership["LeidenCluster"].apply(
+    membership.rename(columns={"index": "protid", "leiden": cluster_name}, inplace=True)
+    max_chars = len(str(membership[cluster_name].astype(int).max()))
+    membership[cluster_name] = cluster_abbrev + membership[cluster_name].apply(
         lambda x: str(x).zfill(max_chars)
     ).astype(str)
 
@@ -90,9 +106,16 @@ def main():
     output_file = args.output
     neighbors = int(args.n_neighbors)
     pcs = int(args.n_pcs)
+    cluster_name = args.cluster_name
+    cluster_abbrev = args.cluster_abbrev
 
     scanpy_leiden_cluster(
-        input_file=input_file, savefile=output_file, n_neighbors=neighbors, n_pcs=pcs
+        input_file=input_file,
+        savefile=output_file,
+        n_neighbors=neighbors,
+        n_pcs=pcs,
+        cluster_name=cluster_name,
+        cluster_abbrev=cluster_abbrev,
     )
 
 
