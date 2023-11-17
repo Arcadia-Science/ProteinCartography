@@ -117,8 +117,8 @@ def query_uniprot_bioservices(
 def query_uniprot_rest(
     query_list: str,
     output_file: str,
-    batch_size=1000,
-    sub_batch_size=500,
+    batch_size=300,
+    sub_batch_size=300,
     fmt="tsv",
     fields=DEFAULT_FIELDS,
 ):
