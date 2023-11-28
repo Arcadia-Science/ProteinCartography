@@ -93,7 +93,7 @@ def query_uniprot_bioservices(
     # perform ID mapping using bioservices UniProt
     # should probably do this differently in the future because it often results in weird memory leaks
     u = UniProtWithExpBackoff()
-    results = u.mapping("UniProtKB_AC-ID", "UniProtKB", query=" ".join(id_list))
+    results = u.mapping("UniProtKB_AC-ID", "UniProtKB", query=id_list, progress=False)
 
     # read the results as a normalized json
     results_df = pd.json_normalize(results["results"])
@@ -117,8 +117,8 @@ def query_uniprot_bioservices(
 def query_uniprot_rest(
     query_list: str,
     output_file: str,
-    batch_size=1000,
-    sub_batch_size=500,
+    batch_size=300,
+    sub_batch_size=300,
     fmt="tsv",
     fields=DEFAULT_FIELDS,
 ):
@@ -142,6 +142,16 @@ def query_uniprot_rest(
     if os.path.exists(output_file):
         print("Output file already exists at this location. Aborting.")
         return
+
+    header_written = False  # Flag to check if header has been written
+
+    # Load any existing results from previous incomplete runs, to remove them from the query list.
+    existing_data = set()
+    if os.path.exists(temp_file):
+        existing_df = pd.read_csv(temp_file, sep="\t", usecols=["Entry"])
+        existing_data = set(existing_df["Entry"].values)
+        print(f"Loaded {len(existing_data)} entries from {temp_file}")
+        header_written = True
 
     # Define regular expression pattern to extract the next URL from the response headers
     re_next_link = re.compile(r'<(.+)>; rel="next"')
@@ -168,14 +178,14 @@ def query_uniprot_rest(
 
     with open(query_list, "r") as q:
         query_accessions = [line.rstrip("\n") for line in q.readlines()]
+        # Remove accessions that have already been downloaded, keeping the order.
+        query_accessions = [e for e in query_accessions if e not in existing_data]
 
     # Split the query accessions into batches
     accession_batches = [
         query_accessions[i : i + batch_size]
         for i in range(0, len(query_accessions), batch_size)
     ]
-
-    header_written = False  # Flag to check if header has been written
 
     # Process each batch separately
     for i, accession_batch in enumerate(accession_batches):
@@ -225,6 +235,7 @@ def query_uniprot_rest(
         pass
 
     df.to_csv(output_file, sep="\t", index=None)
+    os.remove(temp_file)
 
     return df
 
