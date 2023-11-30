@@ -9,7 +9,7 @@ from api_utils import session_with_retry, UniProtWithExpBackoff
 
 
 # only import these functions when using import *
-__all__ = ["query_uniprot_bioservices", "query_uniprot_rest"]
+__all__ = ["query_uniprot"]
 
 # global fields for querying using REST API
 REQUIRED_FIELDS_DICT = {
@@ -54,7 +54,7 @@ def parse_args():
         required=True,
         help="path of destination uniprot_features.tsv file",
     )
-    parser.add_argument("-s", "--service", default="rest", help="how to fetch mapping")
+    parser.add_argument("-s", "--service", default="rest", help="how to fetch metadata")
     parser.add_argument(
         "-a",
         "--additional-fields",
@@ -72,55 +72,14 @@ def parse_args():
 #############################################
 
 
-def query_uniprot_bioservices(
-    input_file: str, output_file: str, save=True
-) -> pd.DataFrame:
-    """
-    Takes an input list of accessions and gets the full information set from Uniprot for those proteins.
-
-    Args:
-        input_file (str): path of input list text file where each accession is on a new line
-        output_file (str): path of destination tsv file with all uniprot features
-
-    Returns:
-        a pandas.DataFrame of the resulting features
-    """
-
-    # open and read the file
-    with open(input_file, "r") as f:
-        id_list = [i.rstrip("\n") for i in f.readlines()]
-
-    # perform ID mapping using bioservices UniProt
-    # should probably do this differently in the future because it often results in weird memory leaks
-    u = UniProtWithExpBackoff()
-    results = u.mapping("UniProtKB_AC-ID", "UniProtKB", query=id_list, progress=False)
-
-    # read the results as a normalized json
-    results_df = pd.json_normalize(results["results"])
-    # remove the "to" prefix for tidier columns
-    results_df.columns = results_df.columns.str.removeprefix("to.")
-    # add a protid column for later merging
-    results_df.insert(0, "protid", results_df["primaryAccession"])
-
-    # save to file if needed
-    if save:
-        results_df.to_csv(output_file, index=None, sep="\t")
-
-    return results_df
-
-
-######################################
-## Query using REST API (preferred) ##
-######################################
-
-
-def query_uniprot_rest(
+def query_uniprot(
     query_list: str,
     output_file: str,
     batch_size=300,
     sub_batch_size=300,
     fmt="tsv",
     fields=DEFAULT_FIELDS,
+    service="rest",
 ):
     """
     Takes an input list of accessions and gets the full information set from Uniprot for those proteins.
@@ -132,6 +91,7 @@ def query_uniprot_rest(
         sub_batch_size (int): number of entries to pull per page of batch.
         fmt (str): output suffix format (default 'tsv')
         fields (list): list of UniProt fields to retrieve.
+        service (str): which API to use: 'rest' or 'bioservices'.
 
     Returns:
         a pandas.DataFrame of the resulting features
@@ -165,16 +125,24 @@ def query_uniprot_rest(
             if match:
                 return match.group(1)
 
-    def get_batch(batch_url):
-        # Generator function to fetch data in batches
-        while batch_url:
-            response = session.get(batch_url)
-            response.raise_for_status()
-            total = response.headers["x-total-results"]
-            yield response, total
-            batch_url = get_next_link(response.headers)
-
     fields_string = ",".join(fields)
+    def get_batch(query_string: str):
+        # Generator function to fetch data in batches
+        if service == "rest":
+            batch_url = f"https://rest.uniprot.org/uniprotkb/search?query={query_string}&format={fmt}&fields={fields_string}&size={sub_batch_size}"
+            while batch_url:
+                response = session.get(batch_url)
+                response.raise_for_status()
+                total = response.headers["x-total-results"]
+                yield response.text
+                batch_url = get_next_link(response.headers)
+        elif service == "bioservices":
+            u = UniProtWithExpBackoff()
+            results = u.search(query_string, columns=fields_string, size=sub_batch_size, progress=False)
+            # bioservices doesn't directly return the number of results.
+            yield results
+        else:
+            raise ValueError(f"Unknown service {service}")
 
     with open(query_list, "r") as q:
         query_accessions = [line.rstrip("\n") for line in q.readlines()]
@@ -187,6 +155,7 @@ def query_uniprot_rest(
         for i in range(0, len(query_accessions), batch_size)
     ]
 
+    total = len(query_accessions)
     # Process each batch separately
     for i, accession_batch in enumerate(accession_batches):
         print(f">> Starting batch {i + 1} of {len(accession_batches)}")
@@ -198,12 +167,11 @@ def query_uniprot_rest(
         query_string = f"({query_string})"
 
         # Construct the URL with the constructed query string
-        url = f"https://rest.uniprot.org/uniprotkb/search?query={query_string}&format={fmt}&fields={fields_string}&size={sub_batch_size}"
         progress = 0
 
         with open(temp_file, "a") as f:
-            for batch, total in get_batch(url):
-                lines = batch.text.splitlines()
+            for batch in get_batch(query_string):
+                lines = batch.splitlines()
 
                 if not header_written:
                     print_lines = lines
@@ -254,10 +222,7 @@ def main():
     else:
         fields = DEFAULT_FIELDS
 
-    if service == "bioservices":
-        query_uniprot_bioservices(input_file, output_file)
-    else:
-        query_uniprot_rest(input_file, output_file, fields=fields)
+    query_uniprot(input_file, output_file, fields=fields, service=service)
 
 
 # check if called from interpreter
