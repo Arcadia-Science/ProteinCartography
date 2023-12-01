@@ -2,7 +2,7 @@
 # From-Query Pipeline Config Parameters #
 #########################################
 
-# Config parameters in this file are used as defaults by the 
+# Config parameters in this file are used as defaults by the
 # From-Query version of the pipeline (Snakefile).
 # To override the defaults, we recommend creating a copy of this file
 # and passing your new file to Snakemake using the --configfile flag.
@@ -39,6 +39,9 @@ foldseek_databases:
 
 # Set maximum number of BLAST hits to retrieve
 max_blasthits: 3000
+# Additional arguments to pass to BLAST.
+blast_word_size: 5
+blast_evalue: 10.0
 
 ######################
 # Structure settings #
@@ -57,7 +60,7 @@ min_length: 0
 max_length: 0
 
 # Specify whether or not to override protein quality checks prior to download
-# from UniProt. By default the pipeline removes proteins marked as fragments 
+# from UniProt. By default the pipeline removes proteins marked as fragments
 # by UniProt, as well as proteins that have been deleted from UniProt.
 override_quality_check: False
 

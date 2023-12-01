@@ -38,6 +38,8 @@ else:
 UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 
 MAX_BLASTHITS = int(config["max_blasthits"])
+BLAST_WORD_SIZE = int(config["blast_word_size"])
+BLAST_EVALUE = float(config["blast_evalue"])
 MAX_STRUCTURES = int(config["max_structures"])
 
 FS_DATABASES = config["foldseek_databases"]
@@ -67,8 +69,8 @@ for file in os.listdir(input_dir):
         file_id = os.path.splitext(file)[0]
         PROTID.append(file_id)
 
-BLAST_DEFAULTS = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'sacc', 'saccver', 'sgi', 'staxids', 'scomnames']
-BLAST_DEFAULT_STRING = '"' + ' '.join(['6'] + BLAST_DEFAULTS) + '"'
+BLAST_OUTPUT_FIELDS = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'sacc', 'saccver', 'sgi', 'staxids', 'scomnames']
+BLAST_OUTFMT = '"' + ' '.join(['6'] + BLAST_OUTPUT_FIELDS) + '"'
 
 ######################################
 
@@ -133,15 +135,25 @@ rule run_blast:
         refseqhits = output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt"
     params:
         max_blasthits = MAX_BLASTHITS,
-        blast_string = BLAST_DEFAULT_STRING
+        blast_word_size = BLAST_WORD_SIZE,
+        blast_evalue = BLAST_EVALUE,
+        blast_outfmt = BLAST_OUTFMT
     benchmark:
         output_dir / benchmarks_dir / "{protid}.run_blast.txt"
     conda:
         "envs/run_blast.yml"
     shell:
         '''
-        blastp -db nr -query {input.cds} -out {output.blastresults} -remote -max_target_seqs {params.max_blasthits} -outfmt {params.blast_string}
-        python ProteinCartography/extract_blasthits.py -i {output.blastresults} -o {output.refseqhits} -B {params.blast_string}
+        blastp \
+          -db nr \
+          -query {input.cds} \
+          -out {output.blastresults} \
+          -remote \
+          -max_target_seqs {params.max_blasthits} \
+          -outfmt {params.blast_outfmt} \
+          -word_size {params.blast_word_size} \
+          -evalue {params.blast_evalue}
+        python ProteinCartography/extract_blasthits.py -i {output.blastresults} -o {output.refseqhits} -B {params.blast_outfmt}
         '''
 
 rule map_refseqids:
