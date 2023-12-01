@@ -1,0 +1,31 @@
+name: run-demo-pipeline
+
+# this workflow uses the snakemake github action 
+# to test that the snakemake pipeline can be run in dryrun mode using the demo config
+
+# TODO (KC): define a minimal version of the demo config that can be used to run the pipeline for real
+# in a reasonable amount of time
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  run-demo-pipeline:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Test workflow
+        uses: snakemake/snakemake-github-action@v1.24.0
+        with:
+          directory: .
+          snakefile: ./Snakefile
+          args: "--configfile ./demo/config_actin.yml --use-conda --show-failed-logs --dryrun"

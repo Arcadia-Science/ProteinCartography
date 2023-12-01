@@ -12,5 +12,5 @@ dependencies:
   - mamba=1.4.2
   - pip=23.2.1
   - pip:
-      - "--editable=git+https://github.com/Arcadia-Science/arcadia-pycolor.git@245ad0c#egg=arcadia_pycolor"
+      - "git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"
       - bioservices==1.11.2

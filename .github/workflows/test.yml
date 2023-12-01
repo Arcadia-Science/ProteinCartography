@@ -1,0 +1,61 @@
+name: test
+
+# run unit and integration tests for the ProteinCartography package
+
+# NOTE (KC): for now, this workflow is a placeholder;
+# it just checks that the conda environment defined in envs/cartography_dev.yml
+# can be created and that it includes all of the dependencies
+# required by the ProteinCartography package
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          python-version: "3.9"
+          mamba-version: 1.4.2
+          use-mamba: true
+          activate-environment: test-env
+          auto-activate-base: false
+          # note: the docs claim `use-only-tar-bz2` must be set to true
+          # in order for package caching to work properly,
+          # but this results in many package-not-found errors,
+          # so we set it to false and do not use package caching
+          use-only-tar-bz2: false
+
+      - name: Cache the conda env
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ${{ env.CONDA }}/envs
+          key:
+            conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/cartography_dev.yml') }}
+
+      - name: Install the conda env
+        run: |
+          mamba env update -n test-env -f envs/cartography_dev.yml
+        if: steps.cache.outputs.cache-hit != 'true'
+
+      # check that the conda environment includes all of the dependencies
+      # required by the ProteinCartography package
+      - name: Check importability
+        run: |
+          python -c "import sys;sys.path.append('ProteinCartography');import ProteinCartography"
+
+      - name: Run tests
+        run: |
+          pytest .

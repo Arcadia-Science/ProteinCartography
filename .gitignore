@@ -1,9 +1,84 @@
-envs/src/
+# packages installed in editable mode
+envs/src/**
+
+# Snakemake-related folders and files
+.snakemake/
 **/input/
 **/output/
-.ipynb_checkpoints/
-.DS_Store
-.snakemake/
 output*/
 input*/
-**__pycache__/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*,cover
+.hypothesis/
+.napari_cache
+
+# Translations
+*.mo
+*.pot
+
+# Sphinx documentation
+docs/_build/
+
+# MkDocs documentation
+/site/
+
+# PyBuilder
+target/
+
+# Pycharm and VSCode
+.idea/
+venv/
+.vscode/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# OS
+.DS_Store
+
+# written by setuptools_scm
+**/_version.py
+
+# Nextflow related folders and files
+.nextflow*
+work/
