@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import argparse
-import pandas as pd
-import numpy as np
-import plotly.express as px
+
 import arcadia_pycolor as apc
+import numpy as np
+import pandas as pd
+import plotly.express as px
 
 arcadia_viridis = apc.Gradients["arcadia:viridis"].grad_nested_list
 
@@ -27,12 +28,8 @@ def parse_args():
     parser.add_argument(
         "-c", "--features-column", required=True, help="Column to aggregate groups on."
     )
-    parser.add_argument(
-        "-T", "--output-tsv", default="", help="Path to output TSV file."
-    )
-    parser.add_argument(
-        "-H", "--output-html", default="", help="Path to output HTML file."
-    )
+    parser.add_argument("-T", "--output-tsv", default="", help="Path to output TSV file.")
+    parser.add_argument("-H", "--output-html", default="", help="Path to output HTML file.")
     args = parser.parse_args()
 
     return args
@@ -42,12 +39,15 @@ def calculate_group_similarity(
     matrix_file: str, features_file: str, features_column: str, output_file=None
 ):
     """
-    Takes an all-v-all similarity matrix_file and averages across a grouping found in a features_file.
+    Takes an all-v-all similarity matrix_file and averages across a grouping
+    found in a features_file.
     The grouping is specified based on a column of the features file.
 
     Each row and column in the matrix_file should be a protid.
-    Within the features file, each protid should have an associated value in the specified features_column, which is its category.
-    The similarity matrix will be aggregated based on those groupings, and the similarity values averaged across the whole group versus every other group.
+    Within the features file, each protid should have an associated value
+    in the specified features_column, which is its category.
+    The similarity matrix will be aggregated based on those groupings,
+    and the similarity values averaged across the whole group versus every other group.
 
     Args:
         matrix_file (str): path of input similarity matrix file.
@@ -64,10 +64,7 @@ def calculate_group_similarity(
 
     # group entries along one axis by feature groups, applying mean
     pivot_agg = pivot_agg.groupby(features_column).agg(
-        {
-            i: list if i == "protid" or i == features_column else np.mean
-            for i in pivot_agg.columns
-        }
+        {i: list if i == "protid" or i == features_column else np.mean for i in pivot_agg.columns}
     )
 
     # tidy up dataframe
@@ -81,10 +78,7 @@ def calculate_group_similarity(
     # merge features dataframe again and groupby feature
     pivot_t_agg = pivot_t.merge(features_df, on="protid")
     pivot_t_agg = pivot_t_agg.groupby(features_column).agg(
-        {
-            i: list if i == "protid" or i == features_column else np.mean
-            for i in pivot_t_agg.columns
-        }
+        {i: list if i == "protid" or i == features_column else np.mean for i in pivot_t_agg.columns}
     )
 
     # clean up and reset groupings
@@ -136,9 +130,7 @@ def plot_group_similarity(
         thickness=20,
     )
 
-    fig.update_layout(
-        width=plot_width, height=plot_height, coloraxis_colorbar=colorbar_dict
-    )
+    fig.update_layout(width=plot_width, height=plot_height, coloraxis_colorbar=colorbar_dict)
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="rgba(0,0,0,0)")
 
     fig.update_xaxes(side="top", title="target")
@@ -146,7 +138,7 @@ def plot_group_similarity(
 
     try:
         fig.update_layout(font=dict(family="Arial"))
-    except:
+    except Exception:
         pass
 
     plot_config = {

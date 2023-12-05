@@ -30,7 +30,7 @@ body:
         if the extension is not allowed.
 
         Your verbose log `<hash>.snakemake.log` file is often useful _(this is a hidden file
-        in the directory where you launched the pipeline)_ as well as custom 
+        in the directory where you launched the pipeline)_ as well as custom
         Snakemake configuration files.
 
         You can find the log file in the `.snakemake/log/` directory.

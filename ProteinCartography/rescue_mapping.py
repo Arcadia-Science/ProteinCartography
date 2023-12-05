@@ -25,7 +25,7 @@ def rescue_mapping(input_file: str, output_file: str):
     """
 
     # read the file
-    with open(input_file, "r") as f:
+    with open(input_file) as f:
         text = [i.rstrip("\n") for i in f.readlines()]
 
     # unique-ify it

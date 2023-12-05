@@ -2,7 +2,7 @@
 # From-Folder Pipeline Config Parameters #
 ##########################################
 
-# Config parameters in this file are used as defaults by the 
+# Config parameters in this file are used as defaults by the
 # From-Folder version of the pipeline (Snakefile_ff).
 # To override the defaults, we recommend creating a copy of this file
 # and passing your new file to Snakemake using the --configfile flag.

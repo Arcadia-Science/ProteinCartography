@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+
 import pandas as pd
 
 # only import these functions when using import *
@@ -9,21 +10,15 @@ __all__ = ["extract_tmscore_feature"]
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i", "--input", required=True, help="Input distance matrix filepath."
-    )
-    parser.add_argument(
-        "-o", "--output", required=True, help="Destination _features.tsv filepath."
-    )
+    parser.add_argument("-i", "--input", required=True, help="Input distance matrix filepath.")
+    parser.add_argument("-o", "--output", required=True, help="Destination _features.tsv filepath.")
     parser.add_argument("-p", "--protid", required=True, help="Protid of interest.")
     args = parser.parse_args()
 
     return args
 
 
-def extract_tmscore_feature(
-    input_file: str, protid: str, savefile=None
-) -> pd.DataFrame:
+def extract_tmscore_feature(input_file: str, protid: str, savefile=None) -> pd.DataFrame:
     """
     Extracts the TMscore column from data for a specific protid and saves to file.
     This should be identical to the filename of the protein structure without the '.pdb' suffix.

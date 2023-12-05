@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 import argparse
-import pandas as pd
-import numpy as np
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-import arcadia_pycolor as apc
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import textwrap
 
+import arcadia_pycolor as apc
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+from matplotlib.ticker import MaxNLocator
 from plot_interactive import extend_colors
+from plotly.subplots import make_subplots
+from wordcloud import WordCloud
 
 __all__ = [
     "plot_semantic_analysis",
@@ -28,9 +28,7 @@ def parse_args():
         required=True,
         help="Path to features file for grouping.",
     )
-    parser.add_argument(
-        "-c", "--agg-column", required=True, help="Column to aggregate groups on."
-    )
+    parser.add_argument("-c", "--agg-column", required=True, help="Column to aggregate groups on.")
     parser.add_argument(
         "-n", "--annot-column", required=True, help="Column of annotations to analyze."
     )
@@ -38,7 +36,10 @@ def parse_args():
         "-o",
         "--output",
         default="",
-        help="Path to output file ending in a matplotlib-compatible format (png, pdf, ps, eps, and svg).",
+        help=(
+            "Path to output file ending in a matplotlib-compatible format "
+            "(png, pdf, ps, eps, and svg)."
+        ),
     )
     parser.add_argument(
         "-i",
@@ -53,9 +54,7 @@ def parse_args():
         default=["protein", "None"],
         help="Words to exclude from word cloud.",
     )
-    parser.add_argument(
-        "-a", "--analysis-name", default="", help="name of analysis for plotting"
-    )
+    parser.add_argument("-a", "--analysis-name", default="", help="name of analysis for plotting")
     args = parser.parse_args()
 
     return args
@@ -66,7 +65,7 @@ def plot_semantic_analysis(
     agg_col: str,
     annot_col: str,
     colors: list,
-    exclude_words=["protein", "None"],
+    exclude_words=("protein", "None"),
     ignore_nan=True,
     top_n=10,
     max_str_len=30,
@@ -76,9 +75,11 @@ def plot_semantic_analysis(
     show=False,
 ):
     """
-    Takes a features file and performs semantic analysis on an annot_col for a given group of entries specified in agg_col.
+    Takes a features file and performs semantic analysis on an annot_col
+    for a given group of entries specified in agg_col.
     The annot_col usually contains a gene description for each protein in the features file.
-    The agg_col is a column that describes the group for each protein (e.g. its cluster number, species, etc).
+    The agg_col is a column that describes the group for each protein
+    (e.g. its cluster number, species, etc).
 
     Generates a bar chart where the most common annotations (up to top_n) in each group are ranked.
     Also generates a word cloud for the most common words in the annotations for that group.
@@ -88,27 +89,32 @@ def plot_semantic_analysis(
         agg_col (str): column in the features file to use for aggregation.
         annot_col (str): column in the features file that contains the annotations.
         colors (list): ordered list of HEX or rgba values to color the groups with.
-        exclude_words (list): list of words to ignore when building word cloud. Defaults to 'protein' and 'None'.
-        ignore_nan (bool): whether to ignore empty annotation cells when building the bar chart and word cloud. Defaults to True.
+        exclude_words (list): list of words to ignore when building word cloud.
+            Defaults to 'protein' and 'None'.
+        ignore_nan (bool): whether to ignore empty annotation cells
+            when building the bar chart and word cloud. Defaults to True.
         top_n (int): up to this number of annotations will be displayed in the bar chart.
-        max_str_len (int): maximum number of characters to display from annotation string in bar chart. Defaults to 30.
-        n_cols (int): number of columns of paired bar chart + word cloud plots to show. Number of rows is automatically adjusted to fit.
+        max_str_len (int): maximum number of characters to display
+            from annotation string in bar chart. Defaults to 30.
+        n_cols (int): number of columns of paired bar chart + word cloud plots to show.
+            Number of rows is automatically adjusted to fit.
         analysis_name (str): an analysis name to add to the title of the plot. Defaults to ''.
         savefile (str or None): if not None, saves a file to this path.
-        show (bool): whether or not to show the plot. Used during interactive sessions. Defaults to False.
+        show (bool): whether or not to show the plot. Used during interactive sessions.
+            Defaults to False.
         output_file (str): path of destination file.
     """
     # read in features file
     features_df = pd.read_csv(features_file, sep="\t")
 
-    ignore_fxn = (
-        lambda x: [i for i in x if i is not np.nan]
-        if ignore_nan
-        else lambda x: [i for i in x]
-    )
+    # TODO (KC): this is duplicated in count_
+    def ignore_function(x):
+        if ignore_nan:
+            return [i for i in x if i is not np.nan]
+        return list(x)
 
     # group features file by aggregation column and extract aggregated annotation column
-    groupedby_agg_df = features_df.groupby(agg_col).agg(ignore_fxn)[annot_col]
+    groupedby_agg_df = features_df.groupby(agg_col).agg(ignore_function)[annot_col]
 
     # determine number of groups
     n_groups = len(groupedby_agg_df)
@@ -135,7 +141,8 @@ def plot_semantic_analysis(
         # count number of unique annotations per cluster
         len_dict[clu] = len(values)
 
-        # combine all annotations into one long space-separated string, then break into individual words
+        # combine all annotations into one long space-separated string,
+        # then break into individual words
         annot_word_list = " ".join(list(values)).split(" ")
 
         # sanitize word list by removing irrelevant words and parentheses
@@ -156,14 +163,12 @@ def plot_semantic_analysis(
             width=500,
             height=500,
             background_color="white",
-            color_func=lambda *args, **kwargs: used_colors[i],
+            color_func=lambda *args, i=i, **kwargs: used_colors[i],
         ).generate_from_frequencies(str_summary)
 
     # create figure with correct number of dimensions
     plt.figure(figsize=(n_cols * 6, n_rows * 3))
-    plt.suptitle(
-        f"Simple semantic analysis of {analysis_name} {agg_col}", y=1.01, fontsize=18
-    )
+    plt.suptitle(f"Simple semantic analysis of {analysis_name} {agg_col}", y=1.01, fontsize=18)
 
     # generate plots
     for i, clu in enumerate(summary_dict.keys()):
@@ -173,8 +178,7 @@ def plot_semantic_analysis(
 
         # shorten annotation strings based on a maximum number of characters
         labels = [
-            i[:max_str_len] + "..." if len(i) > max_str_len else i
-            for i in list(top_n_df.index)
+            i[:max_str_len] + "..." if len(i) > max_str_len else i for i in list(top_n_df.index)
         ]
         widths = list(top_n_df["count"])
 
@@ -217,7 +221,7 @@ def count_features(
     agg_col: str,
     annot_col: str,
     colors: list,
-    exclude_words=["protein", "None"],
+    exclude_words=("protein", "None"),
     ignore_nan=True,
 ):
     """
@@ -234,14 +238,14 @@ def count_features(
     # read in features file
     features_df = pd.read_csv(features_file, sep="\t")
 
-    ignore_fxn = (
-        lambda x: [i for i in x if i is not np.nan]
-        if ignore_nan
-        else lambda x: [i for i in x]
-    )
+    # TODO (KC): this is duplicated from plot_semantic_analysis above
+    def ignore_function(x):
+        if ignore_nan:
+            return [i for i in x if i is not np.nan]
+        return list(x)
 
     # group features file by aggregation column and extract aggregated annotation column
-    groupedby_agg_df = features_df.groupby(agg_col).agg(ignore_fxn)[annot_col]
+    groupedby_agg_df = features_df.groupby(agg_col).agg(ignore_function)[annot_col]
 
     # determine number of groups
     n_groups = len(groupedby_agg_df)
@@ -265,7 +269,8 @@ def count_features(
         # count number of unique annotations per cluster
         total_annots_dict[clu] = len(values)
 
-        # combine all annotations into one long space-separated string, then break into individual words
+        # combine all annotations into one long space-separated string,
+        # then break into individual words
         annot_word_list = " ".join(list(values)).split(" ")
 
         # sanitize word list by removing irrelevant words and parentheses
@@ -286,7 +291,7 @@ def count_features(
             width=500,
             height=500,
             background_color="white",
-            color_func=lambda *args, **kwargs: used_colors[i],
+            color_func=lambda *args, i=i, **kwargs: used_colors[i],
         ).generate_from_frequencies(str_summary)
 
     results = {
@@ -314,7 +319,6 @@ def semantic_barchart_plotly(annotation_count: dict, group: str, color: str, top
     annotation_count_group_filtered = annotation_count_group.head(top_n)
 
     x = annotation_count_group_filtered["count"]
-    y = annotation_count_group_filtered["count"]
     text = annotation_count_group_filtered.index
     customdata = ["<br>".join(textwrap.wrap(i, 30)) for i in text]
 
@@ -325,15 +329,12 @@ def semantic_barchart_plotly(annotation_count: dict, group: str, color: str, top
         xaxis="x",
         yaxis="y",
         customdata=customdata,
-        hovertemplate="<br>".join(["%{customdata}", "<b>Count:</b> %{x}"])
-        + "<extra></extra>",
+        hovertemplate="<br>".join(["%{customdata}", "<b>Count:</b> %{x}"]) + "<extra></extra>",
     )
     return bar
 
 
-def wordcloud_image(
-    wordclouds: dict, group: str, color: str, mode="fig", savefile=None
-):
+def wordcloud_image(wordclouds: dict, group: str, color: str, mode="fig", savefile=None):
     """
     Generate an SVG image or Plotly figure object from a wordcloud object
 
@@ -398,9 +399,7 @@ def semantic_multiplot_plotly(
 
     flattened_indices = [
         k
-        for lst in [
-            [(j + 1, i + 1) for i in np.arange(n_cols * 2)] for j in np.arange(n_rows)
-        ]
+        for lst in [[(j + 1, i + 1) for i in np.arange(n_cols * 2)] for j in np.arange(n_rows)]
         for k in lst
     ]
 
@@ -409,9 +408,7 @@ def semantic_multiplot_plotly(
     if len(used_colors) < n_groups:
         used_colors = used_colors + extend_colors([1] * n_groups, used_colors)
 
-    colors_dict = dict(
-        zip(count_features_results["annotation_count"].keys(), used_colors)
-    )
+    colors_dict = dict(zip(count_features_results["annotation_count"].keys(), used_colors))
 
     xaxis_params = {
         "showline": True,
@@ -452,26 +449,24 @@ def semantic_multiplot_plotly(
         )
 
         fig.add_trace(bar, row=flattened_indices[i][0], col=flattened_indices[i][1])
-        next(
-            fig.select_xaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])
-        ).update(xaxis_params)
-        next(
-            fig.select_yaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])
-        ).update(yaxis_params)
+        next(fig.select_xaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])).update(
+            xaxis_params
+        )
+        next(fig.select_yaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])).update(
+            yaxis_params
+        )
 
         i += 1
 
-        image = wordcloud_image(
-            count_features_results["wordclouds"], group, colors_dict[group]
-        )
+        image = wordcloud_image(count_features_results["wordclouds"], group, colors_dict[group])
 
         fig.add_trace(image, row=flattened_indices[i][0], col=flattened_indices[i][1])
-        next(
-            fig.select_xaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])
-        ).update(xaxis2_params)
-        next(
-            fig.select_yaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])
-        ).update(yaxis2_params)
+        next(fig.select_xaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])).update(
+            xaxis2_params
+        )
+        next(fig.select_yaxes(row=flattened_indices[i][0], col=flattened_indices[i][1])).update(
+            yaxis2_params
+        )
 
         i += 1
 

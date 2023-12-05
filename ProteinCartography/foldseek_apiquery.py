@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-import sys
-import os
 import argparse
+import os
+import sys
 from time import sleep
 
 from api_utils import session_with_retry
-
 
 ### NOTES
 # FoldSeek API example from website:
@@ -71,10 +70,12 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
     Args:
         input_file (str): path to the query PDB file.
-        output_file (str): path to a compressed '.tar.gz' results file. If suffix is missing, adds it.
+        output_file (str): path to a compressed '.tar.gz' results file.
+            If suffix is missing, adds it.
         mode (str): whether to run in '3diaa' or 'tmalign' mode.
         database (list): list of run databases.
-            Valid databases include 'afdb50', 'afdb-swissprot', 'afdb-proteome', 'mgnify_esm30', 'pdb100', and 'gmgcl_id'.
+            Valid databases include 'afdb50', 'afdb-swissprot', 'afdb-proteome', 'mgnify_esm30',
+            'pdb100', and 'gmgcl_id'.
     """
     # Check to make sure input file has '.pdb' suffix
     if ".pdb" not in input_file:
@@ -112,23 +113,19 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
     # Check to make sure at least one valid database is provided
     if len(query_databases) == 0:
-        sys.exit(
-            f"No valid databases provided. Valid databases include {SET_DATABASES}."
-        )
+        sys.exit(f"No valid databases provided. Valid databases include {SET_DATABASES}.")
 
     # Collector for PDB information for requests.post()
     pdb = ""
 
     # Open input file and collect text as string
-    with open(input_file, "r") as file:
+    with open(input_file) as file:
         text = file.readlines()
         pdb = "".join(text)
 
     ### Code below is mostly based on:
     ### <https://github.com/soedinglab/MMseqs2-App/blob/master/docs/api_example.py>
     # submit a new job via the API
-    post_successful = False
-
     ticket = (
         session_with_retry()
         .post(
@@ -140,9 +137,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
     # check to see if the ticket failed to be posted
     # tickets can fail to be posted because of ratelimits
-    try:
-        testid = ticket["id"]
-    except KeyError:
+    if "id" not in ticket.keys():
         if "status" in ticket.keys() and "reason" in ticket.keys():
             print("===============")
             print(ticket["status"])

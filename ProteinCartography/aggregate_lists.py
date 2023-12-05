@@ -28,7 +28,8 @@ def parse_args():
 # aggregate .txt files from folders based on suffix
 def aggregate_lists(input_files: list, output_file: str):
     """
-    Takes in a list of input .txt files containing accessions and combines them, removing duplicates.
+    Takes in a list of input .txt files containing accessions and combines them,
+    removing duplicates.
 
     Args:
         input_files (list): list of string paths of input files.
@@ -40,7 +41,7 @@ def aggregate_lists(input_files: list, output_file: str):
     # iterate through files
     for file in input_files:
         # get file contents
-        with open(file, "r") as f:
+        with open(file) as f:
             ids = f.read().splitlines()
             # add ids to set, which is non-redundant
             id_set.update(ids)

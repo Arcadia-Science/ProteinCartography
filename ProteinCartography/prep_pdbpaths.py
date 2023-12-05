@@ -15,9 +15,7 @@ def parse_args():
         nargs="+",
         help="Input path to directories to scrape PDB paths. Can accept multiple arguments.",
     )
-    parser.add_argument(
-        "-o", "--output", required=True, help="Name of output TXT file."
-    )
+    parser.add_argument("-o", "--output", required=True, help="Name of output TXT file.")
     args = parser.parse_args()
     return args
 

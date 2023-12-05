@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import pandas as pd
 import argparse
+
+import pandas as pd
 
 # only import these functions when using import *
 __all__ = ["linear_concordance", "calculate_concordance"]
@@ -54,7 +55,8 @@ def linear_concordance(tmscore, fident):
     """
     Takes two values and subtracts them.
 
-    This is a function mostly because we'll build in other concordance metrics and will need to have functions for each method for calculating concordance/discordance.
+    This is a function mostly because we'll build in other concordance metrics
+    and will need to have functions for each method for calculating concordance/discordance.
     """
     distance = tmscore - fident
     return distance
@@ -71,16 +73,21 @@ def calculate_concordance(
     save=True,
 ):
     """
-    Takes a TM-score 'distance_features.tsv' file and a sequence identity 'fident_features.tsv' file and calculates a concordance metric.
-    Filters results using user-provided cutoffs and saves filtered results to a 'concordance_features.tsv' file.
+    Takes a TM-score 'distance_features.tsv' file
+    and a sequence identity 'fident_features.tsv' file
+    and calculates a concordance metric.
+    Filters results using user-provided cutoffs and saves filtered results
+    to a 'concordance_features.tsv' file.
 
     Args:
         tmscore_file (str): path of input tmscore file.
         fident_file (str): path of input fraction sequence identity file.
         protid (str): protid of the input protein associated with the tmscore and fident files.
         output_file (str): path of destination file.
-        method (str): how to calculate concordance. Currently only supports 'linear', which subtracts fident from tmscore.
-        evalue_maximum (float): maximum cutoff for evalues from .m8 results files. Defaults to 0.001.
+        method (str): how to calculate concordance. Currently only supports 'linear',
+        which subtracts fident from tmscore.
+        evalue_maximum (float): maximum cutoff for evalues from .m8 results files.
+            Defaults to 0.001.
         tmscore_minimum (float): minimum tmscore to include in calculations. Defaults to 0.
     """
     fident_df = pd.read_csv(fident_file, sep="\t")

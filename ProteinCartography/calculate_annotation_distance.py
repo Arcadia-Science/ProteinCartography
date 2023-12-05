@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 import argparse
-import pandas as pd
-import os
-import numpy as np
-import re
-from sklearn.metrics.pairwise import linear_kernel
-from sklearn.feature_extraction.text import TfidfVectorizer
+
 import nltk
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
 
 # downloads a pretrained punkt word tokenizer for use
 # by nltk.tokenize.word_tokenize
@@ -20,18 +18,12 @@ __all__ = ["calculate_annotation_distance"]
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i", "--input", required=True, help="Path of input features file."
-    )
-    parser.add_argument(
-        "-o", "--output", required=True, help="Path of output distances file."
-    )
+    parser.add_argument("-i", "--input", required=True, help="Path of input features file.")
+    parser.add_argument("-o", "--output", required=True, help="Path of output distances file.")
     parser.add_argument(
         "-d", "--id-col", required=True, help="ID column to use for unique entries."
     )
-    parser.add_argument(
-        "-a", "--annot-col", required=True, help="Column containing annotations."
-    )
+    parser.add_argument("-a", "--annot-col", required=True, help="Column containing annotations.")
     parser.add_argument(
         "-f",
         "--filter-col",
@@ -50,16 +42,17 @@ def calculate_annotation_distance(
     annot_col: str,
     output_file=None,
     sep="\t",
-    filter_cols=[],
+    filter_cols=None,
     dropna=True,
     tokenizer="nltk_word_tokenize",
-    ignored_tokens=["(", ")", ";", "."],
+    ignored_tokens=("(", ")", ";", "."),
     round_digits=8,
     ngram_range=(1, 3),
     min_df=0.0,
 ):
     """
-    Takes a TSV file containing annotations and calculates the all-v-all cosine similarity between them.
+    Takes a TSV file containing annotations and calculates the all-v-all cosine similarity
+    between them.
     The output is a TSV file containing the cosine similarity between each pair of annotations.
 
     Args:
@@ -71,11 +64,14 @@ def calculate_annotation_distance(
         filter_cols (list): list of columns to be used as filters based on missing values
         dropna (bool): whether to drop rows with missing values in the filter columns
         tokenizer (str): tokenizer to use for tokenizing the annotations
-        ignored_tokens (list): list of tokens to be ignored
+        ignored_tokens (tuple): list of tokens to be ignored
         round_digits (int): number of digits to round the cosine similarity to
         ngram_range (tuple): range of n-grams to be used for the TF-IDF vectorizer
         min_df (float): minimum document frequency for the TF-IDF vectorizer
     """
+
+    if filter_cols is None:
+        filter_cols = []
 
     # Read the input file
     input_df = pd.read_csv(input_file, sep=sep)
@@ -119,9 +115,7 @@ def calculate_annotation_distance(
     # (note: the linear kernel is equivalent to the cosine similarity
     # because the TF-IDF vectors are normalized, and it is faster to calculate)
     tfidf_cosine = linear_kernel(tfidf)
-    tfidf_df = pd.DataFrame(
-        tfidf_cosine, columns=annotations[id_col], index=annotations[id_col]
-    )
+    tfidf_df = pd.DataFrame(tfidf_cosine, columns=annotations[id_col], index=annotations[id_col])
     tfidf_df = tfidf_df.round(round_digits)
 
     if output_file is not None:

@@ -1,11 +1,11 @@
 # ProteinCartography
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8377393.svg)](https://doi.org/10.5281/zenodo.8377393) 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8377393.svg)](https://doi.org/10.5281/zenodo.8377393)
 [![Arcadia Pub](https://img.shields.io/badge/Arcadia-Pub-596F74.svg?logo=data:image/svg%2bxml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI3LjcuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA0My4yIDQwLjQiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDQzLjIgNDAuNDsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOm5vbmU7c3Ryb2tlOiNGRkZGRkY7c3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWxpbmVqb2luOmJldmVsO3N0cm9rZS1taXRlcmxpbWl0OjEwO30KPC9zdHlsZT4KPGc+Cgk8cG9seWdvbiBjbGFzcz0ic3QwIiBwb2ludHM9IjIxLjYsMyAxLjcsMzcuNCA0MS41LDM3LjQgCSIvPgoJPGxpbmUgY2xhc3M9InN0MCIgeDE9IjIxLjYiIHkxPSIzIiB4Mj0iMjEuNiIgeTI9IjI3LjMiLz4KCTxwb2x5bGluZSBjbGFzcz0ic3QwIiBwb2ludHM9IjEyLjIsMTkuNCAyNC42LDMwLjEgMjQuNiwzNy40IAkiLz4KCTxsaW5lIGNsYXNzPSJzdDAiIHgxPSIxNy42IiB5MT0iMTYuNyIgeDI9IjE3LjYiIHkyPSIyNC4xIi8+Cgk8bGluZSBjbGFzcz0ic3QwIiB4MT0iMjguNiIgeTE9IjE1LjIiIHgyPSIyMS43IiB5Mj0iMjIuMSIvPgoJPHBvbHlsaW5lIGNsYXNzPSJzdDAiIHBvaW50cz0iNi44LDI4LjcgMTkuNSwzNC40IDE5LjUsMzcuNCAJIi8+Cgk8bGluZSBjbGFzcz0ic3QwIiB4MT0iMzQuOCIgeTE9IjI1LjgiIHgyPSIyNC42IiB5Mj0iMzYuMSIvPgoJPGxpbmUgY2xhc3M9InN0MCIgeDE9IjI5LjciIHkxPSIyMi4yIiB4Mj0iMjkuNyIgeTI9IjMwLjkiLz4KPC9nPgo8L3N2Zz4K)](https://doi.org/10.57844/arcadia-a5a6-1068)
 [![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
 [![Snakemake](https://img.shields.io/badge/snakemake--green)](https://snakemake.readthedocs.io/en/stable/)
 
 
-The ProteinCartography pipeline searches sequence and structure databases for matches to input proteins and builds maps of protein space for the purposes of discovery and exploration. 
+The ProteinCartography pipeline searches sequence and structure databases for matches to input proteins and builds maps of protein space for the purposes of discovery and exploration.
 
 You can find a general overview of the pipeline in the Pub [![Arcadia Pub](https://img.shields.io/badge/Arcadia-Pub-596F74.svg?logo=data:image/svg%2bxml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI3LjcuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA0My4yIDQwLjQiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDQzLjIgNDAuNDsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOm5vbmU7c3Ryb2tlOiNGRkZGRkY7c3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWxpbmVqb2luOmJldmVsO3N0cm9rZS1taXRlcmxpbWl0OjEwO30KPC9zdHlsZT4KPGc+Cgk8cG9seWdvbiBjbGFzcz0ic3QwIiBwb2ludHM9IjIxLjYsMyAxLjcsMzcuNCA0MS41LDM3LjQgCSIvPgoJPGxpbmUgY2xhc3M9InN0MCIgeDE9IjIxLjYiIHkxPSIzIiB4Mj0iMjEuNiIgeTI9IjI3LjMiLz4KCTxwb2x5bGluZSBjbGFzcz0ic3QwIiBwb2ludHM9IjEyLjIsMTkuNCAyNC42LDMwLjEgMjQuNiwzNy40IAkiLz4KCTxsaW5lIGNsYXNzPSJzdDAiIHgxPSIxNy42IiB5MT0iMTYuNyIgeDI9IjE3LjYiIHkyPSIyNC4xIi8+Cgk8bGluZSBjbGFzcz0ic3QwIiB4MT0iMjguNiIgeTE9IjE1LjIiIHgyPSIyMS43IiB5Mj0iMjIuMSIvPgoJPHBvbHlsaW5lIGNsYXNzPSJzdDAiIHBvaW50cz0iNi44LDI4LjcgMTkuNSwzNC40IDE5LjUsMzcuNCAJIi8+Cgk8bGluZSBjbGFzcz0ic3QwIiB4MT0iMzQuOCIgeTE9IjI1LjgiIHgyPSIyNC42IiB5Mj0iMzYuMSIvPgoJPGxpbmUgY2xhc3M9InN0MCIgeDE9IjI5LjciIHkxPSIyMi4yIiB4Mj0iMjkuNyIgeTI9IjMwLjkiLz4KPC9nPgo8L3N2Zz4K)](https://doi.org/10.57844/arcadia-a5a6-1068) for this pipeline. The results of a 25-protein meta-analysis of top-studied human proteins can be found on Zenodo [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8377393.svg)](https://doi.org/10.5281/zenodo.8377393).
 
@@ -22,8 +22,8 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
     git clone https://github.com/Arcadia-Science/ProteinCartography.git
     ```
 2. Install [`conda`](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) and/or [`mamba`](https://github.com/mamba-org/mamba) if you don't already have them installed.
-3. Create a conda environment containing the software needed to run the pipeline.  
-    Run this code from within the ProteinCartography repo.
+3. Create a conda environment containing the software needed to run the pipeline.
+    Run this code from within the ProteinCartography repo:
     ```
     conda env create -f envs/cartography_tidy.yml -n cartography_tidy
     conda activate cartography_tidy
@@ -34,7 +34,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
     snakemake --snakefile Snakefile --configfile demo/config_actin.yml --use-conda --cores n
     ```
 5. Inspect results.
-    In the `demo/output/clusteringresults/` directory, you should find the following files:  
+    In the `demo/output/clusteringresults/` directory, you should find the following files:
     - `actin_aggregated_features.tsv`: metadata file containing protein feature hits
     - `actin_aggregated_features_pca_umap.html`: interactive UMAP scatter plot of results
     - `actin_aggregated_features_pca_tsne.html`: interactive t-SNE scatter plot of results
@@ -43,7 +43,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
 
 ---
 ## Compute Specifications
-We have been able to successfully run the pipeline on macOS and Amazon Linux 2 machines with at least 8GB RAM and 8 cores.  
+We have been able to successfully run the pipeline on macOS and Amazon Linux 2 machines with at least 8GB RAM and 8 cores.\
 For the data generated for our pub, we ran the pipeline on an AWS EC2 instance of type `t2.2xlarge` (32 GiB RAM + 8 vCPU).
 
 ---
@@ -51,7 +51,7 @@ For the data generated for our pub, we ran the pipeline on an AWS EC2 instance o
 The pipeline supports two modes: **Search** and **Cluster**.
 
 ### Search Mode
-In this default mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).  
+In this default mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map. The pipeline is implemented in [`Snakefile`](Snakefile).
 ![rulegraph](rulegraph.png)
 
 #### Inputs
@@ -59,7 +59,7 @@ In this default mode, the pipeline starts with a set of input proteins of intere
     - Each protein should have a unique protein identifier (`protid`).
     - The `protid` should be the prefix of the FASTA and PDB files (e.g. `P60709.fasta`, `P60709.pdb`).
     - Proteins provided as FASTAs <400aa in length will be folde automatically by the pipeline using the ESMFold API.
-    - For proteins >400aa in length, we recommend using [ColabFold](https://github.com/sokrypton/ColabFold). 
+    - For proteins >400aa in length, we recommend using [ColabFold](https://github.com/sokrypton/ColabFold).
 - Custom `config.yml` file.
     - [`config.yml`](config.yml) contains the default parameters of the pipeline, which are used if a custom file is not provided.
     - We recommend making a copy of this file and customizing the file to fit your search parameters.
@@ -92,7 +92,7 @@ snakemake --snakefile Snakefile --configfile config.yml --use-conda --cores 8
 ```
 
 ### Cluster Mode
-In this mode, the pipeline starts with a folder containing PDBs of interest and performs just the clustering and visualization steps of the pipeline, without performing any searches or downloads. The pipeline is implemented in [`Snakefile_ff`](Snakefile_ff).  
+In this mode, the pipeline starts with a folder containing PDBs of interest and performs just the clustering and visualization steps of the pipeline, without performing any searches or downloads. The pipeline is implemented in [`Snakefile_ff`](Snakefile_ff).
 ![rulegraph_ff](rulegraph_ff.png)
 
 #### Inputs
@@ -115,23 +115,25 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
     - The file should be placed into the `input` directory.
     - This file contains protein metadata for each protein used for visualization purposes.
     - The columns of this file are described in [Feature file main columns](#feature-file-main-columns).
-    
+
 #### Walkthrough
 0. Follow steps 1-3 in the [Quickstart](#quickstart) section above to set up and activate the conda environment.
 1. Set up a [`config_ff.yml`](config_ff.yml) file specifying input and output directories and an analysis name.
 2. Add input protein structures in PDB format to your input folder.
     - The pipeline does not yet support PDBs with multiple chains.
 3. Make a `uniprot_features.tsv` file.
-    You can generate this one of two ways. If you have a list of UniProt accessions, you can provide that as a .txt file and automatically pull down the correct annotations. Alternatively, you can manually generate the file.  
-    **3.1 Generating the file using query_UniProt.py**
-    - Create a `uniprot_ids.txt` file that contains a list of UniProt accessions, one per line.
-    - Run the following code from the base of the GitHub repository. Modify the input folder path to your input folder.
-        `python ProteinCartography/query_uniprot.py -i uniprot_ids.txt -o input_ff/uniprot_features.tsv`  
-    **3.2 Manually generating the file.**
-    - For each protid in the dataset, you should gather relevant protein metadata.
-    - The first column of the file should be the unique protein identifer, with `protid` as the column name.
-    - You should have additional columns for relevant metadata as described in [Feature file main columns](#feature-file-main-columns).
-    - Default columns that are missing will be ignored.
+    You can generate this one of two ways. If you have a list of UniProt accessions, you can provide that as a .txt file and automatically pull down the correct annotations. Alternatively, you can manually generate the file.
+    - **3.1 Generating the file using `query_UniProt.py`**
+        - Create a `uniprot_ids.txt` file that contains a list of UniProt accessions, one per line.
+        - Run the following code from the base of the GitHub repository. Modify the input folder path to your input folder.
+            ```
+            python ProteinCartography/query_uniprot.py -i uniprot_ids.txt -o input_ff/uniprot_features.tsv
+            ```
+    - **3.2 Manually generating the file**
+        - For each protid in the dataset, you should gather relevant protein metadata.
+        - The first column of the file should be the unique protein identifer, with `protid` as the column name.
+        - You should have additional columns for relevant metadata as described in [Feature file main columns](#feature-file-main-columns).
+        - Default columns that are missing will be ignored.
 4. Run this command, replacing the `config_ff.yml` with your config file and `8` with the number of cores you want to allocate to Snakemake.
 ```
 snakemake --snakefile Snakefile_ff --configfile config_ff.yml --use-conda --cores 8
@@ -148,8 +150,8 @@ snakemake --snakefile Snakefile_ff --configfile config_ff.yml --use-conda --core
 
 ---
 ## Pipeline Overview
-The Search mode of the pipeline performs all of the following steps.  
-The Cluster mode starts at the Clustering step.
+The **Search** mode of the pipeline performs all of the following steps.\
+The **Cluster** mode starts at the "Clustering" step.
 
 ### Protein Folding
 0. Fold input FASTA files using ESMFold.
@@ -157,28 +159,28 @@ The Cluster mode starts at the Clustering step.
     - If a matching PDB file is not provided, the pipeline will use the ESMFold API to generate a PDB file for FASTA sequences shorter than 400aa.
 
 ### Protein Search
-1. Search the AlphaFold databases using queries to the Foldseek webserver API for each provided `.pdb` file.  
+1. Search the AlphaFold databases using queries to the Foldseek webserver API for each provided `.pdb` file.
     - The pipeline searches `afdb50`, `afdb-proteome` and `afdb-swissprot` for each input protein and aggregate the results. You can customize to add or remove databases using the config file.
-    - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein, per database.  
+    - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein, per database.
 
-2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.  
+2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob).
     - TODO: This can fail for large proteins (>700aa) due to remote BLAST CPU limits. To overcome this error, you can manually run BLAST locally or via the webserver and create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blasthits.refseq.txt` in the `output/blastresults/` directory.
-    
-### Download Data
-3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of UniProt IDs. 
 
-4. Download annotation and feature information for each hit protein from UniProt.  
+### Download Data
+3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of UniProt IDs.
+
+4. Download annotation and feature information for each hit protein from UniProt.
 
 5. Filter proteins based on key UniProt metadata. The pipeline removes:
     - Proteins marked as fragments by UniProt.
     - Deleted or outdated proteins.
     - Proteins larger than or smaller than user-specified maximum and minimum size parameters, specified in the `config.yml` file.
 
-6. Download a `.pdb` file from each remaining protein from AlphaFold.  
+6. Download a `.pdb` file from each remaining protein from AlphaFold.
     - This part is a bit slow, as it's currently limited to the number of cores provided to Snakemake.
     - Sometimes this will fail, possibly due to rate limits. Restarting Snakemake with the `--rerun-incomplete` flag usually resolves this.
-    
+
 ### Clustering
 
 7. Generate a similarity matrix and cluster all protein .pdb files using Foldseek.
@@ -189,7 +191,7 @@ The Cluster mode starts at the Clustering step.
 8. Perform dimensionality reduction and clustering on the similarity matrix.
     - By default, we perform 30-component PCA prior to running both TSNE and UMAP for visualization.
     - For clustering, we use the defaults of [`scanpy`'s Leiden clustering implementation](https://scanpy.readthedocs.io/en/latest/generated/scanpy.tl.leiden.html#scanpy-tl-leiden).
-    
+
 ### Data Analysis and Aggregation
 
 9. Generate a variety of `_features.tsv` files.
@@ -202,7 +204,7 @@ The Cluster mode starts at the Clustering step.
     - We extract from Foldseek search a fraction sequence identity for every protid in our input protids as `<input_protid>_fident_features.tsv` files.
     - We subtract the fraction sequence identity from the TM-score to generate a `<input_protid>_convergence_features.tsv` file.
     - We determine the source of each file in the analysis (whether it was found from blast or Foldseek) as the `source_features.tsv` file.
-    
+
 10. Aggregate features.
     - All of the features.tsv files are combined into one large `aggregated_features.tsv` file.
 
@@ -216,8 +218,8 @@ The Cluster mode starts at the Clustering step.
     - For the annotations in each cluster, aggregate them and count the frequency of every full annotation string.
     - Perform a word count analysis on all of the annotations and generate a word cloud.
     - Save as a PDF file with suffix `_semantic_analysis.pdf`.
-    
-13. Build an explorable HTML visualization using `Plotly` based on the aggregated features.  
+
+13. Build an explorable HTML visualization using `Plotly` based on the aggregated features.
     - An example can be found [here](examples/scatter.html)
     - Each point has hover-over information.
     - Default parameters include:
@@ -229,7 +231,7 @@ The Cluster mode starts at the Clustering step.
             - For 'bac', uses the taxonomic groups `Pseudomonadota, Nitrospirae, Acidobacteria, Bacillota, Spirochaetes, Cyanobacteria, Actinomycetota, Deinococcota, Bacteria, Archaea, Viruses, Metazoa, Fungi, Viridiplantae, Eukaryota`
         - **Length:** length of the protein in amino acids.
         - **Source:** how the protein was added to the clustering space (`blast`, `foldseek` or `blast+foldseek`).
-        
+
     - Power users can customize the plots using a variety of rules, described below.
 
 ---
@@ -257,7 +259,7 @@ Each column is an entry in the dictionary containing a dictionary of rules.
 ```
 The possible rules for each column are as follows:
 ### For any plot type
-- **'type'(required):**
+- **'type' (required):**
     - `'categorical'`, `'continuous'`, `'taxonomic'`, or `'hovertext'`
     - Determines the plotting style of the data.
     - If 'categorical', expects the data to be in string format.
@@ -286,7 +288,7 @@ The possible rules for each column are as follows:
     - Minimum value to use for color scale. Defaults to minimum value for that column.
 - **'cmax':**
     - Maximum value to use for color scale. Defaults to maximum value for that column.
-- Note: if the value of 'fillna' is lower than the cmin, na values will have their own light grey coloration, distinct from the rest of the color scale. 
+- Note: if the value of 'fillna' is lower than the cmin, na values will have their own light grey coloration, distinct from the rest of the color scale.
   Good for indicating values that are missing, rather than actually calculated.
 
 ### For 'categorical' and 'taxonomic' plots
@@ -305,8 +307,8 @@ The possible rules for each column are as follows:
 ---
 ## File Conventions
 
-The pipeline generates a large number of .txt and .tsv files with specific formatting expectations.  
-Many of the pipeline's scripts accept these specific format conventions as input or return them as output.  
+The pipeline generates a large number of .txt and .tsv files with specific formatting expectations.
+Many of the pipeline's scripts accept these specific format conventions as input or return them as output.
 These are the primary formats and their descriptions.
 
 ### Accession list files (ACC)
@@ -320,7 +322,7 @@ These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank,
     A0A811ZNA7
     ...
     ```
-- **Input to:** 
+- **Input to:**
     - [`aggregate_lists.py`](ProteinCartography/aggregate_lists.py)
     - [`get_source.py`](ProteinCartography/get_source.py)
     - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
@@ -334,16 +336,16 @@ These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank,
     - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
 
 ### Matrix File (MTX)
-These files end with `'.tsv'` and contain distance or similarity matrices, usually all-v-all.  
+These files end with `'.tsv'` and contain distance or similarity matrices, usually all-v-all.
 
-- **Example:**:
-    | protid | A0A2J8L4A7 | K7EV54 | A0A2J8WJR8 | A0A811ZNA7 | 
+- **Example:**
+    | protid | A0A2J8L4A7 | K7EV54 | A0A2J8WJR8 | A0A811ZNA7 |
     |-------:|:----------:|:------:|:----------:|:----------:|
     | A0A2J8L4A7 |  1   | 0.9  | 0.85 | 0.7  |
     | K7EV54     | 0.9  |  1   | 0.91 | 0.6  |
     | A0A2J8WJR8 | 0.85 | 0.91 |  1   | 0.71 |
     | A0A811ZNA7 | 0.7  | 0.6  | 0.71 |  1   |
-- **Input to:** 
+- **Input to:**
     - [`cluster_similarity.py`](ProteinCartography/cluster_similarity.py)
     - [`dim_reduction.py`](ProteinCartography/dim_reduction.py)
     - [`extract_input_distances.py`](ProteinCartography/extract_input_distances.py)
@@ -351,7 +353,7 @@ These files end with `'.tsv'` and contain distance or similarity matrices, usual
     - [`Foldseek_clustering.py`](ProteinCartography/Foldseek_clustering.py)
 
 ### Features files (FTF)
-These files end with `'.tsv'` and contain a `protid` column, which is the unique identifier of each protein in the dataset.  
+These files end with `'.tsv'` and contain a `protid` column, which is the unique identifier of each protein in the dataset.
 The remaining columns are metadata for each protein. These metadata can be of any data type.
 
 - **Example:**
@@ -364,7 +366,7 @@ The remaining columns are metadata for each protein. These metadata can be of an
 - **Input to:**
     - [`aggregate_features.py`](ProteinCartography/aggregate_features.py)
     - [`calculate_convergence.py`](ProteinCartography/calculate_convergence.py)
-    - [`dim_reduction.py`](ProteinCartography/dim_reduction.py) 
+    - [`dim_reduction.py`](ProteinCartography/dim_reduction.py)
     - [`plot_interactive.py`](ProteinCartography/plot_interactive.py)
     - [`semantic_analysis.py`](ProteinCartography/semantic_analysis.py)
 - **Output from:**
@@ -378,13 +380,13 @@ The remaining columns are metadata for each protein. These metadata can be of an
 
 #### Feature file main columns
 
-A variety of metadata features for each protein are usually pulled from UniProt for visualization purposes. An [example `features_file.tsv`](examples/features_file.tsv) is provided as part of the repo.  
+A variety of metadata features for each protein are usually pulled from UniProt for visualization purposes. An [example `features_file.tsv`](examples/features_file.tsv) is provided as part of the repo.
 
-If you are providing a set of custom proteins (such as those not fetched from UniProt) when using the **Search** mode, you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map. You can specify the path to this file using the `override_file` parameter in [`config.yml`](config.yml).  
+If you are providing a set of custom proteins (such as those not fetched from UniProt) when using the **Search** mode, you may want to include a `features_override.tsv` file that contains these features for your proteins of interest. This will allow you to visualize your protein correctly in the interactive HTML map. You can specify the path to this file using the `override_file` parameter in [`config.yml`](config.yml).
 
-When using **Cluster** mode, you should provide protein metadata in a `uniprot_features.tsv` file. You can specify the path to this file using the `features_file` parameter in [`config_ff.yml`](config_ff.yml).  
+When using **Cluster** mode, you should provide protein metadata in a `uniprot_features.tsv` file. You can specify the path to this file using the `features_file` parameter in [`config_ff.yml`](config_ff.yml).
 
-Note that the `override_file` parameter also exists in the **Cluster** mode. The difference between `features_file` and `override_file` is that the former is used as the base metadata file (replacing the `uniprot_features.tsv` file normally retrieved from UniProt, whereas the latter is loaded after the base metadata file, *replacing* any information pulled from the `features_file`. In the **Search** mode, you can therefore use the `override_file` parameter to correct errors in metadata provided by UniProt or replace values for specific columns in the `uniprot_features.tsv` file that is retrieved by the pipeline.  
+Note that the `override_file` parameter also exists in the **Cluster** mode. The difference between `features_file` and `override_file` is that the former is used as the base metadata file (replacing the `uniprot_features.tsv` file normally retrieved from UniProt, whereas the latter is loaded after the base metadata file, *replacing* any information pulled from the `features_file`. In the **Search** mode, you can therefore use the `override_file` parameter to correct errors in metadata provided by UniProt or replace values for specific columns in the `uniprot_features.tsv` file that is retrieved by the pipeline.
 
 For either custom proteins provided through `override_file` in either mode, or base metadata provided by `features_file` in **Cluster** mode, you should strive to include the default columns in the table below. Features used for color schemes in the default plotting rules are marked with *(Plotting)* below. Features used only for hover-over description are marked with *(Hovertext)*.
 

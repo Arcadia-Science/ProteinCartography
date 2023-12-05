@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+
 import pandas as pd
 
 # only import these functions when using import *
@@ -27,23 +28,26 @@ def parse_args():
     return args
 
 
-def aggregate_features(
-    input_files: list, output_file=None, features_override=None
-) -> pd.DataFrame:
+def aggregate_features(input_files: list, output_file=None, features_override=None) -> pd.DataFrame:
     """
     Aggregates features from multiple features files by `protid`.
-    A features file contains at least one column with the name `protid` that is a unique identifier for each PDB file.
-    The additional columns in the file are the features - the measures for each `protid` such as Length, LeidenCluster, etc.
+    A features file contains at least one column with the name `protid`
+    that is a unique identifier for each PDB file.
+    The additional columns in the file are the features -
+    the measures for each `protid` such as Length, LeidenCluster, etc.
 
-    Returns a matrix where each of the columns is derived from the original features file and each row is a protein.
+    Returns a matrix where each of the columns is derived from the original features file
+    and each row is a protein.
 
     Args:
         input_files (list): list of filepaths to aggregate.
         output_file (str): path of destination file.
         features_override (str): path to features override file.
-            The override file contains as its first column a protid for specific proteins in the data.
+            The override file contains as its first column a protid
+            for specific proteins in the data.
             The remaining columns can be columns of any of the features files.
-            After aggregation, the values of those specific cells will be updated to reflect the override file.
+            After aggregation, the values of those specific cells will be updated
+            to reflect the override file.
     Returns:
         a pandas.DataFrame containing the aggregated features.
     """
@@ -84,9 +88,7 @@ def aggregate_features(
                         continue
 
                     # otherwise, replace the value at that position
-                    agg_df.loc[agg_df["protid"] == entry, col] = entry_row[col].values[
-                        0
-                    ]
+                    agg_df.loc[agg_df["protid"] == entry, col] = entry_row[col].values[0]
 
     agg_df.drop_duplicates(inplace=True)
 

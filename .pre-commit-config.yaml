@@ -23,6 +23,6 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/snakemake/snakefmt
-    rev: 0.8.5
+    rev: v0.8.5
     hooks:
       - id: snakefmt

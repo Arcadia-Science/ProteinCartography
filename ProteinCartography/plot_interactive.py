@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import argparse
+import colorsys
+
+import arcadia_pycolor as apc
+import matplotlib.colors as mc
+import numpy as np
+import pandas as pd
 import plotly
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
-import arcadia_pycolor as apc
-import numpy as np
-import matplotlib.colors as mc
-import colorsys
 
 # only import these functions when using import *
 __all__ = [
@@ -73,9 +74,7 @@ ANNOTATION_SCORE_COLORS = [
     apc.All["arcadia:canary"],
 ]
 
-ANNOTATION_SCORE_COLOR_DICT = dict(
-    zip([str(i) for i in range(6)], ANNOTATION_SCORE_COLORS)
-)
+ANNOTATION_SCORE_COLOR_DICT = dict(zip([str(i) for i in range(6)], ANNOTATION_SCORE_COLORS))
 
 EUK_COLOR_DICT = {
     "Mammalia": apc.All["arcadia:oat"],
@@ -142,12 +141,8 @@ def parse_args():
         required=True,
         help="path to dimensionality reduction file",
     )
-    parser.add_argument(
-        "-f", "--features", required=True, help="path to aggregated features file"
-    )
-    parser.add_argument(
-        "-o", "--output", required=True, help="path of destination HTML file"
-    )
+    parser.add_argument("-f", "--features", required=True, help="path to aggregated features file")
+    parser.add_argument("-o", "--output", required=True, help="path of destination HTML file")
     parser.add_argument(
         "-t",
         "--dimensions-type",
@@ -165,14 +160,13 @@ def parse_args():
         "-x",
         "--taxon_focus",
         default="euk",
-        help="Coloring scheme/ taxonomic groups for broad taxon plot.\n'euk'(aryote) is default; 'bac'(teria) is another option.",
+        help=(
+            "Coloring scheme/ taxonomic groups for broad taxon plot.\n"
+            "'euk'(aryote) is default; 'bac'(teria) is another option."
+        ),
     )
-    parser.add_argument(
-        "-X", "--plot-width", default="700", help="width of resulting plot."
-    )
-    parser.add_argument(
-        "-Y", "--plot-height", default="750", help="width of resulting plot."
-    )
+    parser.add_argument("-X", "--plot-width", default="700", help="width of resulting plot.")
+    parser.add_argument("-Y", "--plot-height", default="750", help="width of resulting plot.")
     args = parser.parse_args()
 
     return args
@@ -191,8 +185,9 @@ def adjust_lightness(color: str, amount=0.5) -> str:
     """
     try:
         color_string = mc.cnames[color]
-    except:
+    except KeyError:
         color_string = color
+
     # convert rgb to hls
     color_string = colorsys.rgb_to_hls(*mc.to_rgb(color_string))
     # adjust the lightness in hls space and convert back to rgb
@@ -244,7 +239,8 @@ def apply_coordinates(
         dimensions_file (str): path to dimensions file.
         features_file (str): path to aggregated features file.
         saveprefix (str): prefix for output file.
-        dimtype (str): type of dimensions file (e.g. pca, tsne, etc.). If not provided, is inferred from dimensions file.
+        dimtype (str): type of dimensions file (e.g. pca, tsne, etc.).
+            If not provided, is inferred from dimensions file.
         save (bool): whether or not to save the file. Defaults to False.
         prep_step (bool): if True, returns path of the final output file. Defaults to False.
     """
@@ -290,14 +286,17 @@ def assign_taxon(taxon_list: list, rank_list: list, hierarchical=False, sep=",")
     """
     Takes a list of taxa and assigns it a category based on a ranked-order list.
 
-    The ranked-order list should be ordered from most-specific to least-specific taxonomic groupings.
+    The ranked-order list should be ordered from most-specific
+    to least-specific taxonomic groupings.
     The function iterates through the list of ranks and checks if each is within the taxon list.
-    If hierarchical = True, returns only the first element. Otherwise, concatenates the hits in order.
+    If hierarchical = True, returns only the first element.
+    Otherwise, concatenates the hits in order.
 
     Args:
         taxon_list (list): list of taxa for the object in question.
         rank_list (list): ranked list to search through.
-        hierarchical (bool): whether to return the first element found in the rank_list or a concatentation of all hits.
+        hierarchical (bool): whether to return the first element found in the rank_list
+            or a concatentation of all hits.
         sep (str): separator character when returning a concatenation of hits.
     Returns:
         a string either containing the first-rank hit or the string concatenation of all hits.
@@ -317,7 +316,7 @@ def assign_taxon(taxon_list: list, rank_list: list, hierarchical=False, sep=",")
         return sep.join(output)
 
 
-def extend_colors(color_keys: list, color_order: list, steps=[0.7, 0.5, 0.3]) -> list:
+def extend_colors(color_keys: list, color_order: list, steps=(0.7, 0.5, 0.3)) -> list:
     """
     Checks a list of keys and colors and extends the colors list as needed.
 
@@ -336,18 +335,22 @@ def extend_colors(color_keys: list, color_order: list, steps=[0.7, 0.5, 0.3]) ->
     # if there aren't enough cycles, die
     if num_cycles > len(steps):
         raise Exception(
-            f"Can create up to {len(steps) * len(color_order)} colors to use.\nNeeded {len(color_keys)} colors."
+            f"Can create up to {len(steps) * len(color_order)} colors to use.\n"
+            f"Needed {len(color_keys)} colors."
         )
 
     # create additional colors and add to collector
-    for n in range(num_cycles - 1):
+    for _ in range(num_cycles - 1):
         color_order_duplicated = [adjust_lightness(color) for color in color_order]
         more_colors.extend(color_order_duplicated)
 
     return more_colors
 
 
-def generate_plotting_rules(taxon_focus: str, keyids=[], version="current") -> dict:
+def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") -> dict:
+    if keyids is None:
+        keyids = []
+
     # color dictionary for annotation score (values from 0 to 5)
     annotationScore_color_dict = ANNOTATION_SCORE_COLOR_DICT
 
@@ -529,7 +532,8 @@ def generate_plotting_rules(taxon_focus: str, keyids=[], version="current") -> d
             "cmin": -1,
             "cmax": 1,
         }
-        # Add hovertext for whether or not a given protein was a hit via blast or foldseek to the input protein
+        # Add hovertext for whether or not a given protein was a hit via blast or foldseek
+        # to the input protein
         plotting_rules[f"{keyid}.hit"] = {
             "type": "hovertext",
             "apply": lambda x: True if x == 1 else False,
@@ -546,7 +550,7 @@ def plot_interactive(
     marker_size=4,
     marker_opacity=0.8,
     output_file="",
-    keyids=[],
+    keyids=None,
     show=False,
     plot_width=500,
     plot_height=550,
@@ -581,14 +585,16 @@ def plot_interactive(
         - If 'categorical', expects the data to be in string format.
         - If 'continuous', expects the data to be in numerical (int or float) format.
         - If 'taxonomic', expects an ordered list of taxa to be used for grouping.
-        - If 'hovertext', won't plot the data as a dropdown menu option, but will include the data in the hover-over text box.
+        - If 'hovertext', won't plot the data as a dropdown menu option,
+            but will include the data in the hover-over text box.
     - **'fillna':**
         - A value to fill rows that are `np.nan`.
         - For categorical plots, usually empty string `''`.
         - For continuous plots, usually `0`.
     - **'apply':**
         - A function that will be applied to every element of the feature before plotting.
-        - This can be used to convert a numerical value into a categorical value with a lambda function.
+        - This can be used to convert a numerical value into a categorical value
+            with a lambda function.
         - For example, `lambda x: str(x)`
     - **'skip_hover':**
         - Boolean, whether to include this data in the hovertext.
@@ -599,19 +605,23 @@ def plot_interactive(
     ### For 'categorical' and 'taxonomic' plots ###
     - **'color_order':**
         - A list of HEX code colors used for coloring categorical variables.
-        - If there aren't enough colors for unique values of the data, will generate up to 3x more colors of varying darkness.
+        - If there aren't enough colors for unique values of the data,
+            will generate up to 3x more colors of varying darkness.
     - **'color_dict':**
         - A dictionary of key: value pairs for coloring categorical variables.
         - The key is the name of the category and the value is a HEX code color.
 
     ### For 'taxonomic' plots ###
     - **'taxon_order':**
-        - Exclusively used for 'taxonomic' style plots. A list of ranked-order taxa for categorization.
+        - Exclusively used for 'taxonomic' style plots.
+            A list of ranked-order taxa for categorization.
         - Should start with more-specific taxa and expand to less-specific taxa.
 
     Args:
-        coordinates_file (str): path to coordinates file (an aggregated features file with columns for the coordinates in PC/TSNE/UMAP space).
-        plotting_rules (dict): a JSON-like dictionary containing plotting rules for relevant columns of the data.
+        coordinates_file (str): path to coordinates file (an aggregated features file
+            with columns for the coordinates in PC/TSNE/UMAP space).
+        plotting_rules (dict): a JSON-like dictionary containing plotting rules
+            for relevant columns of the data.
         marker_size (int): size of markers.
         marker_opacity (float): opacity of markers (value should between 0 and 1).
         output_file (str): path of destination file.
@@ -620,6 +630,9 @@ def plot_interactive(
     Returns:
         if show = False, returns the plotly.graphobjects object of the plot.
     """
+    if keyids is None:
+        keyids = []
+
     # make a copy of the starting data
     df = pd.read_csv(coordinates_file, sep="\t")
 
@@ -660,9 +673,7 @@ def plot_interactive(
         # This doesn't work properly if the column is NA for that value.
         col_index = custom_data.index(col)
 
-        hovertemplate_item = (
-            "<b>" + hovertext_label + "</b>: %{customdata[" + str(col_index) + "]}"
-        )
+        hovertemplate_item = "<b>" + hovertext_label + "</b>: %{customdata[" + str(col_index) + "]}"
         hovertemplate_generator.append(hovertemplate_item)
 
     # generates a full hovertemplate string from hovertemplate_generator list
@@ -706,14 +717,10 @@ def plot_interactive(
                 # make sure there's enough colors to make a dict with
                 # if not, extend available colors
                 if len(color_order) < len(color_keys):
-                    more_colors = extend_colors(
-                        color_keys, color_order, steps=[0.7, 0.5, 0.3]
-                    )
+                    more_colors = extend_colors(color_keys, color_order, steps=[0.7, 0.5, 0.3])
 
                     # extend color order with new colors
-                    color_order.extend(
-                        more_colors[: (len(color_keys) - len(color_order))]
-                    )
+                    color_order.extend(more_colors[: (len(color_keys) - len(color_order))])
 
                 # make color dict
                 colors_dict = dict(zip(color_keys, color_order))
@@ -767,9 +774,7 @@ def plot_interactive(
             if "taxon_order" in plotting_rules[col].keys():
                 taxon_order = plotting_rules[col]["taxon_order"]
             else:
-                raise Exception(
-                    'Please provide a "taxon_order" list in the plotting rules.'
-                )
+                raise Exception('Please provide a "taxon_order" list in the plotting rules.')
 
             # Set color keys to taxon order
             color_keys = taxon_order
@@ -790,9 +795,7 @@ def plot_interactive(
                 # make sure there's enough colors to make a dict with
                 # if not, extend available colors
                 if len(color_order) < len(color_keys):
-                    more_colors = extend_colors(
-                        color_keys, color_order, steps=[0.7, 0.5, 0.3]
-                    )
+                    more_colors = extend_colors(color_keys, color_order, steps=[0.7, 0.5, 0.3])
 
                     # extend color order with new colors
                     color_order.extend(more_colors)
@@ -806,7 +809,7 @@ def plot_interactive(
             # generate a taxonomic category column using assign_taxon lambda function
             col_taxonomic = col + "_taxonomic"
             df[col_taxonomic] = df[col].apply(
-                lambda x: assign_taxon(x, taxon_order, hierarchical=True)
+                lambda x, taxon_order=taxon_order: assign_taxon(x, taxon_order, hierarchical=True)
             )
 
             # plot using the above parameters
@@ -830,8 +833,10 @@ def plot_interactive(
     fig_order = []
 
     # create new empty figure to move every original figure onto
-    # this is a workaround to allow colored legends to be preserved and automatically switched using the dropdown
-    # the alternative approach forces you to show all legend items at the same time for all colorations, which is messy
+    # this is a workaround to allow colored legends to be preserved
+    # and automatically switched using the dropdown
+    # the alternative approach forces you to show all legend items at the same time
+    # for all colorations, which is messy
 
     fig = go.Figure()
 
@@ -848,7 +853,8 @@ def plot_interactive(
         fig_order.append(col)
 
         # counts the number of different scatter traces within the original plot
-        # this is needed to determine the number of true or false values for the dropdown toggle visibility field
+        # this is needed to determine the number of true or false values
+        # for the dropdown toggle visibility field
         scatter_counter[col] = len(plot.data)
 
         # if there are more than 50 different categories, hide the legend
@@ -899,10 +905,7 @@ def plot_interactive(
                 else:
                     new_color_scale = "viridis"
 
-                if (
-                    "fillna" in plotting_rules[col]
-                    and plotting_rules[col]["fillna"] < cmin
-                ):
+                if "fillna" in plotting_rules[col] and plotting_rules[col]["fillna"] < cmin:
                     fillna_value = plotting_rules[col]["fillna"]
                     fillna_fraction = -1 * (cmin - fillna_value) / (cmax - fillna_value)
 
@@ -980,7 +983,7 @@ def plot_interactive(
     buttons = []
 
     # for each plot, create a button
-    for col, plot in plots.items():
+    for col in plots.keys():
         # get the textlabel for that plot if it's provided
         # otherwise, default to column name
         if "textlabel" in plotting_rules[col].keys():
@@ -1011,7 +1014,8 @@ def plot_interactive(
 
     # create a separate button to toggle keyid trace
     # the visibility will match the visibility of the first plot upon generation
-    # I couldn't find an obvious way to make ONLY this plot's visibility toggle while preserving the rest...
+    # I couldn't find an obvious way to make ONLY this plot's visibility toggle
+    # while preserving the rest...
     # current behavior is when this button is clicked, the visibility of the keyid stars is toggled
     # but all other data except the first coloration style are hidden
     if keyids != []:
@@ -1123,7 +1127,7 @@ def plot_interactive(
 
     try:
         fig.update_layout(font=dict(family="Arial"))
-    except:
+    except Exception:
         pass
 
     # save if filename is provided
@@ -1152,7 +1156,7 @@ def main():
 
     if keyids == "" or keyids is None or keyids == []:
         keyids = []
-    elif type(keyids) != list:
+    elif not isinstance(keyids, list):
         keyids = [keyids]
 
     # generate coordinates file for the plot

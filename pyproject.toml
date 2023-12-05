@@ -17,6 +17,9 @@ indent-width = 4
 # run ruff on jupyter notebooks (this is not enabled by default)
 extend-include = ["*.ipynb"]
 
+# ignore the pub directory (contains jupyter notebooks for the pub)
+extend-exclude = ["pub/*"]
+
 [tool.ruff.per-file-ignores]
 # ignore star and unused imports
 "__init__.py" = ["F403", "F405"]

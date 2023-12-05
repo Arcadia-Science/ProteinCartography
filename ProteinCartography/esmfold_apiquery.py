@@ -1,19 +1,19 @@
 #!/usr/bin/env python
-import sys
-import os
 import argparse
-
-from Bio import SeqIO
+import os
+import sys
 
 # depends on api_utils.py
 from api_utils import session_with_retry
-
+from Bio import SeqIO
 
 ### NOTES
 # ESMFold API example from website:
-"""
-curl -X POST --data "KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL" https://api.esmatlas.com/foldSequence/v1/pdb/
-"""
+#
+# ```
+# data=KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL # noqa: E501
+# curl -X POST --data $data https://api.esmatlas.com/foldSequence/v1/pdb/
+# ```
 
 # only import these functions when using import *
 __all__ = ["post_esmfold_apiquery", "esmfold_apiquery"]
@@ -30,7 +30,10 @@ def parse_args():
         "-i",
         "--input",
         required=True,
-        help="Name of input file. Must be a single-entry peptide FASTA file (ends with .fa, .fna, .fasta).",
+        help=(
+            "Name of input file. Must be a single-entry peptide FASTA file "
+            "(ends with .fa, .fna, .fasta)."
+        ),
     )
     parser.add_argument(
         "-o",
@@ -62,11 +65,13 @@ def post_esmfold_apiquery(fasta: str):
 
 def esmfold_apiquery(input_file: str, output_file=None):
     """
-    Takes an input peptide FASTA file with one entry and submits it for folding using the ESMfold API.
+    Takes an input peptide FASTA file with one entry
+    and submits it for folding using the ESMfold API.
     Creates a PDB file with the resulting output.
 
     Args:
-        input_file (str): path to input FASTA file (must end with .fa, .fna, or .fasta; not case-sensitive).
+        input_file (str): path to input FASTA file
+            (must end with .fa, .fna, or .fasta; not case-sensitive).
         output_file (str): path to the destination PDB file.
     """
     # Check to make sure input file has a correct FASTA suffix

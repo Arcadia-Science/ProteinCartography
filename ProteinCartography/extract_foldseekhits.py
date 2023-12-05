@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import pandas as pd
-import re
 import argparse
 import os
+import re
+
+import pandas as pd
 
 # only import these functions when using import *
 __all__ = ["extract_foldseekhits"]
@@ -39,12 +40,8 @@ def parse_args():
     parser.add_argument(
         "-i", "--input", nargs="+", required=True, help="Takes .m8 file paths as input."
     )
-    parser.add_argument(
-        "-o", "--output", required=True, help="Returns a .txt file as output."
-    )
-    parser.add_argument(
-        "-e", "--evalue", default="0.01", help="Sets maximum evalue for filtering."
-    )
+    parser.add_argument("-o", "--output", required=True, help="Returns a .txt file as output.")
+    parser.add_argument("-e", "--evalue", default="0.01", help="Sets maximum evalue for filtering.")
     args = parser.parse_args()
 
     return args

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import argparse
+
+import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from umap import UMAP
-import numpy as np
 
 # only import these functions when using import *
 __all__ = ["calculate_PCA", "calculate_TSNE", "calculate_UMAP"]
@@ -52,7 +53,8 @@ def calculate_PCA(
 ):
     """
     Calculates the n-component PCA of an all-v-all similarity matrix.
-    The matrix should be a square, where rows and columns are identical and each cell is a similarity score.
+    The matrix should be a square, where rows and columns are identical
+    and each cell is a similarity score.
 
     Args:
         pivot_file (str): path to a matrix of values.
@@ -108,8 +110,10 @@ def calculate_TSNE(
     **kwargs,
 ):
     """
-    Calculates the TSNE of an all-v-all similarity matrix given a random state, perplexity, and number of iterations.
-    The matrix should be a square, where rows and columns are identical and each cell is a similarity score.
+    Calculates the TSNE of an all-v-all similarity matrix given a random state, perplexity,
+    and number of iterations.
+    The matrix should be a square, where rows and columns are identical
+    and each cell is a similarity score.
 
     Args:
         pivot_file (str): path to a matrix of values.
@@ -177,8 +181,10 @@ def calculate_UMAP(
     **kwargs,
 ):
     """
-    Calculates the UMAP of an all-v-all similarity matrix given a random state, number of neighbors, and minimum distance.
-    The matrix should be a square, where rows and columns are identical and each cell is a similarity score.
+    Calculates the UMAP of an all-v-all similarity matrix given a random state,
+    number of neighbors, and minimum distance.
+    The matrix should be a square, where rows and columns are identical
+    and each cell is a similarity score.
 
     Args:
         pivot_file (str): path to a matrix of values.
@@ -245,7 +251,7 @@ def main():
     # Or use default value
     try:
         random_state = int(args.random_state)
-    except:
+    except Exception:
         random_state = 123456
 
     # Check whether modes are valid
@@ -266,7 +272,8 @@ def main():
 
     # First run 30-component PCA and pass that space to TSNE
     elif mode == "pca_tsne":
-        # Generate temporary save prefix to avoid collisions if run simultaneously with other PCA calls
+        # Generate temporary save prefix to avoid collisions if run simultaneously
+        # with other PCA calls
         saveprefix1 = pivot_file.replace(".tsv", "temp1")
         pca_results_file = calculate_PCA(
             pivot_file,
@@ -277,13 +284,12 @@ def main():
         )
 
         saveprefix2 = pca_results_file.replace("temp1", "").replace(".tsv", "")
-        calculate_TSNE(
-            pca_results_file, random_state, save=True, saveprefix=saveprefix2
-        )
+        calculate_TSNE(pca_results_file, random_state, save=True, saveprefix=saveprefix2)
 
     # First run 30-component PCA and pass that space to UMAP
     elif mode == "pca_umap":
-        # Generate temporary save prefix to avoid collisions if run simultaneously with other PCA calls
+        # Generate temporary save prefix to avoid collisions if run simultaneously
+        # with other PCA calls
         saveprefix1 = pivot_file.replace(".tsv", "temp2")
         pca_results_file = calculate_PCA(
             pivot_file,
@@ -294,9 +300,7 @@ def main():
         )
 
         saveprefix2 = pca_results_file.replace("temp2", "").replace(".tsv", "")
-        calculate_UMAP(
-            pca_results_file, random_state, save=True, saveprefix=saveprefix2
-        )
+        calculate_UMAP(pca_results_file, random_state, save=True, saveprefix=saveprefix2)
 
 
 # check if called from interpreter

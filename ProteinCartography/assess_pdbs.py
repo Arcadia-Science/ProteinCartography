@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 import argparse
-import re
-import pandas as pd
-import numpy as np
-import arcadia_pycolor as apc
-from io import StringIO
 import os
+import re
+from io import StringIO
+
+import arcadia_pycolor as apc
+import numpy as np
+import pandas as pd
 
 __all__ = [
     "fetch_atoms",
@@ -63,9 +64,7 @@ def parse_args():
         "--textfile",
         help="Input path to text file containing file paths, one per line.",
     )
-    parser.add_argument(
-        "-o", "--output", required=True, help="Name of output TSV file."
-    )
+    parser.add_argument("-o", "--output", required=True, help="Name of output TSV file.")
     args = parser.parse_args()
     return args
 
@@ -77,15 +76,13 @@ def fetch_atoms(input_path: str) -> pd.DataFrame:
     Args:
         input_path (str): path of PDB file.
     """
-    with open(input_path, "r") as f:
+    with open(input_path) as f:
         atoms = [i for i in f.readlines() if "ATOM" in i[0:6]]
 
     if len(atoms) == 0:
         return pd.DataFrame()
 
-    data = pd.read_fwf(
-        StringIO("".join(atoms)), names=ATOM_SPEC_NAMES, colspecs=ATOM_SPEC_VALS
-    )
+    data = pd.read_fwf(StringIO("".join(atoms)), names=ATOM_SPEC_NAMES, colspecs=ATOM_SPEC_VALS)
 
     return data
 
@@ -97,7 +94,7 @@ def fetch_dbref(input_path: str) -> pd.DataFrame:
     Args:
         input_path (str): path of PDB file.
     """
-    with open(input_path, "r") as f:
+    with open(input_path) as f:
         dbref = [i for i in f.readlines() if "DBREF" in i[0:6]]
 
     if len(dbref) == 0:
@@ -115,7 +112,7 @@ def fetch_experiment(input_path: str) -> str:
     Args:
         input_path (str): path of PDB file.
     """
-    with open(input_path, "r") as f:
+    with open(input_path) as f:
         expdta = [
             " ".join([i for i in i.split() if i != "EXPDTA"])
             for i in f.readlines()
@@ -134,11 +131,9 @@ def fetch_title(input_path: str) -> str:
     Args:
         input_path (str): path of PDB file.
     """
-    with open(input_path, "r") as f:
+    with open(input_path) as f:
         title = [
-            " ".join([i for i in i.split() if i != "TITLE"])
-            for i in f.readlines()
-            if "TITLE" in i
+            " ".join([i for i in i.split() if i != "TITLE"]) for i in f.readlines() if "TITLE" in i
         ]
 
     title_out = " ".join(title)
@@ -153,7 +148,7 @@ def fetch_remark(input_path: str) -> str:
     Args:
         input_path (str): path of PDB file.
     """
-    with open(input_path, "r") as f:
+    with open(input_path) as f:
         remark = [
             " ".join([i for i in i.split() if i != "REMARK"])
             for i in f.readlines()
@@ -179,7 +174,8 @@ def extract_residue_confidence(input_path: str):
 
 def assign_residue_colors(lst: list):
     """
-    Assigns a color to each residue in a PDB based on the AlphaFold color scheme (converted to analogous Arcadia colors).
+    Assigns a color to each residue in a PDB based on the AlphaFold color scheme
+    (converted to analogous Arcadia colors).
 
     Args:
         lst (list): list of atoms temperatures.
@@ -206,7 +202,8 @@ def parse_chains(input_path: str):
 
 def assign_origin(input_path: str):
     """
-    Assigns an origin to a PDB file based on presence/ absence of references to AlphaFold, Protein Data Bank, or ESMFold.
+    Assigns an origin to a PDB file based on presence/ absence of references to AlphaFold,
+    Protein Data Bank, or ESMFold.
 
     Args:
         input_path (str): path of PDB file.
@@ -215,7 +212,7 @@ def assign_origin(input_path: str):
     PDB_FLAG, PDB_REF_FLAG, PDB_REMARK_FLAG = 0, 0, 0
     ESM_FLAG, ESM_TITLE_FLAG, ESM_REMARK_FLAG = 0, 0, 0
 
-    with open(input_path, "r") as f:
+    with open(input_path) as f:
         contents = f.read()
 
         if re.search("ALPHAFOLD", contents, re.IGNORECASE):
@@ -266,7 +263,8 @@ def assign_origin(input_path: str):
 
 def assess_pdbs(structures_list: list, output_file=None):
     """
-    Assesses PDB quality, experimental information, origin, and lists chains for a list of PDB paths.
+    Assesses PDB quality, experimental information, origin,
+    and lists chains for a list of PDB paths.
 
     Args:
         structures_list (list): list of paths to assess.
@@ -278,11 +276,9 @@ def assess_pdbs(structures_list: list, output_file=None):
         if not os.path.exists(structure_file):
             continue
 
-        with open(structure_file, "r") as f:
+        with open(structure_file) as f:
             if "<Error>" in f.read():
                 continue
-
-        expdta = fetch_experiment(structure_file)
 
         origin = assign_origin(structure_file)
 
@@ -290,9 +286,7 @@ def assess_pdbs(structures_list: list, output_file=None):
             max_confidence = np.max(extract_residue_confidence(structure_file))
             min_confidence = np.min(extract_residue_confidence(structure_file))
             if max_confidence <= 1 and min_confidence <= 1:
-                confidence = (
-                    np.average(extract_residue_confidence(structure_file)) * 100
-                )
+                confidence = np.average(extract_residue_confidence(structure_file)) * 100
             elif max_confidence >= 1 and min_confidence >= 1:
                 confidence = np.average(extract_residue_confidence(structure_file))
         else:
@@ -324,7 +318,7 @@ def read_txtlist(input_file: str):
     Args:
         input_file (str): path of input text file.
     """
-    with open(input_file, "r") as f:
+    with open(input_file) as f:
         paths = [i.rstrip("\n") for i in f.readlines()]
 
     return paths

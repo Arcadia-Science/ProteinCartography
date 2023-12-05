@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import argparse
-import scanpy as sc
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+import scanpy as sc
 
 # only import these functions when using import *
 __all__ = ["scanpy_leiden_cluster"]
@@ -55,7 +56,7 @@ def scanpy_leiden_cluster(
     n_pcs=30,
     cluster_name="LeidenCluster",
     cluster_abbrev="LC",
-    **kwargs
+    **kwargs,
 ):
     """
     Uses Scanpy's Leiden clustering implementation to perform clustering.

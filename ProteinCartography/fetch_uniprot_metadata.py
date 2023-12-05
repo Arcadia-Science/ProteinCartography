@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 import argparse
-import pandas as pd
-import numpy as np
 import os
 import re
 
-from api_utils import session_with_retry, UniProtWithExpBackoff
-
+import numpy as np
+import pandas as pd
+from api_utils import UniProtWithExpBackoff, session_with_retry
 
 # only import these functions when using import *
 __all__ = ["query_uniprot"]
@@ -45,9 +44,7 @@ DEFAULT_FIELDS = list(DEFAULT_FIELDS_DICT.values())
 # parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i", "--input", required=True, help="path of input merged hits file"
-    )
+    parser.add_argument("-i", "--input", required=True, help="path of input merged hits file")
     parser.add_argument(
         "-o",
         "--output",
@@ -82,7 +79,8 @@ def query_uniprot(
     service="rest",
 ):
     """
-    Takes an input list of accessions and gets the full information set from Uniprot for those proteins.
+    Takes an input list of accessions and gets the full information set from Uniprot
+    for those proteins.
 
     Args:
         input_file (str): path of input list text file where each accession is on a new line
@@ -126,6 +124,7 @@ def query_uniprot(
                 return match.group(1)
 
     fields_string = ",".join(fields)
+
     def get_batch(query_string: str):
         # Generator function to fetch data in batches
         if service == "rest":
@@ -133,26 +132,26 @@ def query_uniprot(
             while batch_url:
                 response = session.get(batch_url)
                 response.raise_for_status()
-                total = response.headers["x-total-results"]
                 yield response.text
                 batch_url = get_next_link(response.headers)
         elif service == "bioservices":
             u = UniProtWithExpBackoff()
-            results = u.search(query_string, columns=fields_string, size=sub_batch_size, progress=False)
+            results = u.search(
+                query_string, columns=fields_string, size=sub_batch_size, progress=False
+            )
             # bioservices doesn't directly return the number of results.
             yield results
         else:
             raise ValueError(f"Unknown service {service}")
 
-    with open(query_list, "r") as q:
+    with open(query_list) as q:
         query_accessions = [line.rstrip("\n") for line in q.readlines()]
         # Remove accessions that have already been downloaded, keeping the order.
         query_accessions = [e for e in query_accessions if e not in existing_data]
 
     # Split the query accessions into batches
     accession_batches = [
-        query_accessions[i : i + batch_size]
-        for i in range(0, len(query_accessions), batch_size)
+        query_accessions[i : i + batch_size] for i in range(0, len(query_accessions), batch_size)
     ]
 
     total = len(query_accessions)
@@ -161,9 +160,7 @@ def query_uniprot(
         print(f">> Starting batch {i + 1} of {len(accession_batches)}")
 
         # Construct the query string for the batch
-        query_string = " OR ".join(
-            f"accession:{accession}" for accession in accession_batch
-        )
+        query_string = " OR ".join(f"accession:{accession}" for accession in accession_batch)
         query_string = f"({query_string})"
 
         # Construct the URL with the constructed query string
@@ -186,20 +183,17 @@ def query_uniprot(
                 print(f"downloaded {progress} / {total} hits for batch {i + 1}")
 
     df = pd.read_csv(temp_file, sep="\t")
-
-    lineage_string_splitter = (
-        lambda lineage_string: [
-            rank.split(" (")[0] for rank in lineage_string.split(", ")
-        ]
-        if lineage_string is not np.nan
-        else np.nan
-    )
-
     df.insert(0, "protid", df["Entry"].values)
+
+    def lineage_string_splitter(lineage_string):
+        if lineage_string is np.nan:
+            return np.nan
+        else:
+            return [rank.split(" (")[0] for rank in lineage_string.split(", ")]
 
     try:
         df["Lineage"] = df["Taxonomic lineage"].apply(lineage_string_splitter)
-    except:
+    except Exception:
         pass
 
     df.to_csv(output_file, sep="\t", index=None)

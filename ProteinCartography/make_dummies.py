@@ -27,7 +27,10 @@ def parse_args():
         "-M",
         "--maximum",
         default="0",
-        help="Maximum number of dummies to generate.\nThis will cause Snakemake to download only this many entries.",
+        help=(
+            "Maximum number of dummies to generate.\n"
+            "This will cause Snakemake to download only this many entries."
+        ),
     )
     args = parser.parse_args()
     return args
@@ -49,7 +52,7 @@ def make_dummies(input_file: str, output_dir: str, maximum=0):
         os.mkdir(output_dir)
 
     input_text = []
-    with open(input_file[0], "r") as f:
+    with open(input_file[0]) as f:
         input_text = f.read().splitlines()
 
     if maximum == 0 or maximum > len(input_text):

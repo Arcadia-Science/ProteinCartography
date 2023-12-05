@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 import argparse
-from collections import defaultdict
 import csv
-import pandas as pd
-import subprocess
 import os
+import subprocess
+from collections import defaultdict
 from pathlib import Path
+
+import pandas as pd
 
 # only import these functions when using import *
 __all__ = [
@@ -49,14 +50,17 @@ def run_foldseek_clustering(
     """
     Runs foldseek all-v-all TMscore comparison and clustering on all PDBs in an input query_folder.
     Saves results to an output results_folder.
-    Puts temporary files in a temp_folder (called `temp` in the results_folder if not specified explicity.)
+    Puts temporary files in a temp_folder
+    (called `temp` in the results_folder if not specified explicity.)
 
     Args:
         query_folder (str): path to a query folder containing .pdb files.
         results_folder (str): path to a results folder.
         temp_folder (str): path to a temporary folder. Defaults to results_folder / temp
-        distances_filename (str): filename for output distances file. Defaults to `all_by_all_tmscore.tsv`.
-        cluster_filename (str): filename for output struclusters file. Defaults to `struclusters.tsv`.
+        distances_filename (str): filename for output distances file.
+            Defaults to `all_by_all_tmscore.tsv`.
+        cluster_filename (str): filename for output struclusters file.
+            Defaults to `struclusters.tsv`.
     Return:
         a tuple containing the full file paths of the distances file and the clusters file.
     """
@@ -82,9 +86,7 @@ def run_foldseek_clustering(
 
     foldseek_out = temp_Path / "all_by_all"
     foldseek_tmp = temp_Path / "tmp"
-    subprocess.run(
-        ["foldseek", "search", db_prefix, db_prefix, foldseek_out, foldseek_tmp, "-a"]
-    )
+    subprocess.run(["foldseek", "search", db_prefix, db_prefix, foldseek_out, foldseek_tmp, "-a"])
 
     foldseek_tmscore = temp_Path / "all_by_all_tmscore"
     subprocess.run(
@@ -159,12 +161,7 @@ def make_struclusters_file(foldseek_clustertsv: str, output_file: str):
     # Aggregate groupings by ClusterRep
     df_merged = (
         df.groupby("ClusterRep")
-        .agg(
-            {
-                i: ("first" if i == "ClusterRep" else lambda x: [i for i in x])
-                for i in df.columns
-            }
-        )
+        .agg({i: ("first" if i == "ClusterRep" else lambda x: [i for i in x]) for i in df.columns})
         .reset_index(drop=True)
     )
 
@@ -207,15 +204,17 @@ def reading_data(input_file: str):
         for line in fh:
             # Getting the first three entries in the output from Foldseek using
             # the parameters specified in `run_foldseek_clustering`, the full
-            # list of params avail is specified https://github.com/steineggerlab/foldseek#output-search
-            protid, target, score, *_ = [e.strip() for e in line.split()]
+            # list of params avail is specified here:
+            # https://github.com/steineggerlab/foldseek#output-search
+            protid, target, score, *_ = (e.strip() for e in line.split())
             protid = protid.replace(".pdb", "")
             target = target.replace(".pdb", "")
 
             if target in entries[protid]:
                 if entries[protid][target] != score:
                     raise ValueError(
-                        f"Multiple values supplied for protid={protid}, target={target} with different scores."
+                        f"Multiple values supplied for protid={protid}, target={target} "
+                        "with different scores."
                     )
             else:
                 entries[protid][target] = score
@@ -230,8 +229,10 @@ def get_line_for_protid(protid_and_targets: tuple, targets: set):
     the line of the similarity matrix file for the given protid in the entry.
 
     Args:
-        protid_and_targets (tuple): the first entry is a protid and the second entry is a target to score dictionary.
-        targets (set): A set of all targets seen in the data set. This allows setting 0.0 as fillna(0.0) did with pandas.
+        protid_and_targets (tuple): the first entry is a protid
+        and the second entry is a target to score dictionary.
+        targets (set): A set of all targets seen in the data set.
+        This allows setting 0.0 as fillna(0.0) did with pandas.
     Return:
         A list with the protid as the first element and then scores for each target.
     """

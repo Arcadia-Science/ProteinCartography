@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-import pandas as pd
-import re
 import argparse
+import re
+
+import pandas as pd
 
 # only import these functions when using import *
 __all__ = ["aggregate_foldseek_fident"]
@@ -38,9 +39,7 @@ def parse_args():
     parser.add_argument(
         "-i", "--input", nargs="+", required=True, help="Takes .m8 file paths as input."
     )
-    parser.add_argument(
-        "-o", "--output", required=True, help="Returns a .tsv file as output."
-    )
+    parser.add_argument("-o", "--output", required=True, help="Returns a .tsv file as output.")
     parser.add_argument(
         "-p",
         "--protid",
@@ -52,12 +51,11 @@ def parse_args():
     return args
 
 
-def aggregate_foldseek_fident(
-    input_files: list, output_file: str, protid: str
-) -> pd.DataFrame:
+def aggregate_foldseek_fident(input_files: list, output_file: str, protid: str) -> pd.DataFrame:
     """
     Takes a list of input tabular Foldseek results files from the API query (ending in .m8).
-    Generates a fident_features.tsv file containing the fraction sequence identity returned by Foldseek.
+    Generates a fident_features.tsv file containing the fraction sequence identity
+    returned by Foldseek.
 
     Args:
         input_files (list): list of string paths to input files.

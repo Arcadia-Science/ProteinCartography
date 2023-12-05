@@ -33,7 +33,10 @@ def parse_args():
         "--arg-list",
         nargs="+",
         default=[],
-        help="Example optional argument that accepts 1+ space-separated arguments. By default, returns an empty list.",
+        help=(
+            "Example optional argument that accepts 1+ space-separated arguments. "
+            "By default, returns an empty list."
+        ),
     )
 
     # actually run the argument parsing and accept input from the command line
@@ -44,7 +47,7 @@ def parse_args():
 
 
 # script-specific function that does something useful
-def my_function(input_arg: str, variable_arg="", arg_list=[]):
+def my_function(input_arg: str, variable_arg="", arg_list=None):
     print("This is what you passed to the interpreter:")
     print(f"--input: {input_arg}")
     print(f"--variable-arg: {variable_arg}")

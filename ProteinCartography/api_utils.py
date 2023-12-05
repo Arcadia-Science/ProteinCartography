@@ -1,15 +1,12 @@
 #!/usr/bin/env python
+from bioservices import UniProt
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from bioservices import UniProt
-
 __all__ = ["session_with_retry", "DefaultExpBackoffRetry", "UniProtWithExpBackoff"]
 
-USER_AGENT_HEADER = {
-    "User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1"
-}
+USER_AGENT_HEADER = {"User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1"}
 
 
 def session_with_retry():

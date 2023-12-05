@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+
 import pandas as pd
 
 __all__ = ["filter_results"]
@@ -43,7 +44,8 @@ def filter_results(
     max_length=0,
 ):
     """
-    Takes an input uniprot_features.tsv file and filters the results based on fragment status, inactive status, and size.
+    Takes an input uniprot_features.tsv file and filters the results based on fragment status,
+    inactive status, and size.
 
     Args:
         input_file (str): path of input tsv file with all uniprot features
@@ -63,8 +65,7 @@ def filter_results(
 
     if filter_inactive:
         filtered_df = filtered_df[
-            (filtered_df["Protein names"] != "deleted")
-            & ~filtered_df["Annotation"].isna()
+            (filtered_df["Protein names"] != "deleted") & ~filtered_df["Annotation"].isna()
         ]
     if filter_fragment:
         filtered_df = filtered_df[filtered_df["Fragment"] != "fragment"]
@@ -90,16 +91,14 @@ def main():
 
     try:
         min_length = int(args.min_length)
-    except:
+    except (TypeError, ValueError):
         min_length = 0
     try:
         max_length = int(args.max_length)
-    except:
+    except (TypeError, ValueError):
         max_length = 0
 
-    filter_results(
-        input_file, output_file, min_length=min_length, max_length=max_length
-    )
+    filter_results(input_file, output_file, min_length=min_length, max_length=max_length)
 
 
 if __name__ == "__main__":

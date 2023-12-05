@@ -3,7 +3,7 @@ import argparse
 import os
 from pathlib import Path
 
-from api_utils import session_with_retry, UniProtWithExpBackoff, USER_AGENT_HEADER
+from api_utils import UniProtWithExpBackoff, session_with_retry
 
 # only import these functions when using import *
 __all__ = ["fetch_fasta", "fetch_pdb"]
@@ -27,7 +27,11 @@ def parse_args():
         "--format",
         nargs="+",
         default=["fasta", "pdb"],
-        help='Formats to acquire.\nIf "fasta", requests the FASTA sequence using bioservices UniProt.\nIf "pdb", downloads the pdb from AlphaFold.\nCan accept multiple arguments.',
+        help=(
+            "Formats to acquire.\n"
+            'If "fasta", requests the FASTA sequence using bioservices UniProt.\n'
+            'If "pdb", downloads the pdb from AlphaFold.\nCan accept multiple arguments.'
+        ),
     )
     args = parser.parse_args()
     return args
@@ -39,7 +43,8 @@ def fetch_fasta(accession: str, output_dir: str):
 
     Args:
         accession (str): a valid UniprotKB accession.
-        output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.fasta".
+        output_dir (str): path to the output directory.
+        File will be saved as "{output_dir}/{accession}.fasta".
     """
     u = UniProtWithExpBackoff()
     output_path = Path(output_dir) / (accession + ".fasta")
@@ -56,10 +61,11 @@ def fetch_pdb(accession: str, output_dir: str):
 
     Args:
         accession (str): a valid UniprotKB accession.
-        output_dir (str): path to the output directory. File will be saved as "{output_dir}/{accession}.pdb".
+        output_dir (str): path to the output directory.
+        File will be saved as "{output_dir}/{accession}.pdb".
     """
     output_path = Path(output_dir) / (accession + ".pdb")
-    source = "https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v4.pdb".format(accession)
+    source = f"https://alphafold.ebi.ac.uk/files/AF-{accession}-F1-model_v4.pdb"
 
     if not os.path.exists(output_path):
         result = session_with_retry().get(source)

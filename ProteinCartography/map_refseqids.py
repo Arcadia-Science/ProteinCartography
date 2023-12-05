@@ -4,12 +4,10 @@ import sys
 from time import sleep
 
 import pandas as pd
-
 from api_utils import (
-    session_with_retry,
     UniProtWithExpBackoff,
+    session_with_retry,
 )
-
 
 # only import these functions when using import *
 __all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
@@ -39,7 +37,7 @@ def parse_args():
         "-o",
         "--output",
         required=True,
-        help="path to destination .txt file where uniquely-mapped Uniprot accessions will be printed.",
+        help="path to .txt file where uniquely-mapped Uniprot accessions will be printed.",
     )
     parser.add_argument(
         "-d",
@@ -73,7 +71,7 @@ def map_refseqids_bioservices(
     u = UniProtWithExpBackoff()
 
     # open the input file to extract ids
-    with open(input_file, "r") as f:
+    with open(input_file) as f:
         ids = f.read().splitlines()
 
     if len(ids) > 100000:
@@ -113,14 +111,15 @@ def map_refseqids_bioservices(
 
 
 # Example curl POST request
-"""
-% curl --request POST 'https://rest.uniprot.org/idmapping/run' --form 'ids="P21802,P12345"' --form 'from="UniProtKB_AC-ID"' --form 'to="UniRef90"'
-"""
+# ```
+# % curl --request POST 'https://rest.uniprot.org/idmapping/run' \
+#   --form 'ids="P21802,P12345"' \
+#   --form 'from="UniProtKB_AC-ID"' \
+#   --form 'to="UniRef90"'
+# ```
 
 
-def map_refseqids_rest(
-    input_file: str, output_file: str, query_dbs: list, return_full=False
-):
+def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, return_full=False):
     """
     Takes an input .txt file of accessions and maps to UniProt accessions.
 
@@ -133,7 +132,7 @@ def map_refseqids_rest(
         return_full (bool): whether to return all of the results as a dataframe
     """
     # open the input file to extract ids
-    with open(input_file, "r") as f:
+    with open(input_file) as f:
         input_lines = f.read().splitlines()
         input_ids = list(set(input_lines))
         input_string = ",".join(input_ids)
@@ -170,14 +169,10 @@ def map_refseqids_rest(
             repeat = "results" not in status
 
         if tries == 10:
-            sys.exit(
-                f"The ticket failed to complete after {tries * sleep_time} seconds."
-            )
+            sys.exit(f"The ticket failed to complete after {tries * sleep_time} seconds.")
 
         results = (
-            session_with_retry()
-            .get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket["jobId"]}')
-            .json()
+            session_with_retry().get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket["jobId"]}').json()
         )
         results_df = pd.DataFrame(results["results"])
 
