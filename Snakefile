@@ -41,6 +41,9 @@ UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 
 MAX_BLASTHITS = int(config["max_blasthits"])
 BLAST_WORD_SIZE = int(config["blast_word_size"])
+BLAST_WORD_SIZE_BACKOFF = int(config["blast_word_size_backoff"])
+BLAST_WORD_SIZE_ATTEMPTS_BEFORE_BACKOFF = int(config["blast_word_size_attempts_before_backoff"])
+
 BLAST_EVALUE = float(config["blast_evalue"])
 MAX_STRUCTURES = int(config["max_structures"])
 
@@ -169,9 +172,15 @@ rule run_blast:
         refseqhits=output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt",
     params:
         max_blasthits=MAX_BLASTHITS,
-        blast_word_size=BLAST_WORD_SIZE,
+        blast_word_size=lambda wildcards, resources: BLAST_WORD_SIZE
+        if resources.blast_attempts <= BLAST_WORD_SIZE_ATTEMPTS_BEFORE_BACKOFF
+        else BLAST_WORD_SIZE_BACKOFF,
         blast_evalue=BLAST_EVALUE,
         blast_outfmt=BLAST_OUTFMT,
+    resources:
+        # Workaround to update the number of blast attempts; `attempt` only available in `resources` section, not in `params`:
+        # https://github.com/snakemake/snakemake/issues/499
+        blast_attempts=lambda wildcards, attempt: attempt,
     benchmark:
         output_dir / benchmarks_dir / "{protid}.run_blast.txt"
     conda:

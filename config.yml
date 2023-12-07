@@ -39,9 +39,14 @@ foldseek_databases:
 
 # Set maximum number of BLAST hits to retrieve
 max_blasthits: 3000
-# Additional arguments to pass to BLAST.
+# The blast word size: the length of exact matches to start the candidate alignments.
 blast_word_size: 5
-blast_evalue: 10.0
+# The maximal e-value to use for the blast search.
+blast_evalue: 1.0
+# The blast_word_size to use, if attempts with blast_word_size have failed.
+blast_word_size_backoff: 6
+# The number of attempts to use blast_word_size, before backing off to blast_word_size_backoff.
+blast_word_size_attempts_before_backoff: 1
 
 ######################
 # Structure settings #
