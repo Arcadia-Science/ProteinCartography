@@ -175,6 +175,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
         "https://search.foldseek.com/api/result/download/" + ticket["id"],
         stream=True,
     )
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "wb") as fd:
         for chunk in download.iter_content(chunk_size=128):
             fd.write(chunk)

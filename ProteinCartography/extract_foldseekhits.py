@@ -3,35 +3,11 @@ import argparse
 import os
 import re
 
+import constants
 import pandas as pd
 
 # only import these functions when using import *
 __all__ = ["extract_foldseekhits"]
-
-# default column names for a Foldseek run in this pipeline
-FOLDSEEK_NAMES = [
-    "query",
-    "target",
-    "fident",
-    "alnlen",
-    "mismatch",
-    "gapopen",
-    "qstart",
-    "qend",
-    "tstart",
-    "tend",
-    "prob",
-    "evalue",
-    "bits",
-    "qcov",
-    "tcov",
-    "qlan",
-    "taln",
-    "coord",
-    "tseq",
-    "taxid",
-    "taxname",
-]
 
 
 # parse command line arguments
@@ -63,7 +39,7 @@ def extract_foldseekhits(input_files: list, output_file: str, evalue=0.01):
     # iterate through results files, reading them
     for i, file in enumerate(input_files):
         # load the file
-        file_df = pd.read_csv(file, sep="\t", names=FOLDSEEK_NAMES)
+        file_df = pd.read_csv(file, sep="\t", names=constants.FOLDSEEK_COLUMN_NAMES)
 
         if os.path.getsize(file) == 0:
             continue
@@ -91,7 +67,11 @@ def extract_foldseekhits(input_files: list, output_file: str, evalue=0.01):
             dummy_df = pd.concat([dummy_df, file_df], axis=0)
 
     # extract unique uniprot IDs
-    hits = dummy_df["uniprotid"].unique()
+    if dummy_df.empty:
+        print(f"WARNING: No matching foldseek hits found in {input_files}.")
+        hits = []
+    else:
+        hits = dummy_df["uniprotid"].unique()
 
     # save to a .txt file
     with open(output_file, "w+") as f:

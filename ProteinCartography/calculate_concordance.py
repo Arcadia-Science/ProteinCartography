@@ -93,6 +93,11 @@ def calculate_concordance(
     fident_df = pd.read_csv(fident_file, sep="\t")
     tmscore_df = pd.read_csv(tmscore_file, sep="\t")
 
+    if fident_df.empty or tmscore_df.empty:
+        # Generate an empty output with a minimal header to prevent downstream failures.
+        pd.DataFrame(columns=["protid"]).to_csv(output_file, index=None)
+        return
+
     if method == "linear":
         concordance_fxn = linear_concordance
 

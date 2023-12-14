@@ -2,35 +2,11 @@
 import argparse
 import re
 
+import constants
 import pandas as pd
 
 # only import these functions when using import *
 __all__ = ["aggregate_foldseek_fident"]
-
-# default column names for a Foldseek run in this pipeline
-FOLDSEEK_NAMES = [
-    "query",
-    "target",
-    "fident",
-    "alnlen",
-    "mismatch",
-    "gapopen",
-    "qstart",
-    "qend",
-    "tstart",
-    "tend",
-    "prob",
-    "evalue",
-    "bits",
-    "qcov",
-    "tcov",
-    "qlan",
-    "taln",
-    "coord",
-    "tseq",
-    "taxid",
-    "taxname",
-]
 
 
 # parse command line arguments
@@ -68,12 +44,19 @@ def aggregate_foldseek_fident(input_files: list, output_file: str, protid: str) 
 
     # open each .m8 file and append it to the collector, if it's not empty
     for f in input_files:
-        temp_df = pd.read_csv(f, sep="\t", names=FOLDSEEK_NAMES)
+        temp_df = pd.read_csv(f, sep="\t", names=constants.FOLDSEEK_COLUMN_NAMES)
 
         if len(temp_df) == 0:
             continue
 
         dummy_df = pd.concat([dummy_df, temp_df])
+
+    if dummy_df.empty:
+        # Generate an empty output with a minimal header to prevent downstream failures.
+        pd.DataFrame(columns=constants.FOLDSEEK_OUT_COLUMN_NAMES).to_csv(
+            output_file, index=None, sep="\t"
+        )
+        return dummy_df
 
     # tidy up index and any duplicates
     dummy_df.reset_index(inplace=True, drop=True)
@@ -89,7 +72,7 @@ def aggregate_foldseek_fident(input_files: list, output_file: str, protid: str) 
     )
 
     # collect only the relevant columns
-    results_df = dummy_df[["protid", "fident", "prob", "evalue"]]
+    results_df = dummy_df[constants.FOLDSEEK_OUT_COLUMN_NAMES]
     results_df = results_df.drop_duplicates()
 
     # rescale fraction identity from percentile to actual fraction
