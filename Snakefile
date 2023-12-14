@@ -112,6 +112,12 @@ rule all:
         output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html"),
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf"),
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html"),
+        expand(
+            output_dir
+            / clusteringresults_dir
+            / (analysis_name + "_{protid}_distribution_analysis.svg"),
+            protid=PROTID,
+        ),
 
 
 ###########################################
@@ -752,4 +758,26 @@ rule calculate_annotation_distance:
     shell:
         """
         python ProteinCartography/calculate_annotation_distance.py -i {input.features_file} -d {params.id_column} -a {params.annot_column} -o {output.distances_file} -f {params.filter_columns}
+        """
+
+
+rule plot_cluster_distributions:
+    """
+    Plots distributions of key values per cluster for each input protein.
+    """
+    input:
+        features_file=output_dir
+        / clusteringresults_dir
+        / (analysis_name + "_aggregated_features.tsv"),
+    output:
+        output_dir / clusteringresults_dir / (analysis_name + "_{protid}_distribution_analysis.svg"),
+    params:
+        protid="{protid}",
+    conda:
+        "envs/plotting.yml"
+    benchmark:
+        output_dir / benchmarks_dir / "plot_cluster_distributions_{protid}.txt"
+    shell:
+        """
+        python ProteinCartography/plot_cluster_distributions.py -i {input.features_file} -o {output} -k {params.protid}
         """

@@ -219,7 +219,11 @@ The **Cluster** mode starts at the "Clustering" step.
     - Perform a word count analysis on all of the annotations and generate a word cloud.
     - Save as a PDF file with suffix `_semantic_analysis.pdf`.
 
-13. Build an explorable HTML visualization using `Plotly` based on the aggregated features.
+13. Perform simple statistical tests on the aggregated features and create a violin plot.
+    - For every feature, perform a Mann-Whitney U test between the cluster containing each input protein (for Search mode) against each other cluster, or for each cluster against every other cluster (for Cluster mode).
+    - Save the results as a `_distribution_analysis.svg` image file.
+
+14. Build an explorable HTML visualization using `Plotly` based on the aggregated features.
     - An example can be found [here](examples/scatter.html)
     - Each point has hover-over information.
     - Default parameters include:
