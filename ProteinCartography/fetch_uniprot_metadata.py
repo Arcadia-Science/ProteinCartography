@@ -6,6 +6,12 @@ import re
 import numpy as np
 import pandas as pd
 from api_utils import UniProtWithExpBackoff, session_with_retry
+from tests import api_mocks
+
+# if necessary, mock the `uniprot.search` method (used by `query_uniprot`)
+# see comments in `tests.api_mocks` for more details
+if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
+    api_mocks.mock_bioservices_uniprot_search()
 
 # only import these functions when using import *
 __all__ = ["query_uniprot"]
@@ -64,13 +70,8 @@ def parse_args():
     return args
 
 
-#############################################
-## Query using bioservices (not preferred) ##
-#############################################
-
-
 def query_uniprot(
-    query_list: str,
+    input_file: str,
     output_file: str,
     batch_size=300,
     sub_batch_size=300,
@@ -83,7 +84,7 @@ def query_uniprot(
     for those proteins.
 
     Args:
-        input_file (str): path of input list text file where each accession is on a new line
+        input_file (str): path to a text file of accessions (with one accession per line)
         output_file (str): path of destination tsv file with all uniprot features
         batch_size (int): number of entries to query per batch.
         sub_batch_size (int): number of entries to pull per page of batch.
@@ -95,7 +96,7 @@ def query_uniprot(
         a pandas.DataFrame of the resulting features
     """
 
-    temp_file = output_file + ".temp"
+    temp_filepath = output_file + ".temp"
 
     if os.path.exists(output_file):
         print("Output file already exists at this location. Aborting.")
@@ -105,10 +106,10 @@ def query_uniprot(
 
     # Load any existing results from previous incomplete runs, to remove them from the query list.
     existing_data = set()
-    if os.path.exists(temp_file):
-        existing_df = pd.read_csv(temp_file, sep="\t", usecols=["Entry"])
+    if os.path.exists(temp_filepath):
+        existing_df = pd.read_csv(temp_filepath, sep="\t", usecols=["Entry"])
         existing_data = set(existing_df["Entry"].values)
-        print(f"Loaded {len(existing_data)} entries from {temp_file}")
+        print(f"Loaded {len(existing_data)} entries from {temp_filepath}")
         header_written = True
 
     # Define regular expression pattern to extract the next URL from the response headers
@@ -135,8 +136,8 @@ def query_uniprot(
                 yield response.text
                 batch_url = get_next_link(response.headers)
         elif service == "bioservices":
-            u = UniProtWithExpBackoff()
-            results = u.search(
+            uniprot = UniProtWithExpBackoff()
+            results = uniprot.search(
                 query_string, columns=fields_string, size=sub_batch_size, progress=False
             )
             # bioservices doesn't directly return the number of results.
@@ -144,7 +145,7 @@ def query_uniprot(
         else:
             raise ValueError(f"Unknown service {service}")
 
-    with open(query_list) as q:
+    with open(input_file) as q:
         query_accessions = [line.rstrip("\n") for line in q.readlines()]
         # Remove accessions that have already been downloaded, keeping the order.
         query_accessions = [e for e in query_accessions if e not in existing_data]
@@ -166,7 +167,7 @@ def query_uniprot(
         # Construct the URL with the constructed query string
         progress = 0
 
-        with open(temp_file, "a") as f:
+        with open(temp_filepath, "a") as temp_file:
             for batch in get_batch(query_string):
                 lines = batch.splitlines()
 
@@ -177,12 +178,12 @@ def query_uniprot(
                     print_lines = lines[1:]
 
                 for line in print_lines:
-                    print(line, file=f)
+                    print(line, file=temp_file)
 
                 progress += len(lines) - 1
                 print(f"downloaded {progress} / {total} hits for batch {i + 1}")
 
-    df = pd.read_csv(temp_file, sep="\t")
+    df = pd.read_csv(temp_filepath, sep="\t")
     df.insert(0, "protid", df["Entry"].values)
 
     def lineage_string_splitter(lineage_string):
@@ -197,7 +198,7 @@ def query_uniprot(
         pass
 
     df.to_csv(output_file, sep="\t", index=None)
-    os.remove(temp_file)
+    os.remove(temp_filepath)
 
     return df
 

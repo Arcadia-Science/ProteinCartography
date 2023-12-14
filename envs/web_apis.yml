@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9.16
+  - pip=23.2.1
+  - pandas=2.0.1
+  - requests=2.29.0
+  - biopython=1.81
+  - pip:
+      - bioservices==1.11.2

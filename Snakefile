@@ -40,6 +40,8 @@ else:
 UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 
 MAX_BLASTHITS = int(config["max_blasthits"])
+MAX_FOLDSEEKHITS = int(config["max_foldseekhits"])
+
 BLAST_WORD_SIZE = int(config["blast_word_size"])
 BLAST_WORD_SIZE_BACKOFF = int(config["blast_word_size_backoff"])
 BLAST_WORD_SIZE_ATTEMPTS_BEFORE_BACKOFF = int(config["blast_word_size_attempts_before_backoff"])
@@ -129,7 +131,7 @@ rule make_pdb:
     benchmark:
         output_dir / benchmarks_dir / "{protid}.make_pdb.txt"
     conda:
-        "envs/api.yml"
+        "envs/web_apis.yml"
     shell:
         """
         python ProteinCartography/esmfold_apiquery.py -i {input.cds}
@@ -169,7 +171,6 @@ rule run_blast:
         cds=input_dir / "{protid}.fasta",
     output:
         blastresults=output_dir / blastresults_dir / "{protid}.blastresults.tsv",
-        refseqhits=output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt",
     params:
         max_blasthits=MAX_BLASTHITS,
         blast_word_size=lambda wildcards, resources: BLAST_WORD_SIZE
@@ -184,7 +185,7 @@ rule run_blast:
     benchmark:
         output_dir / benchmarks_dir / "{protid}.run_blast.txt"
     conda:
-        "envs/run_blast.yml"
+        "envs/blast.yml"
     shell:
         """
         blastp \
@@ -196,7 +197,26 @@ rule run_blast:
           -outfmt {params.blast_outfmt} \
           -word_size {params.blast_word_size} \
           -evalue {params.blast_evalue}
-        python ProteinCartography/extract_blasthits.py -i {output.blastresults} -o {output.refseqhits} -B {params.blast_outfmt}
+        """
+
+
+rule extract_blast_hits:
+    """
+    Extracts the top hits from the BLAST results file.
+    """
+    input:
+        blastresults=output_dir / blastresults_dir / "{protid}.blastresults.tsv",
+    output:
+        refseqhits=output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt",
+    params:
+        blast_outfmt=BLAST_OUTFMT,
+    benchmark:
+        output_dir / benchmarks_dir / "{protid}.extract_blast_hits.txt"
+    conda:
+        "envs/pandas.yml"
+    shell:
+        """
+        python ProteinCartography/extract_blasthits.py -i {input.blastresults} -o {output.refseqhits} -B {params.blast_outfmt}
         """
 
 
@@ -212,7 +232,7 @@ rule map_refseqids:
     benchmark:
         output_dir / benchmarks_dir / "{protid}.map_refseqids.txt"
     conda:
-        "envs/map_refseq_ids.yml"
+        "envs/web_apis.yml"
     shell:
         """
         python ProteinCartography/map_refseqids.py -i {input.refseqhits} -o {output.uniprothits}
@@ -241,18 +261,31 @@ rule run_foldseek:
         m8files=expand(
             output_dir / foldseekresults_dir / "{{protid}}" / "alis_{db}.m8", db=FS_DATABASES
         ),
-        foldseekhits=output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt",
     params:
         fs_databases=expand("{fs_databases}", fs_databases=FS_DATABASES),
     conda:
-        "envs/foldseek.yml"
+        "envs/web_apis.yml"
     benchmark:
         output_dir / benchmarks_dir / "{protid}.run_foldseek.txt"
     shell:
         """
         python ProteinCartography/foldseek_apiquery.py -i {input.cds} -o {output.targz} -d {params.fs_databases}
         tar -xvf {output.targz} -C {output.unpacked}
-        python ProteinCartography/extract_foldseekhits.py -i {output.m8files} -o {output.foldseekhits}
+        """
+
+
+rule extract_foldseek_hits:
+    input:
+        m8files=rules.run_foldseek.output.m8files,
+    output:
+        foldseekhits=output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt",
+    params:
+        max_foldseekhits=MAX_FOLDSEEKHITS,
+    conda:
+        "envs/pandas.yml"
+    shell:
+        """
+        python ProteinCartography/extract_foldseekhits.py -i {input.m8files} -o {output.foldseekhits} -m {params.max_foldseekhits}
         """
 
 
@@ -315,7 +348,7 @@ rule fetch_uniprot_metadata:
     benchmark:
         output_dir / benchmarks_dir / "get_uniprot_metadata.txt"
     conda:
-        "envs/fetch_uniprot_metadata.yml"
+        "envs/web_apis.yml"
     shell:
         """
         python ProteinCartography/fetch_uniprot_metadata.py -i {input} -o {output} -a {params.additional_fields}
@@ -372,7 +405,7 @@ rule download_pdbs:
     benchmark:
         output_dir / benchmarks_dir / downloading_dir / "{acc}.download_pdbs.txt"
     conda:
-        "envs/api.yml"
+        "envs/web_apis.yml"
     resources:
         mem_mb=256,
     threads: 1
@@ -462,7 +495,7 @@ rule dim_reduction:
     params:
         modes="{modes}",
     conda:
-        "envs/dim_reduction.yml"
+        "envs/analysis.yml"
     benchmark:
         output_dir / benchmarks_dir / "{modes}.dim_reduction.txt"
     shell:
@@ -480,7 +513,7 @@ rule leiden_clustering:
     output:
         output_dir / clusteringresults_dir / "leiden_features.tsv",
     conda:
-        "envs/leiden_clustering.yml"
+        "envs/analysis.yml"
     benchmark:
         output_dir / benchmarks_dir / "leiden_clustering.txt"
     shell:
@@ -713,7 +746,7 @@ rule calculate_annotation_distance:
         annot_column="'Protein names'",
         filter_columns="LeidenCluster",
     conda:
-        "envs/annotation_distance.yml"
+        "envs/analysis.yml"
     benchmark:
         output_dir / benchmarks_dir / "calculate_annotation_distance.txt"
     shell:

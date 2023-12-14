@@ -9,6 +9,8 @@ import pandas as pd
 # only import these functions when using import *
 __all__ = ["extract_foldseekhits"]
 
+DEFAULT_EVALUE = 0.01
+
 
 # parse command line arguments
 def parse_args():
@@ -17,13 +19,31 @@ def parse_args():
         "-i", "--input", nargs="+", required=True, help="Takes .m8 file paths as input."
     )
     parser.add_argument("-o", "--output", required=True, help="Returns a .txt file as output.")
-    parser.add_argument("-e", "--evalue", default="0.01", help="Sets maximum evalue for filtering.")
+    parser.add_argument(
+        "-e",
+        "--evalue",
+        type=float,
+        default=DEFAULT_EVALUE,
+        help="Sets maximum evalue for filtering.",
+    )
+    parser.add_argument(
+        "-m",
+        "--max-num-hits",
+        type=int,
+        help=(
+            "Maximum number of hits to include in the output file. "
+            "If not provided, all hits will be included."
+        ),
+    )
+
     args = parser.parse_args()
 
     return args
 
 
-def extract_foldseekhits(input_files: list, output_file: str, evalue=0.01):
+def extract_foldseekhits(
+    input_files: list, output_file: str, evalue=DEFAULT_EVALUE, max_num_hits=None
+):
     """
     Takes a list of input tabular Foldseek results files from the API query (ending in .m8).
     Generates a .txt file containing a list of unique accessions across all the .m8 files.
@@ -73,6 +93,10 @@ def extract_foldseekhits(input_files: list, output_file: str, evalue=0.01):
     else:
         hits = dummy_df["uniprotid"].unique()
 
+    # if max_num_hits is provided, truncate the list
+    if max_num_hits is not None:
+        hits = hits[:max_num_hits]
+
     # save to a .txt file
     with open(output_file, "w+") as f:
         f.writelines(hit + "\n" for hit in hits)
@@ -86,10 +110,11 @@ def main():
     # collect arguments individually
     input_files = args.input
     output_file = args.output
-    evalue = float(args.evalue)
+    evalue = args.evalue
+    max_num_hits = args.max_num_hits
 
     # send to map_refseqids
-    extract_foldseekhits(input_files, output_file, evalue=evalue)
+    extract_foldseekhits(input_files, output_file, evalue=evalue, max_num_hits=max_num_hits)
 
 
 # check if called from interpreter

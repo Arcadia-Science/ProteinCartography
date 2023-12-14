@@ -11,6 +11,7 @@ plotting_modes:
 - "pca_umap"
 
 max_blasthits: 3000
+max_foldseekhits: 3000
 max_structures: 5000
 
 taxon_focus: 'euk'

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import os
 import sys
 from time import sleep
 
@@ -8,6 +9,12 @@ from api_utils import (
     UniProtWithExpBackoff,
     session_with_retry,
 )
+from tests import api_mocks
+
+# if necessary, mock the `uniprot.mapping` method (used by `map_refseqids_bioservices`)
+# see comments in `tests.api_mocks` for more details
+if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
+    api_mocks.mock_bioservices_uniprot_mapping()
 
 # only import these functions when using import *
 __all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
@@ -19,7 +26,6 @@ DEFAULT_DBS = ["EMBL-GenBank-DDBJ_CDS", "RefSeq_Protein"]
 UNIPROT_IDMAPPING_API = "https://rest.uniprot.org/idmapping"
 
 # requests constants
-REQUESTS_TRIES = 0
 REQUESTS_LIMIT = 10
 REQUESTS_SLEEP_TIME = 30
 
@@ -68,22 +74,23 @@ def map_refseqids_bioservices(
     """
 
     # make object that references UniProt database
-    u = UniProtWithExpBackoff()
+    uniprot = UniProtWithExpBackoff()
 
     # open the input file to extract ids
     with open(input_file) as f:
         ids = f.read().splitlines()
 
-    if len(ids) > 100000:
-        ids = ids[0:100000]
+    # limit the number of ids to prevent the uniprot mapping API from timing out
+    max_num_ids = 100000
+    ids = ids[:max_num_ids]
 
     # make an empty collector dataframe for mapping
     dummy_df = pd.DataFrame()
 
     # for each query database, map
     for i, db in enumerate(query_dbs):
-        # u.mapping returns a gross json file
-        results = u.mapping(db, "UniProtKB", query=",".join(ids))
+        # uniprot.mapping returns a gross json file
+        results = uniprot.mapping(db, "UniProtKB", query=",".join(ids))
 
         # pandas can normalize the json and make it more tractable
         results_df = pd.json_normalize(results["results"])
@@ -151,10 +158,8 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
 
         # poll until the job was successful or failed
         repeat = True
-        tries = REQUESTS_TRIES
-        limit = REQUESTS_LIMIT
-        sleep_time = REQUESTS_SLEEP_TIME
-        while repeat and tries < limit:
+        tries = 0
+        while repeat and tries < REQUESTS_LIMIT:
             status = (
                 session_with_retry()
                 .get(
@@ -164,12 +169,12 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
             )
 
             # wait a short time between poll requests
-            sleep(sleep_time)
+            sleep(REQUESTS_SLEEP_TIME)
             tries += 1
             repeat = "results" not in status
 
         if tries == 10:
-            sys.exit(f"The ticket failed to complete after {tries * sleep_time} seconds.")
+            sys.exit(f"The ticket failed to complete after {tries * REQUESTS_SLEEP_TIME} seconds.")
 
         results = (
             session_with_retry().get(f'{UNIPROT_IDMAPPING_API}/stream/{ticket["jobId"]}').json()
@@ -210,7 +215,6 @@ def main():
     service = args.service
 
     if service == "bioservices":
-        # send to map_refseqids
         map_refseqids_bioservices(input_file, output_file, query_dbs)
     else:
         map_refseqids_rest(input_file, output_file, query_dbs)

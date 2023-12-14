@@ -1,12 +1,32 @@
 #!/usr/bin/env python
+import os
+
 from bioservices import UniProt
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from tests import api_mocks, artifact_generation_utils
 
 __all__ = ["session_with_retry", "DefaultExpBackoffRetry", "UniProtWithExpBackoff"]
 
 USER_AGENT_HEADER = {"User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1"}
+
+# If necessary, mock the web API responses returned by the `request` method of `requests.Session`
+# Note: the env variable below is intended to indicate that the current python process
+# was started by pytest or by a snakemake run that was started by pytest
+# it is set by the `set_env_variables` pytest fixture during test setup;
+# it should be used only during testing and *not* in production
+if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
+    api_mocks.mock_requests_session_request()
+
+# If necessary, use the custom (and crude) `HTTPAdapterWithLogging` class in place of `HTTPAdapter`
+# to log the API requests made by the pipeline
+# Note: `HTTPAdapterWithLogging` is intended for use only during development
+# to help create the mocked API responses used in the pytest tests.
+# The env var below should only ever be set manually by the developer in a dev environment;
+# it should *not* be set in production.
+if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_LOG_API_REQUESTS") == "true":
+    HTTPAdapter = artifact_generation_utils.HTTPAdapterWithLogging  # noqa F811
 
 
 def session_with_retry():

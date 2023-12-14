@@ -70,6 +70,16 @@ def calculate_PCA(
     # Read input file
     pivoted_df = pd.read_csv(pivot_file, sep="\t", index_col="protid")
 
+    # check that the data is large enough to support the specified number of principal components
+    max_n_components = min(pivoted_df.shape)
+    if n_components > max_n_components:
+        print(
+            f"Warning: the specified value of `n_components` ({n_components})"
+            f"cannot be greater than the number of samples ({max_n_components}),"
+            f"so `n_components` will be set to {max_n_components}."
+        )
+        n_components = max_n_components
+
     # Initialize and run PCA
     pca = PCA(n_components=n_components, **kwargs)
     pca_results = pca.fit_transform(pivoted_df)

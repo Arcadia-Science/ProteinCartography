@@ -11,5 +11,6 @@ dependencies:
   - pandas=2.0.1
   - numpy=1.23.5
   - ipython=8.13.2
+  - pip=23.2.1
   - pip:
       - "git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"

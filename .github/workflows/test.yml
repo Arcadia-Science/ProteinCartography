@@ -2,11 +2,6 @@ name: test
 
 # run unit and integration tests for the ProteinCartography package
 
-# NOTE (KC): for now, this workflow is a placeholder;
-# it just checks that the conda environment defined in envs/cartography_dev.yml
-# can be created and that it includes all of the dependencies
-# required by the ProteinCartography package
-
 on:
   pull_request:
     branches:
@@ -27,7 +22,6 @@ jobs:
           miniforge-variant: Mambaforge
           miniforge-version: latest
           python-version: "3.9"
-          mamba-version: 1.4.2
           use-mamba: true
           activate-environment: test-env
           auto-activate-base: false
@@ -39,23 +33,30 @@ jobs:
 
       - name: Cache the conda env
         uses: actions/cache@v2
-        id: cache
+        id: cache-conda-env
         with:
           path: ${{ env.CONDA }}/envs
           key:
-            conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/cartography_dev.yml') }}
+            conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/cartography_test.yml') }}
 
-      - name: Install the conda env
+      - name: Create the conda env from which to run snakemake
         run: |
-          mamba env update -n test-env -f envs/cartography_dev.yml
-        if: steps.cache.outputs.cache-hit != 'true'
+          mamba env update -n test-env -f envs/cartography_test.yml
+        if: steps.cache-conda-env.outputs.cache-hit != 'true'
 
-      # check that the conda environment includes all of the dependencies
-      # required by the ProteinCartography package
-      - name: Check importability
-        run: |
-          python -c "import sys;sys.path.append('ProteinCartography');import ProteinCartography"
+      - name: Cache the conda envs created by snakemake
+        uses: actions/cache@v2
+        id: cache-snakemake-conda-envs
+        with:
+          path: .snakemake/conda
+          key:
+            conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/*.yml') }}
 
-      - name: Run tests
+      - name: Create the snakemake conda envs
         run: |
-          pytest .
+          snakemake --configfile demo/config_actin.yml --use-conda --conda-create-envs-only --cores 1
+        if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
+
+      - name: Run the tests
+        run: |
+          pytest -vv -s .

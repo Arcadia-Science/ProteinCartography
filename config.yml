@@ -48,12 +48,17 @@ blast_word_size_backoff: 6
 # The number of attempts to use blast_word_size, before backing off to blast_word_size_backoff.
 blast_word_size_attempts_before_backoff: 1
 
+# Set maximum number of Foldseek hits to retain
+# (the foldseek API does not provide a way to limit the number of Foldseek hits returned,
+# so this is used to truncate the list of retrieved hits)
+max_foldseekhits: 3000
+
 ######################
 # Structure settings #
 ######################
 
 # Set maximum number of total structures to download (combined BLAST + Foldseek hits)
-# By default, we prioritize downloading structures from Foldseek
+# (this is the final number of structures that will be used for analysis)
 max_structures: 5000
 
 # Specify the maximum and minimum length of proteins to filter by
@@ -97,3 +102,11 @@ plotting_modes:
 # Also accepts 'bac' which displays some large bacterial taxonomic groups.
 # See README.md for more details
 taxon_focus: 'euk'
+
+# Resource execution settings
+resources:
+    mem_mb: 16 * 1000
+cores: 8
+max-jobs-per-second: 1
+max-status-checks-per-second: 10
+local-cores: 10
