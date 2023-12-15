@@ -201,7 +201,15 @@ def plot_distribution_violins(
 
     # Create a dictionary to store the distributions of the data
     distribution_dict = {}
-    for col in plotting_rules.keys():
+
+    # ignore missing plotting rule columns
+    all_columns = set(plotting_rules.keys())
+    valid_columns = all_columns.intersection(grouped.columns)
+    invalid_columns = all_columns.difference(grouped.columns)
+    if len(invalid_columns):
+        print(f"Ignoring the following invalid plotting rule columns: {invalid_columns}.")
+
+    for col in valid_columns:
         distribution_dict[col] = dict(grouped[col])
         for item in distribution_dict[col]:
             distribution_dict[col][item] = remove_nans(distribution_dict[col][item])
@@ -228,12 +236,12 @@ def plot_distribution_violins(
 
     fig, axs = plt.subplots(
         nrows=1,
-        ncols=len(plotting_rules.keys()),
-        figsize=(1.4 * len(plotting_rules.keys()), 6.5),
+        ncols=len(valid_columns),
+        figsize=(1.4 * len(valid_columns), 6.5),
     )
 
     # generate plots by iterating through plotting rules columns
-    for i, (col, ax) in enumerate(zip(plotting_rules.keys(), axs)):
+    for i, (col, ax) in enumerate(zip(valid_columns, axs)):
         values = list(distribution_dict[col].values())
 
         if target_clusters is not None:
