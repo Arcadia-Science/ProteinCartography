@@ -16,12 +16,14 @@ def parse_args():
     parser.add_argument(
         "-o", "--output", required=True, help="Path of output aggregated features file."
     )
+
+    # note: the `--override-file` option requires `nargs="?"` because this option will be included
+    # without a value if OVERRIDE_FILE is set to an empty string in the snakemake file
     parser.add_argument(
         "-v",
         "--override-file",
-        default=None,
-        help="Features override file for manual entries.",
         nargs="?",
+        help="Features override file for manual entries.",
     )
     args = parser.parse_args()
 

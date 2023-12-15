@@ -35,7 +35,6 @@ def parse_args():
     parser.add_argument(
         "-o",
         "--output",
-        default="",
         help=(
             "Path to output file ending in a matplotlib-compatible format "
             "(png, pdf, ps, eps, and svg)."
@@ -44,7 +43,6 @@ def parse_args():
     parser.add_argument(
         "-i",
         "--interactive",
-        default="",
         help='Path to output file ending with ".html" for interactive plot.',
     )
     parser.add_argument(
@@ -54,7 +52,7 @@ def parse_args():
         default=["protein", "None"],
         help="Words to exclude from word cloud.",
     )
-    parser.add_argument("-a", "--analysis-name", default="", help="name of analysis for plotting")
+    parser.add_argument("-a", "--analysis-name", help="name of analysis for plotting")
     args = parser.parse_args()
 
     return args
@@ -364,7 +362,6 @@ def semantic_multiplot_plotly(
     count_features_results: dict,
     colors: list,
     n_cols=3,
-    analysis_name="",
     savefile=None,
     show=False,
 ):
@@ -375,7 +372,6 @@ def semantic_multiplot_plotly(
         count_features_results (dict): full dictionary output of count_features()
         colors (list): list of HEX colors
         n_cols (int): number of columns to use in plot
-        analysis_name (str): analysis name to include in title
         savefile (str): path to destination file
         show (bool): whether to show the result in an interactive session
     """
@@ -505,7 +501,7 @@ def main():
     analysis_name = args.analysis_name
     colors = apc.Palettes["arcadia:AccentAllOrdered"].colors
 
-    if output_file != "":
+    if output_file is not None:
         apc.mpl_setup()
 
         plot_semantic_analysis(
@@ -518,7 +514,7 @@ def main():
             analysis_name=analysis_name,
         )
 
-    if interactive_file != "":
+    if interactive_file is not None:
         results = count_features(
             features_file=features_file,
             agg_col=agg_col,
@@ -526,9 +522,7 @@ def main():
             colors=colors,
         )
 
-        semantic_multiplot_plotly(
-            results, colors, analysis_name=analysis_name, savefile=interactive_file
-        )
+        semantic_multiplot_plotly(results, colors, savefile=interactive_file)
 
 
 if __name__ == "__main__":

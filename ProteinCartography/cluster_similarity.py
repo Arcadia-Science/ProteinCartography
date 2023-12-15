@@ -28,8 +28,8 @@ def parse_args():
     parser.add_argument(
         "-c", "--features-column", required=True, help="Column to aggregate groups on."
     )
-    parser.add_argument("-T", "--output-tsv", default="", help="Path to output TSV file.")
-    parser.add_argument("-H", "--output-html", default="", help="Path to output HTML file.")
+    parser.add_argument("-T", "--output-tsv", help="Path to output TSV file.")
+    parser.add_argument("-H", "--output-html", help="Path to output HTML file.")
     args = parser.parse_args()
 
     return args
@@ -165,7 +165,9 @@ def main():
     output_html = args.output_html
 
     calculate_group_similarity(matrix, features, column, output_file=output_tsv)
-    plot_group_similarity(output_tsv, output_file=output_html)
+
+    if output_tsv is not None:
+        plot_group_similarity(output_tsv, output_file=output_html)
 
 
 if __name__ == "__main__":

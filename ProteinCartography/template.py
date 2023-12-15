@@ -25,17 +25,15 @@ def parse_args():
         "-v",
         "--variable-arg",
         nargs="?",
-        default="",
         help="Example optional argument that accepts 0 or 1 arguments.",
     )
     parser.add_argument(
         "-a",
         "--arg-list",
         nargs="+",
-        default=[],
         help=(
             "Example optional argument that accepts 1+ space-separated arguments. "
-            "By default, returns an empty list."
+            "Returns None if no arguments are passed."
         ),
     )
 
@@ -47,7 +45,7 @@ def parse_args():
 
 
 # script-specific function that does something useful
-def my_function(input_arg: str, variable_arg="", arg_list=None):
+def my_function(input_arg: str, variable_arg=None, arg_list=None):
     print("This is what you passed to the interpreter:")
     print(f"--input: {input_arg}")
     print(f"--variable-arg: {variable_arg}")
@@ -61,10 +59,9 @@ def main():
     args = parse_args()
 
     # access each of the arguments as a variable
+    # note: dashes in command line arg names are converted to underscores
     input_file = args.input
-    variable_arg = (
-        args.variable_arg
-    )  # note: dashes in command line arg names are converted to underscores
+    variable_arg = args.variable_arg
     arg_list = args.arg_list
 
     my_function(input_file, variable_arg=variable_arg, arg_list=arg_list)

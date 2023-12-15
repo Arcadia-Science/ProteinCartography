@@ -38,7 +38,6 @@ def parse_args():
     parser.add_argument(
         "-o",
         "--output",
-        default="",
         help='Name of output file. If not provided, replaces ".fasta" from input with ".pdb".',
     )
     args = parser.parse_args()
@@ -124,10 +123,6 @@ def main():
 
     input_file = args.input
     output_file = args.output
-
-    if output_file == "":
-        output_file = None
-
     esmfold_apiquery(input_file, output_file)
 
 

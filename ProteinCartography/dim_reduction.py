@@ -22,9 +22,7 @@ def parse_args():
         required=True,
         help="Path to input all-v-all similarity matrix.",
     )
-    parser.add_argument(
-        "-p", "--output-prefix", default="", help="Prefix for resulting .tsv files."
-    )
+    parser.add_argument("-p", "--output-prefix", help="Prefix for resulting .tsv files.")
     parser.add_argument(
         "-m",
         "--mode",

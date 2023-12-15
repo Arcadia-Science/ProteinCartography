@@ -49,7 +49,6 @@ def parse_args():
     parser.add_argument(
         "-m",
         "--mode",
-        nargs="?",
         default="3diaa",
         help=" | ".join([f"'{mode}'" for mode in SET_MODES]),
     )

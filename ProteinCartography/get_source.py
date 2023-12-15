@@ -29,7 +29,6 @@ def parse_args():
         "-k",
         "--keyids",
         nargs="+",
-        default=[],
         help=(
             "Key ids (usually protids of input proteins) used to determine the source of a protid."
             "\nUseful when there are multiple input proteins."

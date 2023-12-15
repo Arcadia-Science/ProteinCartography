@@ -27,8 +27,7 @@ def parse_args():
     parser.add_argument(
         "-f",
         "--filter-col",
-        default=[],
-        nargs="?",
+        nargs="*",
         help="Columns to use for filtering.",
     )
     args = parser.parse_args()
@@ -131,9 +130,6 @@ def main():
     id_col = args.id_col
     annot_col = args.annot_col
     filter_cols = args.filter_col
-
-    if isinstance(filter_cols, str):
-        filter_cols = [filter_cols]
 
     calculate_annotation_distance(
         input_file=input_file,

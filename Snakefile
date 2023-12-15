@@ -23,6 +23,9 @@ analysis_name = config["analysis_name"]
 output_dir = Path(config["output_dir"])
 
 # Check for an override file, setting a variable if it exists
+# note: `OVERRIDE_FILE` cannot be `None` because it is passed to a CLI option
+# in the `aggregate_features` rule, and snakemake serializes `None` to 'None';
+# using an empty string instead results in the CLI option being passed no value
 if "override_file" in config:
     OVERRIDE_FILE = input_dir / config["override_file"]
 

@@ -61,8 +61,7 @@ def parse_args():
     parser.add_argument(
         "-a",
         "--additional-fields",
-        nargs="?",
-        default=[],
+        nargs="*",
         help="additional non-default fields to fetch from uniprot if using REST",
     )
     args = parser.parse_args()
@@ -212,10 +211,9 @@ def main():
     service = args.service
     additional_fields = args.additional_fields
 
+    fields = DEFAULT_FIELDS
     if additional_fields is not None:
-        fields = DEFAULT_FIELDS + additional_fields
-    else:
-        fields = DEFAULT_FIELDS
+        fields += additional_fields
 
     query_uniprot(input_file, output_file, fields=fields, service=service)
 

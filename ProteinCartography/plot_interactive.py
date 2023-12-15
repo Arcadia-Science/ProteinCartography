@@ -146,14 +146,12 @@ def parse_args():
     parser.add_argument(
         "-t",
         "--dimensions-type",
-        default="",
         help="dimensions data type (pca, tsne, umap, etc.)",
     )
     parser.add_argument(
         "-k",
         "--keyids",
         nargs="*",
-        default=[],
         help="keyids for plotting. Usually input protids.",
     )
     parser.add_argument(
@@ -348,9 +346,6 @@ def extend_colors(color_keys: list, color_order: list, steps=(0.7, 0.5, 0.3)) ->
 
 
 def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") -> dict:
-    if keyids is None:
-        keyids = []
-
     # color dictionary for annotation score (values from 0 to 5)
     annotationScore_color_dict = ANNOTATION_SCORE_COLOR_DICT
 
@@ -506,40 +501,41 @@ def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") ->
         }
 
     # Add additional plotting rules for each keyid (usually the input protein)
-    for keyid in keyids:
-        # Add a plot for tmscore to each input protein
-        plotting_rules[f"TMscore_v_{keyid}"] = {
-            "type": "continuous",
-            "fillna": -0.01,
-            "textlabel": f"TMscore vs. {keyid}",
-            "color_scale": arcadia_viridis,
-            "cmin": 0,
-            "cmax": 1,
-        }
-        plotting_rules[f"fident_v_{keyid}"] = {
-            "type": "continuous",
-            "fillna": -0.01,
-            "textlabel": f"Fraction seq identity vs. {keyid}",
-            "color_scale": arcadia_magma,
-            "cmin": 0,
-            "cmax": 1,
-        }
-        plotting_rules[f"concordance_v_{keyid}"] = {
-            "type": "continuous",
-            "fillna": -1.01,
-            "textlabel": f"Concordance vs. {keyid}",
-            "color_scale": arcadia_poppies_r,
-            "cmin": -1,
-            "cmax": 1,
-        }
-        # Add hovertext for whether or not a given protein was a hit via blast or foldseek
-        # to the input protein
-        plotting_rules[f"{keyid}.hit"] = {
-            "type": "hovertext",
-            "apply": lambda x: True if x == 1 else False,
-            "fillna": "None",
-            "textlabel": f"Blast/Foldseek Hit to {keyid}",
-        }
+    if keyids is not None:
+        for keyid in keyids:
+            # Add a plot for tmscore to each input protein
+            plotting_rules[f"TMscore_v_{keyid}"] = {
+                "type": "continuous",
+                "fillna": -0.01,
+                "textlabel": f"TMscore vs. {keyid}",
+                "color_scale": arcadia_viridis,
+                "cmin": 0,
+                "cmax": 1,
+            }
+            plotting_rules[f"fident_v_{keyid}"] = {
+                "type": "continuous",
+                "fillna": -0.01,
+                "textlabel": f"Fraction seq identity vs. {keyid}",
+                "color_scale": arcadia_magma,
+                "cmin": 0,
+                "cmax": 1,
+            }
+            plotting_rules[f"concordance_v_{keyid}"] = {
+                "type": "continuous",
+                "fillna": -1.01,
+                "textlabel": f"Concordance vs. {keyid}",
+                "color_scale": arcadia_poppies_r,
+                "cmin": -1,
+                "cmax": 1,
+            }
+            # Add hovertext for whether or not a given protein was a hit via blast or foldseek
+            # to the input protein
+            plotting_rules[f"{keyid}.hit"] = {
+                "type": "hovertext",
+                "apply": lambda x: True if x == 1 else False,
+                "fillna": "None",
+                "textlabel": f"Blast/Foldseek Hit to {keyid}",
+            }
 
     return plotting_rules
 
@@ -630,8 +626,6 @@ def plot_interactive(
     Returns:
         if show = False, returns the plotly.graphobjects object of the plot.
     """
-    if keyids is None:
-        keyids = []
 
     # make a copy of the starting data
     df = pd.read_csv(coordinates_file, sep="\t")
@@ -948,7 +942,7 @@ def plot_interactive(
                 fig.add_trace(obj_method(scatter, visible=vis, showlegend=showlegend))
 
     # if there are any keyids provided, generate an additional plot
-    if keyids != []:
+    if keyids is not None:
         # get the positions of the key ids
         keypoints = df[df["protid"].isin(keyids)]
 
@@ -1018,7 +1012,7 @@ def plot_interactive(
     # while preserving the rest...
     # current behavior is when this button is clicked, the visibility of the keyid stars is toggled
     # but all other data except the first coloration style are hidden
-    if keyids != []:
+    if keyids is not None:
         keyids_button = dict(
             buttons=[
                 dict(
@@ -1153,11 +1147,6 @@ def main():
     taxon_focus = args.taxon_focus
     plot_width = int(args.plot_width)
     plot_height = int(args.plot_height)
-
-    if keyids == "" or keyids is None or keyids == []:
-        keyids = []
-    elif not isinstance(keyids, list):
-        keyids = [keyids]
 
     # generate coordinates file for the plot
     coordinates_file = apply_coordinates(
