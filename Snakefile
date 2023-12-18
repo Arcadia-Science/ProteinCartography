@@ -53,6 +53,7 @@ BLAST_EVALUE = float(config["blast_evalue"])
 MAX_STRUCTURES = int(config["max_structures"])
 
 FS_DATABASES = config["foldseek_databases"]
+FS_SERVER_ARG = f"--server {config['foldseek_server']}" if "foldseek_server" in config else ""
 MODES = config["plotting_modes"]
 
 MIN_LENGTH = int(config["min_length"])
@@ -272,13 +273,14 @@ rule run_foldseek:
         ),
     params:
         fs_databases=expand("{fs_databases}", fs_databases=FS_DATABASES),
+        fs_server_arg=FS_SERVER_ARG,
     conda:
         "envs/web_apis.yml"
     benchmark:
         output_dir / benchmarks_dir / "{protid}.run_foldseek.txt"
     shell:
         """
-        python ProteinCartography/foldseek_apiquery.py -i {input.cds} -o {output.targz} -d {params.fs_databases}
+        python ProteinCartography/foldseek_apiquery.py -i {input.cds} -o {output.targz} {params.fs_server_arg} -d {params.fs_databases}
         tar -xvf {output.targz} -C {output.unpacked}
         """
 

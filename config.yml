@@ -25,6 +25,8 @@ analysis_name: "example"
 # Foldseek settings #
 #####################
 
+foldseek_server: "https://search.foldseek.com"
+
 # Choose which Foldseek databases to query
 # To avoid overloading the Foldseek server, we recommend limiting your search
 # to only the databases relevant to your query.

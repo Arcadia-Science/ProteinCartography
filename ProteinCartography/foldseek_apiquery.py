@@ -59,11 +59,14 @@ def parse_args():
         default=DEFAULT_DATABASES,
         help="'all' or any of " + " | ".join([f"'{db}'" for db in SET_DATABASES]),
     )
+    parser.add_argument(
+        "-s", "--server", help="The Foldseek server to use.", default="https://search.foldseek.com"
+    )
     args = parser.parse_args()
     return args
 
 
-def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: list):
+def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: list, server: str):
     """
     Queries the Foldseek web API with a PDB file and retrieves the results.
 
@@ -128,7 +131,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     ticket = (
         session_with_retry()
         .post(
-            "https://search.foldseek.com/api/ticket",
+            f"{server}/api/ticket",
             {"q": pdb, "database[]": query_databases, "mode": mode},
         )
         .json()
@@ -148,12 +151,12 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     repeat = True
     tries = 0
     limit = 10
-    sleep_time = 30
+    sleep_time = 30 if "search.foldseek.com" in server else 5
     while repeat and tries < limit:
         status = (
             session_with_retry()
             .get(
-                "https://search.foldseek.com/api/ticket/" + ticket["id"],
+                f"{server}/api/ticket/{ticket['id']}",
             )
             .json()
         )
@@ -171,7 +174,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
     # download blast compatible result archive
     download = session_with_retry().get(
-        "https://search.foldseek.com/api/result/download/" + ticket["id"],
+        f"{server}/api/result/download/{ticket['id']}",
         stream=True,
     )
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -189,8 +192,9 @@ def main():
     output_file = args.output
     mode = args.mode
     database = args.database
+    server = args.server
 
-    foldseek_apiquery(input_file, output_file, mode, database)
+    foldseek_apiquery(input_file, output_file, mode, database, server)
 
 
 # check if called from interpreter
