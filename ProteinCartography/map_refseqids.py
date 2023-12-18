@@ -9,6 +9,7 @@ from api_utils import (
     UniProtWithExpBackoff,
     session_with_retry,
 )
+from constants import UniProtServices
 from tests import api_mocks
 
 # if necessary, mock the `uniprot.mapping` method (used by `map_refseqids_bioservices`)
@@ -52,7 +53,9 @@ def parse_args():
         default=DEFAULT_DBS,
         help=f"which databases to use for mapping. defaults to {DEFAULT_DBS}",
     )
-    parser.add_argument("-s", "--service", default="rest", help="how to fetch mapping")
+    parser.add_argument(
+        "-s", "--service", default=UniProtServices.BIOSERVICES.value, help="how to fetch mapping"
+    )
     args = parser.parse_args()
     return args
 
@@ -214,7 +217,7 @@ def main():
     query_dbs = args.databases
     service = args.service
 
-    if service == "bioservices":
+    if service == UniProtServices.BIOSERVICES.value:
         map_refseqids_bioservices(input_file, output_file, query_dbs)
     else:
         map_refseqids_rest(input_file, output_file, query_dbs)

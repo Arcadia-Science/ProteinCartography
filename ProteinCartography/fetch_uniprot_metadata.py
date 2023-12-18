@@ -6,6 +6,7 @@ import re
 import numpy as np
 import pandas as pd
 from api_utils import UniProtWithExpBackoff, session_with_retry
+from constants import UniProtServices
 from tests import api_mocks
 
 # if necessary, mock the `uniprot.search` method (used by `query_uniprot`)
@@ -57,7 +58,9 @@ def parse_args():
         required=True,
         help="path of destination uniprot_features.tsv file",
     )
-    parser.add_argument("-s", "--service", default="rest", help="how to fetch metadata")
+    parser.add_argument(
+        "-s", "--service", default=UniProtServices.BIOSERVICES.value, help="how to fetch metadata"
+    )
     parser.add_argument(
         "-a",
         "--additional-fields",
@@ -76,7 +79,7 @@ def query_uniprot(
     sub_batch_size=300,
     fmt="tsv",
     fields=DEFAULT_FIELDS,
-    service="rest",
+    service=UniProtServices.BIOSERVICES.value,
 ):
     """
     Takes an input list of accessions and gets the full information set from Uniprot
@@ -127,14 +130,14 @@ def query_uniprot(
 
     def get_batch(query_string: str):
         # Generator function to fetch data in batches
-        if service == "rest":
+        if service == UniProtServices.REST.value:
             batch_url = f"https://rest.uniprot.org/uniprotkb/search?query={query_string}&format={fmt}&fields={fields_string}&size={sub_batch_size}"
             while batch_url:
                 response = session.get(batch_url)
                 response.raise_for_status()
                 yield response.text
                 batch_url = get_next_link(response.headers)
-        elif service == "bioservices":
+        elif service == UniProtServices.BIOSERVICES.value:
             uniprot = UniProtWithExpBackoff()
             results = uniprot.search(
                 query_string, columns=fields_string, size=sub_batch_size, progress=False
