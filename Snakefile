@@ -742,30 +742,6 @@ rule plot_semantic_analysis:
         """
 
 
-rule calculate_annotation_distance:
-    """
-    Calculates TF-IDF distance between annotations.
-    """
-    input:
-        features_file=output_dir
-        / clusteringresults_dir
-        / (analysis_name + "_aggregated_features.tsv"),
-    output:
-        distances_file=output_dir / clusteringresults_dir / "annotation_distances.tsv",
-    params:
-        id_column="protid",
-        annot_column="'Protein names'",
-        filter_columns="LeidenCluster",
-    conda:
-        "envs/analysis.yml"
-    benchmark:
-        output_dir / benchmarks_dir / "calculate_annotation_distance.txt"
-    shell:
-        """
-        python ProteinCartography/calculate_annotation_distance.py -i {input.features_file} -d {params.id_column} -a {params.annot_column} -o {output.distances_file} -f {params.filter_columns}
-        """
-
-
 rule plot_cluster_distributions:
     """
     Plots distributions of key values per cluster for each input protein.
