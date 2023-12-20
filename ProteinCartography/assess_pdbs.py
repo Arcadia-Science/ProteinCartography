@@ -3,6 +3,7 @@ import argparse
 import os
 import re
 from io import StringIO
+from pathlib import Path
 
 import arcadia_pycolor as apc
 import numpy as np
@@ -18,7 +19,6 @@ __all__ = [
     "assign_residue_colors",
     "parse_chains",
     "assign_origin",
-    "read_txtlist",
     "assess_pdbs",
 ]
 
@@ -55,18 +55,30 @@ ATOM_SPEC_VALS = list(ATOM_SPEC_DICT.values())
 ATOM_SPEC_NAMES = list(ATOM_SPEC_DICT.keys())
 
 
-# parse command line arguments
 def parse_args():
-    # Set command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-t",
-        "--textfile",
-        help="Input path to text file containing file paths, one per line.",
+        "-i",
+        "--input",
+        required=True,
+        help="Path to the directory of PDB files to assess",
     )
     parser.add_argument("-o", "--output", required=True, help="Name of output TSV file.")
     args = parser.parse_args()
     return args
+
+
+def is_valid_pdb(input_path: str) -> bool:
+    """
+    Checks if a file is a valid PDB file.
+    Note: if the PDB file was downloaded from Alphafold, this usually means that the protein
+    does not have a structure in AlphaFold.
+
+    Args:
+        input_path (str): path of PDB file.
+    """
+    with open(input_path) as f:
+        return "<Error>" not in f.read()
 
 
 def fetch_atoms(input_path: str) -> pd.DataFrame:
@@ -261,42 +273,41 @@ def assign_origin(input_path: str):
     return maxscore
 
 
-def assess_pdbs(structures_list: list, output_file=None):
+def assess_pdbs(structure_filepaths: list, output_file=None):
     """
     Assesses PDB quality, experimental information, origin,
     and lists chains for a list of PDB paths.
 
     Args:
-        structures_list (list): list of paths to assess.
+        structure_filepaths (list): list of paths to the PDB files to assess.
         output_file (str): path to output file, if saving results.
     """
     collector_df = pd.DataFrame()
 
-    for structure_file in structures_list:
-        if not os.path.exists(structure_file):
+    for structure_filepath in structure_filepaths:
+        if not os.path.exists(structure_filepath):
             continue
 
-        with open(structure_file) as f:
-            if "<Error>" in f.read():
-                continue
+        if not is_valid_pdb(structure_filepath):
+            continue
 
-        origin = assign_origin(structure_file)
+        origin = assign_origin(structure_filepath)
 
         if origin != "PDB":
-            max_confidence = np.max(extract_residue_confidence(structure_file))
-            min_confidence = np.min(extract_residue_confidence(structure_file))
+            max_confidence = np.max(extract_residue_confidence(structure_filepath))
+            min_confidence = np.min(extract_residue_confidence(structure_filepath))
             if max_confidence <= 1 and min_confidence <= 1:
-                confidence = np.average(extract_residue_confidence(structure_file)) * 100
+                confidence = np.average(extract_residue_confidence(structure_filepath)) * 100
             elif max_confidence >= 1 and min_confidence >= 1:
-                confidence = np.average(extract_residue_confidence(structure_file))
+                confidence = np.average(extract_residue_confidence(structure_filepath))
         else:
             confidence = 100
 
-        chains = parse_chains(structure_file)
+        chains = parse_chains(structure_filepath)
 
         info_df = pd.DataFrame(
             {
-                "protid": os.path.basename(structure_file).split(".pdb")[0],
+                "protid": os.path.basename(structure_filepath).split(".pdb")[0],
                 "pdb_origin": [origin],
                 "pdb_confidence": [confidence],
                 "pdb_chains": [chains],
@@ -311,27 +322,10 @@ def assess_pdbs(structures_list: list, output_file=None):
     return collector_df
 
 
-def read_txtlist(input_file: str):
-    """
-    Reads in a list of newline-separated file paths.
-
-    Args:
-        input_file (str): path of input text file.
-    """
-    with open(input_file) as f:
-        paths = [i.rstrip("\n") for i in f.readlines()]
-
-    return paths
-
-
 def main():
     args = parse_args()
-    textfile = args.textfile
-    output_file = args.output
-
-    files_list = read_txtlist(textfile)
-
-    assess_pdbs(structures_list=files_list, output_file=output_file)
+    structure_filepaths = Path(args.input).glob("*.pdb")
+    assess_pdbs(structure_filepaths, output_file=args.output)
 
 
 if __name__ == "__main__":

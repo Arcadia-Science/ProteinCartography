@@ -1,10 +1,6 @@
 import os
 from pathlib import Path
 
-###########################################
-## Parse config information
-###########################################
-
 
 # Default pipeline configuration parameters are in this file
 # If you create a new yml file and use the --configfile flag,
@@ -54,10 +50,6 @@ if "keyids" in config:
 else:
     KEYIDS = []
 
-###########################################
-## Setup directory structure
-###########################################
-
 # these directories fall within the output directory
 clusteringresults_dir = Path("clusteringresults/")
 benchmarks_dir = Path("benchmarks/")
@@ -70,8 +62,6 @@ for file in os.listdir(input_dir):
     if any(file.lower().endswith(suffix) for suffix in FASTA_FORMATS):
         file_id = os.path.splitext(file)[0]
         PROTID.append(file_id)
-
-######################################
 
 
 rule all:
@@ -88,11 +78,6 @@ rule all:
         output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html"),
 
 
-#####################################################################
-## clustering and dimensionality reduction
-#####################################################################
-
-
 rule assess_pdbs:
     """
     Calculates the quality of all PDBs downloaded from AlphaFold.
@@ -100,7 +85,6 @@ rule assess_pdbs:
     input:
         expand(input_dir / "{protid}.pdb", protid=PROTID),
     output:
-        pdb_paths=output_dir / clusteringresults_dir / "pdbpaths.txt",
         pdb_features=output_dir / clusteringresults_dir / "pdb_features.tsv",
     params:
         inputdir=input_dir,
@@ -108,8 +92,7 @@ rule assess_pdbs:
         output_dir / benchmarks_dir / "assess_pdbs.txt"
     shell:
         """
-        python ProteinCartography/prep_pdbpaths.py -d {params.inputdir} -o {output.pdb_paths}
-        python ProteinCartography/assess_pdbs.py -t {output.pdb_paths} -o {output.pdb_features}
+        python ProteinCartography/assess_pdbs.py -i {params.inputdir} -o {output.pdb_features}
         """
 
 
@@ -193,10 +176,6 @@ rule input_distances:
         python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
         """
 
-
-#####################################################################
-## aggregate features into a big TSV and make a nice plot
-#####################################################################
 
 aggregate_features_input_list = [
     output_dir / clusteringresults_dir / "struclusters_features.tsv",

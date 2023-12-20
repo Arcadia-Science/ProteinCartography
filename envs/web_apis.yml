@@ -8,5 +8,6 @@ dependencies:
   - pandas=2.0.1
   - requests=2.29.0
   - biopython=1.81
+  - ratelimiter=1.2.0
   - pip:
       - bioservices==1.11.2

@@ -54,7 +54,7 @@ def parse_args():
         help=f"which databases to use for mapping. defaults to {DEFAULT_DBS}",
     )
     parser.add_argument(
-        "-s", "--service", default=UniProtServices.BIOSERVICES.value, help="how to fetch mapping"
+        "-s", "--service", default=UniProtServices.REST.value, help="how to fetch mapping"
     )
     args = parser.parse_args()
     return args

@@ -46,34 +46,38 @@ def fetch_fasta(accession: str, output_dir: str):
         output_dir (str): path to the output directory.
         File will be saved as "{output_dir}/{accession}.fasta".
     """
-    u = UniProtWithExpBackoff()
+    uniprot = UniProtWithExpBackoff()
     output_path = Path(output_dir) / (accession + ".fasta")
 
     if not os.path.exists(output_path):
-        res = u.retrieve(accession, frmt="fasta")
-        with open(output_path, "w+") as f:
-            f.write(res)
+        res = uniprot.retrieve(accession, frmt="fasta")
+        with open(output_path, "w+") as file:
+            file.write(res)
 
 
-def fetch_pdb(accession: str, output_dir: str):
+def fetch_pdb(accession: str, output_dir: str, session=None):
     """
     Fetches a PDB file from AlphaFold, given an accession. Places the file in the output_dir.
 
     Args:
         accession (str): a valid UniprotKB accession.
         output_dir (str): path to the output directory.
-        File will be saved as "{output_dir}/{accession}.pdb".
+            File will be saved as "{output_dir}/{accession}.pdb".
+        session (requests.Session, optional): the requests session to use for the request.
     """
-    output_path = Path(output_dir) / (accession + ".pdb")
+    output_path = Path(output_dir) / f"{accession}.pdb"
     source = f"https://alphafold.ebi.ac.uk/files/AF-{accession}-F1-model_v4.pdb"
 
+    if session is None:
+        session = session_with_retry()
+
     if not os.path.exists(output_path):
-        result = session_with_retry().get(source)
+        result = session.get(source)
 
         # Write an output file regardless of the return code and message. The pipeline will filter
         # any error results when processing.
-        with open(output_path, "w") as fh:
-            fh.write(result.text)
+        with open(output_path, "w") as file:
+            file.write(result.text)
 
 
 # run this if called from the interpreter

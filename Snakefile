@@ -1,10 +1,6 @@
 import os
 from pathlib import Path
 
-###########################################
-## Parse config information
-###########################################
-
 
 # Default pipeline configuration parameters are in this file
 # If you create a new yml file and use the --configfile flag,
@@ -59,17 +55,16 @@ MODES = config["plotting_modes"]
 MIN_LENGTH = int(config["min_length"])
 MAX_LENGTH = int(config["max_length"])
 
-###########################################
-## Setup directory structure
-###########################################
-
 # these directories fall within the output directory
 blastresults_dir = Path("blastresults/")
 foldseekresults_dir = Path("foldseekresults/")
 foldseekclustering_dir = Path("foldseekclustering/")
+
+# directory in which to copy or download PDB files
+pdb_download_dir = output_dir / foldseekclustering_dir
+
 clusteringresults_dir = Path("clusteringresults/")
 benchmarks_dir = Path("benchmarks/")
-downloading_dir = Path("downloading/")
 
 # gets the protein ID based on FASTA file name
 # flexibly checks if fasta file is correct suffix
@@ -101,8 +96,6 @@ BLAST_OUTPUT_FIELDS = [
 ]
 BLAST_OUTFMT = '"' + " ".join(["6"] + BLAST_OUTPUT_FIELDS) + '"'
 
-######################################
-
 
 rule all:
     input:
@@ -124,11 +117,6 @@ rule all:
         ),
 
 
-###########################################
-## make .pdb files using esmfold API query
-###########################################
-
-
 rule make_pdb:
     """
     Use the ESMFold API query to generate a pdb from a fasta file.
@@ -148,10 +136,6 @@ rule make_pdb:
         """
 
 
-# Prioritize copying an existing PDB to the folder if the ID is also a blast/foldseek hit.
-ruleorder: copy_pdb > download_pdbs
-
-
 rule copy_pdb:
     """
     Copies existing or generated PDBs to the Foldseek clustering folder.
@@ -159,21 +143,16 @@ rule copy_pdb:
     input:
         input_dir / "{protid}.pdb",
     output:
-        output_dir / foldseekclustering_dir / "{protid}.pdb",
+        pdb_download_dir / "{protid}.pdb",
     shell:
         """
         cp {input} {output}
         """
 
 
-###########################################
-## perform blastp to full database using nr
-###########################################
-
-
 rule run_blast:
     """
-    Using files located in the input directory, perform BLAST using the web API.
+    Using files located in the input directory, run `blastp` using the remote BLAST API.
 
     Large proteins will cause remote BLAST to fail; you can still perform a manual BLAST search to get around this.
     """
@@ -249,19 +228,14 @@ rule map_refseqids:
         """
 
 
-######################################
-## perform Foldseek using web API
-######################################
-
-# Note: this returns a limited number of hits; up to 1000 per database
-
-
 rule run_foldseek:
     """
     Runs Foldseek using a query to the web API using a custom Python script.
     The script accepts an input file ending in '.pdb' and returns an output file ending in '.tar.gz'.
     The script also accepts a `--mode` flag of either '3diaa' (default) or 'tmalign' and choice of databases.
     After running, untars the files and extracts hits.
+
+    Note: the foldseek web API returns a limited number of hits; up to 1000 per database
     """
     input:
         cds=input_dir / "{protid}.pdb",
@@ -324,11 +298,6 @@ rule aggregate_foldseek_fraction_seq_identity:
         """
 
 
-#####################################################################
-## aggregate all hits, download metadata, download structure files
-#####################################################################
-
-
 rule aggregate_lists:
     """
     Take all Uniprot ID lists and make them one big ID list, removing duplicates.
@@ -387,85 +356,62 @@ rule filter_uniprot_hits:
         """
 
 
-checkpoint create_alphafold_wildcard:
+checkpoint download_pdbs:
     """
-    Create dummy files to make Snakemake detect a wildcard.
+    Download all PDB files from AlphaFold
     """
     input:
         jointlist=output_dir / clusteringresults_dir / "alphafold_querylist.txt",
     output:
-        directory(os.path.join(output_dir, "alphafold_dummy/")),
+        output_dir=directory(pdb_download_dir),
     params:
         max_structures=MAX_STRUCTURES,
-    shell:
-        """
-        python ProteinCartography/make_dummies.py -i {input.jointlist} -o {output} -M {params.max_structures}
-        """
-
-
-rule download_pdbs:
-    """
-    Use a checkpoint to parse all of the items in the output.jointlist file from aggregate lists and download all the PDBs.
-    """
-    input:
-        output_dir / "alphafold_dummy/{acc}.txt",
-    output:
-        output_dir / foldseekclustering_dir / "{acc}.pdb",
-    params:
-        outdir=output_dir / foldseekclustering_dir,
     benchmark:
-        output_dir / benchmarks_dir / downloading_dir / "{acc}.download_pdbs.txt"
+        output_dir / benchmarks_dir / "download_pdbs.txt"
     conda:
         "envs/web_apis.yml"
-    resources:
-        mem_mb=256,
-    threads: 1
-    localrule: True
     shell:
         """
-        python ProteinCartography/fetch_accession.py -a {wildcards.acc} -o {params.outdir} -f pdb
+        python ProteinCartography/download_pdbs.py -i {input.jointlist} -o {output.output_dir} -M {params.max_structures}
         """
 
 
-def checkpoint_create_alphafold_wildcard(wildcards):
-    # expand checkpoint to get acc values
-    checkpoint_output = checkpoints.create_alphafold_wildcard.get(**wildcards).output[0]
+def checkpoint_download_pdbs(wildcards):
+    """
+    Returns the paths to all PDB files
+    (both those downloaded in `download_pdbs` and those corresponding to the input proteins)
+    """
+    # the directory containing the PDB files
+    pdb_dirpath = checkpoints.download_pdbs.get(**wildcards).output.output_dir
 
-    # trawls the checkpoint_output file for .txt files
-    # and generates expected .pdb file names for foldseekclustering_dir
-    file_names = expand(
-        output_dir / foldseekclustering_dir / "{acc}.pdb",
-        acc=glob_wildcards(os.path.join(checkpoint_output, "{acc}.txt")).acc,
-    ) + expand(output_dir / foldseekclustering_dir / "{protid}.pdb", protid=PROTID)
-    return file_names
+    # the paths to the PDB files downloaded in `download_pdbs`
+    pdb_filepaths = sorted(Path(pdb_dirpath).glob("*.pdb"))
+
+    # append the paths to the PDB files corresponding to the input proteins
+    # note: this triggers the `copy_pdb` rule to copy the input PDB files from `input_dir`
+    pdb_filepaths += expand(pdb_download_dir / "{protid}.pdb", protid=PROTID)
+    return pdb_filepaths
 
 
 rule assess_pdbs:
     """
-    Calculates the quality of all PDBs downloaded from AlphaFold.
+    Calculates the quality of all PDBs
+    (those downloaded from AlphaFold and those corresponding to the input proteins).
     """
     input:
-        checkpoint_create_alphafold_wildcard,
+        checkpoint_download_pdbs,
     output:
-        pdb_paths=output_dir / clusteringresults_dir / "pdbpaths.txt",
         pdb_features=output_dir / clusteringresults_dir / "pdb_features.tsv",
     params:
-        inputdir=input_dir,
-        clusteringdir=output_dir / foldseekclustering_dir,
+        pdb_download_dir=pdb_download_dir,
     benchmark:
         output_dir / benchmarks_dir / "assess_pdbs.txt"
     conda:
         "envs/plotting.yml"
     shell:
         """
-        python ProteinCartography/prep_pdbpaths.py -d {params.clusteringdir} {params.inputdir} -o {output.pdb_paths}
-        python ProteinCartography/assess_pdbs.py -t {output.pdb_paths} -o {output.pdb_features}
+        python ProteinCartography/assess_pdbs.py -i {params.pdb_download_dir} -o {output.pdb_features}
         """
-
-
-#####################################################################
-## clustering and dimensionality reduction
-#####################################################################
 
 
 rule foldseek_clustering:
@@ -473,12 +419,12 @@ rule foldseek_clustering:
     Runs foldseek all-v-all TM-score comparison and foldseek clustering.
     """
     input:
-        checkpoint_create_alphafold_wildcard,
+        checkpoint_download_pdbs,
     output:
         allvall_pivot=output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
         struclusters_features=output_dir / clusteringresults_dir / "struclusters_features.tsv",
     params:
-        querydir=output_dir / foldseekclustering_dir,
+        querydir=pdb_download_dir,
         resultsdir=output_dir / clusteringresults_dir,
     conda:
         "envs/foldseek.yml"
@@ -602,11 +548,6 @@ rule get_source:
         """
 
 
-#####################################################################
-## aggregate features into a big TSV and make a nice plot
-#####################################################################
-
-
 rule aggregate_features:
     """
     Aggregate all TSV features provided by user in some specific directory, making one big TSV
@@ -710,11 +651,6 @@ rule plot_similarity_strucluster:
         """
         python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
         """
-
-
-##########################################
-## protein annotation semantic analyses ##
-##########################################
 
 
 rule plot_semantic_analysis:

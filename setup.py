@@ -22,7 +22,6 @@ setup(
         "ProteinCartography/foldseek_clustering.py",
         "ProteinCartography/get_source.py",
         "ProteinCartography/leiden_clustering.py",
-        "ProteinCartography/make_dummies.py",
         "ProteinCartography/map_refseqids.py",
         "ProteinCartography/plot_interactive.py",
         "ProteinCartography/query_uniprot.py",
