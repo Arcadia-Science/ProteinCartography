@@ -3,6 +3,9 @@ name: test
 # run unit and integration tests for the ProteinCartography package
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
