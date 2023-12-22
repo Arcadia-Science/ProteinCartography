@@ -63,49 +63,21 @@ def stage_inputs(integration_test_artifacts_dirpath, config_filepath):
         integration_test_artifacts_dirpath / dataset_name / "input", config["input_dir"]
     )
 
-    # copy the blastresults.csv file to the input directory
-    # so it can be used by the `mock_run_blast` rule to mock the output of the `run_blast` rule
-    shutil.copy(
-        integration_test_artifacts_dirpath / dataset_name / "output" / "P60709.blastresults.tsv",
-        config["input_dir"],
-    )
-
 
 @pytest.fixture
 def snakefile_filepath(repo_dirpath):
     """
-    Generate a snakefile with the `run_blast` rule overridden by a `mock_run_blast` rule
-    to eliminate the call to `blastp`
+    Generate a temporary snakefile for testing the pipeline
 
-    TODO (KC): to avoid this super ugly hack, wrap the call to blastp in a python method
-    that can be patched
+    Note: currently this is just a copy of the real snakefile,
+    but in the future we may need to modify it for testing (to, e.g., override certain rules)
     """
-
-    # copy the snakefile to a temporary file
     # note: snakemake requires that the `envs/` dir be relative to the dir containing the snakefile,
     # so we cannot write the modified snakefile to the tmp_path directory but instead must write it
     # to the repo directory and manually remove it after the test has run
     filepath = repo_dirpath / "Snakefile_tmp"
     shutil.copy(repo_dirpath / "Snakefile", filepath)
-
-    # define a rule to copy the blastresults.tsv file from the input to the output directory
-    # and prioritize it over the `run_blast` rule to prevent the latter from being called
-    mock_run_blast_rule = """
-rule mock_run_blast:
-    input:
-        cached_blast_results=input_dir / "{protid}.blastresults.tsv"
-    output:
-        blastresults=output_dir / blastresults_dir / "{protid}.blastresults.tsv"
-    shell:
-        "cp {input.cached_blast_results} {output.blastresults}"
-ruleorder: mock_run_blast > run_blast
-    """
-
-    with open(repo_dirpath / "Snakefile_tmp", "a") as file:
-        file.write(mock_run_blast_rule)
-
     yield filepath
-
     os.remove(filepath)
 
 

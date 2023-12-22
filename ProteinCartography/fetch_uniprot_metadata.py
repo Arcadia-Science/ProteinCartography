@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 from api_utils import UniProtWithExpBackoff, session_with_retry
 from constants import UniProtServices
-from tests import api_mocks
+from tests import mocks
 
 # if necessary, mock the `uniprot.search` method (used by `query_uniprot`)
-# see comments in `tests.api_mocks` for more details
+# see comments in `tests.mocks` for more details
 if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
-    api_mocks.mock_bioservices_uniprot_search()
+    mocks.mock_bioservices_uniprot_search()
 
 # only import these functions when using import *
 __all__ = ["query_uniprot"]

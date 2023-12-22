@@ -8,6 +8,7 @@ envs/src/**
 /demo/output/
 /demo/input/
 /logs
+/tmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

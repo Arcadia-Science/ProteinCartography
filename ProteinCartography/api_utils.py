@@ -5,7 +5,7 @@ from bioservices import UniProt
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from tests import api_mocks, artifact_generation_utils
+from tests import artifact_generation_utils, mocks
 
 __all__ = ["session_with_retry", "DefaultExpBackoffRetry", "UniProtWithExpBackoff"]
 
@@ -17,7 +17,7 @@ USER_AGENT_HEADER = {"User-Agent": "ProteinCartography/0.4 (Arcadia Science) pyt
 # it is set by the `set_env_variables` pytest fixture during test setup;
 # it should be used only during testing and *not* in production
 if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
-    api_mocks.mock_requests_session_request()
+    mocks.mock_requests_session_request()
 
 # If necessary, use the custom (and crude) `HTTPAdapterWithLogging` class in place of `HTTPAdapter`
 # to log the API requests made by the pipeline

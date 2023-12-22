@@ -41,11 +41,11 @@ UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 MAX_BLASTHITS = int(config["max_blasthits"])
 MAX_FOLDSEEKHITS = int(config["max_foldseekhits"])
 
+BLAST_EVALUE = float(config["blast_evalue"])
 BLAST_WORD_SIZE = int(config["blast_word_size"])
 BLAST_WORD_SIZE_BACKOFF = int(config["blast_word_size_backoff"])
-BLAST_WORD_SIZE_ATTEMPTS_BEFORE_BACKOFF = int(config["blast_word_size_attempts_before_backoff"])
+BLAST_NUM_ATTEMPTS = int(config["blast_num_attempts"])
 
-BLAST_EVALUE = float(config["blast_evalue"])
 MAX_STRUCTURES = int(config["max_structures"])
 
 FS_DATABASES = config["foldseek_databases"]
@@ -157,35 +157,31 @@ rule run_blast:
     Large proteins will cause remote BLAST to fail; you can still perform a manual BLAST search to get around this.
     """
     input:
-        cds=input_dir / "{protid}.fasta",
+        fasta_file=input_dir / "{protid}.fasta",
     output:
-        blastresults=output_dir / blastresults_dir / "{protid}.blastresults.tsv",
+        blast_results=output_dir / blastresults_dir / "{protid}.blastresults.tsv",
     params:
-        max_blasthits=MAX_BLASTHITS,
-        blast_word_size=lambda wildcards, resources: BLAST_WORD_SIZE
-        if resources.blast_attempts <= BLAST_WORD_SIZE_ATTEMPTS_BEFORE_BACKOFF
-        else BLAST_WORD_SIZE_BACKOFF,
-        blast_evalue=BLAST_EVALUE,
-        blast_outfmt=BLAST_OUTFMT,
-    resources:
-        # Workaround to update the number of blast attempts; `attempt` only available in `resources` section, not in `params`:
-        # https://github.com/snakemake/snakemake/issues/499
-        blast_attempts=lambda wildcards, attempt: attempt,
+        max_target_seqs=MAX_BLASTHITS,
+        outfmt=BLAST_OUTFMT,
+        word_size=BLAST_WORD_SIZE,
+        word_size_backoff=BLAST_WORD_SIZE_BACKOFF,
+        evalue=BLAST_EVALUE,
+        num_attempts=BLAST_NUM_ATTEMPTS,
     benchmark:
         output_dir / benchmarks_dir / "{protid}.run_blast.txt"
     conda:
         "envs/blast.yml"
     shell:
         """
-        blastp \
-          -db nr \
-          -query {input.cds} \
-          -out {output.blastresults} \
-          -remote \
-          -max_target_seqs {params.max_blasthits} \
-          -outfmt {params.blast_outfmt} \
-          -word_size {params.blast_word_size} \
-          -evalue {params.blast_evalue}
+        python ProteinCartography/run_blast.py \
+          --query {input.fasta_file} \
+          --out {output.blast_results} \
+          --max_target_seqs {params.max_target_seqs} \
+          --outfmt {params.outfmt} \
+          --word_size {params.word_size} \
+          --word_size_backoff {params.word_size_backoff} \
+          --num_attempts {params.num_attempts} \
+          --evalue {params.evalue}
         """
 
 
