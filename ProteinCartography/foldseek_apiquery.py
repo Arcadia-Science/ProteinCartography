@@ -31,6 +31,7 @@ SET_DATABASES = [
     "gmgcl_id",
 ]
 DEFAULT_DATABASES = ["afdb50", "afdb-swissprot", "afdb-proteome"]
+FOLDSEEK_SERVER_TIMEOUT = 60 * 30  # 30 minutes
 
 
 # parse command line arguments
@@ -149,10 +150,9 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
     # poll until the job was successful or failed
     repeat = True
-    tries = 0
-    limit = 10
+    elapsed = 0
     sleep_time = 30 if "search.foldseek.com" in server else 5
-    while repeat and tries < limit:
+    while repeat and elapsed < FOLDSEEK_SERVER_TIMEOUT:
         status = (
             session_with_retry()
             .get(
@@ -166,11 +166,11 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
 
         # wait a short time between poll requests
         sleep(sleep_time)
-        tries += 1
+        elapsed += sleep_time
         repeat = status["status"] != "COMPLETE"
 
-    if tries == 10:
-        sys.exit(f"The ticket failed to complete after {tries * sleep_time} seconds.")
+    if elapsed > FOLDSEEK_SERVER_TIMEOUT:
+        sys.exit(f"The ticket failed to complete after {elapsed} seconds.")
 
     # download blast compatible result archive
     download = session_with_retry().get(
