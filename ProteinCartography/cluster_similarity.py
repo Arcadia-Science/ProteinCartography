@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 import argparse
 
-import arcadia_pycolor as apc
 import numpy as np
 import pandas as pd
 import plotly.express as px
-
-arcadia_viridis = apc.Gradients["arcadia:viridis"].grad_nested_list
+from color_utils import arcadia_viridis
 
 __all__ = ["calculate_group_similarity", "plot_group_similarity"]
 

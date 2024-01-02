@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from matplotlib.ticker import MaxNLocator
-from plot_interactive import extend_colors
 from plotly.subplots import make_subplots
 from wordcloud import WordCloud
 
@@ -120,7 +119,7 @@ def plot_semantic_analysis(
     used_colors = colors
 
     if len(used_colors) < n_groups:
-        used_colors = used_colors + extend_colors([1] * n_groups, used_colors)
+        used_colors = apc.extend_colors(used_colors, n_groups)
 
     # set plot row parameters based on number of groups and columns
     n_rows = int(np.ceil(len(groupedby_agg_df) / n_cols))
@@ -251,7 +250,7 @@ def count_features(
     used_colors = colors
 
     if len(used_colors) < n_groups:
-        used_colors = used_colors + extend_colors([1] * n_groups, used_colors)
+        used_colors = apc.extend_colors(used_colors, n_groups)
 
     # collectors for plot information
     annotation_count_dict = {}
@@ -402,7 +401,7 @@ def semantic_multiplot_plotly(
     used_colors = colors
 
     if len(used_colors) < n_groups:
-        used_colors = used_colors + extend_colors([1] * n_groups, used_colors)
+        used_colors = apc.extend_colors(used_colors, n_groups)
 
     colors_dict = dict(zip(count_features_results["annotation_count"].keys(), used_colors))
 

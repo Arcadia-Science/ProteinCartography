@@ -1,130 +1,47 @@
 #!/usr/bin/env python
 import argparse
-import colorsys
+import textwrap
+from typing import Optional, Union
 
 import arcadia_pycolor as apc
-import matplotlib.colors as mc
 import numpy as np
 import pandas as pd
 import plotly
 import plotly.express as px
 import plotly.graph_objects as go
+from color_utils import (
+    ANNOTATION_SCORE_COLOR_DICT,
+    BAC_COLOR_DICT,
+    EUK_COLOR_DICT,
+    PDB_ORIGIN_COLOR_DICT,
+    PLDDT_CMAP,
+    SOURCE_COLOR_DICT,
+    arcadia_cividis_r,
+    arcadia_magma,
+    arcadia_poppies_r,
+    arcadia_viridis,
+)
 
 # only import these functions when using import *
 __all__ = [
-    "adjust_lightness",
     "apply_coordinates",
     "assign_taxon",
-    "extend_colors",
     "rescale_list",
     "generate_plotting_rules",
     "plot_interactive",
-    "ANNOTATION_SCORE_COLORS",
-    "EUK_COLOR_DICT",
-    "BAC_COLOR_DICT",
-    "SOURCE_COLOR_DICT",
 ]
 
-##############################
-## Standard plotting colors ##
-##############################
-
-arcadia_viridis = apc.Gradients["arcadia:viridis"].grad_nested_list
-arcadia_viridis_r = apc.Gradients["arcadia:viridis_r"].grad_nested_list
-
-arcadia_magma = apc.Gradients["arcadia:magma"].grad_nested_list
-arcadia_magma_r = apc.Gradients["arcadia:magma_r"].grad_nested_list
-
-arcadia_cividis = apc.Gradients["arcadia:cividis"].grad_nested_list
-arcadia_cividis_r = apc.Gradients["arcadia:cividis_r"].grad_nested_list
-
-arcadia_poppies = apc.Gradients["arcadia:poppies"].grad_nested_list
-arcadia_poppies_r = apc.Gradients["arcadia:poppies_r"].grad_nested_list
-
-arcadia_pansies = apc.Gradients["arcadia:pansies"].grad_nested_list
-arcadia_pansies_r = apc.Gradients["arcadia:pansies_r"].grad_nested_list
-
-arcadia_dahlias = apc.Gradients["arcadia:dahlias"].grad_nested_list
-arcadia_dahlias_r = apc.Gradients["arcadia:dahlias_r"].grad_nested_list
-
-plddt_gradient_dict = {
-    "color_dict": apc.dragon
-    | apc.amber
-    | apc.canary
-    | apc.vitalblue
-    | {"arcadia:cobalt": "#4A72B0"},
-    "values": [0, 0.25, 0.6, 0.8, 1],
-}
-
-# instantiate a new Gradient object
-plddt_gradient = apc.Gradient(
-    name="my_gradient",
-    color_dict=plddt_gradient_dict["color_dict"],
-    values=plddt_gradient_dict["values"],
-)
-
-plddt_cmap = plddt_gradient.grad_nested_list
-
-ANNOTATION_SCORE_COLORS = [
-    apc.All["arcadia:brightgrey"],
-    apc.All["arcadia:aster"],
-    apc.All["arcadia:aegean"],
-    apc.All["arcadia:seaweed"],
-    apc.All["arcadia:lime"],
-    apc.All["arcadia:canary"],
-]
-
-ANNOTATION_SCORE_COLOR_DICT = dict(zip([str(i) for i in range(6)], ANNOTATION_SCORE_COLORS))
-
-EUK_COLOR_DICT = {
-    "Mammalia": apc.All["arcadia:oat"],
-    "Vertebrata": apc.All["arcadia:canary"],
-    "Arthropoda": apc.All["arcadia:seaweed"],
-    "Ecdysozoa": apc.All["arcadia:mint"],
-    "Lophotrochozoa": apc.All["arcadia:aegean"],
-    "Metazoa": apc.All["arcadia:amber"],
-    "Fungi": apc.All["arcadia:chateau"],
-    "Viridiplantae": apc.All["arcadia:lime"],
-    "Sar": apc.All["arcadia:rose"],
-    "Excavata": apc.All["arcadia:wish"],
-    "Amoebazoa": apc.All["arcadia:periwinkle"],
-    "Eukaryota": apc.All["arcadia:aster"],
-    "Bacteria": apc.All["arcadia:slate"],
-    "Archaea": apc.All["arcadia:dragon"],
-    "Viruses": apc.All["arcadia:denim"],
-}
-
-BAC_COLOR_DICT = {
-    "Pseudomonadota": apc.All["arcadia:periwinkle"],
-    "Nitrospirae": apc.All["arcadia:vitalblue"],
-    "Acidobacteria": apc.All["arcadia:mars"],
-    "Bacillota": apc.All["arcadia:mint"],
-    "Spirochaetes": apc.All["arcadia:aegean"],
-    "Cyanobacteria": apc.All["arcadia:seaweed"],
-    "Actinomycetota": apc.All["arcadia:canary"],
-    "Deinococcota": apc.All["arcadia:rose"],
-    "Bacteria": apc.All["arcadia:slate"],
-    "Archaea": apc.All["arcadia:dragon"],
-    "Viruses": apc.All["arcadia:denim"],
-    "Metazoa": apc.All["arcadia:amber"],
-    "Fungi": apc.All["arcadia:chateau"],
-    "Viridiplantae": apc.All["arcadia:lime"],
-    "Eukaryota": apc.All["arcadia:wish"],
-}
-
-SOURCE_COLOR_DICT = {
-    "blast": apc.All["arcadia:canary"],
-    "foldseek": apc.All["arcadia:aegean"],
-    "blast+foldseek": apc.All["arcadia:amber"],
-    "None": apc.All["arcadia:brightgrey"],
-}
-
-PDB_ORIGIN_COLOR_DICT = {
-    "AlphaFold": "#4A72B0",
-    "ESMFold": apc.All["arcadia:vitalblue"],
-    "PDB": apc.All["arcadia:bluesky"],
-    "Other": apc.All["arcadia:marineblue"],
-    "None": apc.All["arcadia:brightgrey"],
+COLORBAR_DEFAULT_DICT = {
+    "x": 0.5,
+    "y": 0,
+    "orientation": "h",
+    "xanchor": "center",
+    "yanchor": "top",
+    "ticklabelposition": "inside top",
+    "title_font_size": 14,
+    "title_side": "bottom",
+    "len": 0.7,
+    "thickness": 20,
 }
 
 ###############
@@ -170,33 +87,15 @@ def parse_args():
     return args
 
 
-def adjust_lightness(color: str, amount=0.5) -> str:
+def rescale_list(values: list[Union[int, float]], new_min: float, new_max: float):
     """
-    Takes a HEX code or matplotlib color name and adjusts the lightness.
-    Values < 1 result in a darker color, whereas values > 1 result in a lighter color.
+    Rescales a list of values to a new range.
 
     Args:
-        color (str): hex value (e.g. "#FEACAF") or a valid matplotlib color name (e.g. "tab:blue").
-        amount (float): values < 1 produce a darker color and values > 1 produce a lighter color.
-    Returns:
-        resulting color as HEX string.
+        values (list): list of values to rescale.
+        new_min (float): minimum value of new range to rescale to.
+        new_max (float): maximum value of new range to rescale to.
     """
-    try:
-        color_string = mc.cnames[color]
-    except KeyError:
-        color_string = color
-
-    # convert rgb to hls
-    color_string = colorsys.rgb_to_hls(*mc.to_rgb(color_string))
-    # adjust the lightness in hls space and convert back to rgb
-    color_string2 = colorsys.hls_to_rgb(
-        color_string[0], max(0, min(1, amount * color_string[1])), color_string[2]
-    )
-    # return the new rgb as a hex value
-    return mc.to_hex(color_string2)
-
-
-def rescale_list(values, new_min, new_max):
     # Find the original minimum and maximum values
     original_min = min(values)
     original_max = max(values)
@@ -225,10 +124,10 @@ def rescale_list(values, new_min, new_max):
 def apply_coordinates(
     dimensions_file: str,
     features_file: str,
-    saveprefix=None,
-    dimtype=None,
-    save=False,
-    prep_step=False,
+    saveprefix: Optional[str] = None,
+    dimtype: Optional[str] = None,
+    save: bool = False,
+    prep_step: bool = False,
 ):
     """
     Adds coordinate information for data from the dimensions file to the aggregated features file.
@@ -314,40 +213,21 @@ def assign_taxon(taxon_list: list, rank_list: list, hierarchical=False, sep=",")
         return sep.join(output)
 
 
-def extend_colors(color_keys: list, color_order: list, steps=(0.7, 0.5, 0.3)) -> list:
+def generate_plotting_rules(
+    taxon_focus: str,
+    keyids: Optional[list] = None,
+    wordwrap: bool = True,
+    num_decimals=4,
+) -> dict:
     """
-    Checks a list of keys and colors and extends the colors list as needed.
+    Generates plotting rules dictionary for use in plot_interactive.
 
     Args:
-        color_keys (list): list of color keys
-        color_order (list): list of HEX colors
-        steps (list): float list of potential lightness adjustments to make
-    Returns:
-        extended list of colors, not including original colors
+        taxon_focus (str): taxonomic focus for broad taxon plot, either 'euk' or 'bac'.
+        keyids (list): list of keyids for plotting.
+        version (str): version of the aggregated features file.
+        wordwrap (bool): whether or not to wordwrap long hovertext fields.
     """
-    num_cycles = int(np.ceil(len(color_keys) / len(color_order)))
-
-    # collector for additional colors
-    more_colors = []
-
-    # if there aren't enough cycles, die
-    if num_cycles > len(steps):
-        raise Exception(
-            f"Can create up to {len(steps) * len(color_order)} colors to use.\n"
-            f"Needed {len(color_keys)} colors."
-        )
-
-    # create additional colors and add to collector
-    for _ in range(num_cycles - 1):
-        color_order_duplicated = [adjust_lightness(color) for color in color_order]
-        more_colors.extend(color_order_duplicated)
-
-    return more_colors
-
-
-def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") -> dict:
-    # color dictionary for annotation score (values from 0 to 5)
-    annotationScore_color_dict = ANNOTATION_SCORE_COLOR_DICT
 
     # if the taxonomic focus is eukaryote, use these groupings and colors
     if taxon_focus == "euk":
@@ -357,148 +237,83 @@ def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") ->
     elif taxon_focus == "bac":
         taxon_color_dict = BAC_COLOR_DICT
 
-    # use this color dictionary for the sources (blast vs foldseek vs blast+foldseek)
-    source_color_dict = SOURCE_COLOR_DICT
-
-    pdb_origin_color_dict = PDB_ORIGIN_COLOR_DICT
-
-    plotting_rules = {}
-
-    if version == "current":
-        # use this dictionary as default plotting rules
-        # the order of elements in this dictionary determines their order
-        # both in the plotting dropdown list and the hovertext
-        plotting_rules = {
-            "Protein names": {
-                "type": "hovertext",  # this data only shows up in hovertext
-                "fillna": "",
-                "textlabel": "Protein name",
-            },
-            "Gene Names (primary)": {
-                "type": "hovertext",  # this data only shows up in hovertext
-                "fillna": "",
-                "textlabel": "Gene name",
-            },
-            "Organism": {
-                "type": "hovertext",  # this data only shows up in hovertext
-                "fillna": "",
-                "textlabel": "Organism",
-            },
-            "LeidenCluster": {
-                "type": "categorical",
-                "fillna": "None",
-                "apply": lambda x: str(
-                    x
-                ),  # Leiden cluster is often read as int; this forces it to be string
-                "color_order": apc.Palettes["arcadia:AccentAllOrdered"].colors,
-                "textlabel": "Leiden Cluster",
-            },
-            "Annotation": {
-                "type": "categorical",
-                "fillna": 0,
-                "apply": lambda x: str(
-                    int(x)
-                ),  # Annotation score is parsed as float but we want it to be string
-                "color_dict": annotationScore_color_dict,
-                "textlabel": "Annotation Score",
-            },
-            "Lineage": {
-                "type": "taxonomic",
-                "fillna": "[]",
-                "apply": lambda x: eval(
-                    x
-                ),  # This converts the taxonomic groupings from a string-ified list to a real list
-                "taxon_order": taxon_color_dict.keys(),
-                "color_order": taxon_color_dict.values(),
-                "textlabel": "Broad Taxon",
-                "skip_hover": True,
-            },
-            "Length": {
-                "type": "continuous",
-                "fillna": 0,
-                "textlabel": "Length",
-                "color_scale": arcadia_cividis_r,
-            },
-            "source.method": {
-                "type": "categorical",
-                "fillna": "None",
-                "color_dict": source_color_dict,
-                "textlabel": "Source",
-            },
-            "pdb_origin": {
-                "type": "categorical",
-                "fillna": "None",
-                "color_dict": pdb_origin_color_dict,
-                "textlabel": "PDB Origin",
-            },
-            "pdb_confidence": {
-                "type": "continuous",
-                "fillna": -1,
-                "textlabel": "Mean pLDDT",
-                "color_scale": plddt_cmap,
-                "cmin": 0,
-                "cmax": 100,
-            },
-        }
-    elif version == "v0.2.0" or "v0.2":
-        plotting_rules = {
-            "proteinDescription.recommendedName.fullName.value": {
-                "type": "hovertext",  # this data only shows up in hovertext
-                "fillna": "",
-                "textlabel": "Description",
-            },
-            "organism.scientificName": {
-                "type": "hovertext",  # this data only shows up in hovertext
-                "fillna": "",
-                "textlabel": "Species",
-            },
-            "organism.commonName": {
-                "type": "hovertext",  # this data only shows up in hovertext
-                "fillna": "",
-                "textlabel": "Common name",
-            },
-            "LeidenCluster": {
-                "type": "categorical",
-                "fillna": "None",
-                "apply": lambda x: str(
-                    x
-                ),  # Leiden cluster is often read as int; this forces it to be string
-                "color_order": apc.Palettes["arcadia:AccentAllOrdered"].colors,
-                "textlabel": "Leiden Cluster",
-            },
-            "annotationScore": {
-                "type": "categorical",
-                "fillna": 0,
-                "apply": lambda x: str(
-                    int(x)
-                ),  # Annotation score is parsed as float but we want it to be string
-                "color_dict": annotationScore_color_dict,
-                "textlabel": "Annotation Score",
-            },
-            "organism.lineage": {
-                "type": "taxonomic",
-                "fillna": "[]",
-                "apply": lambda x: eval(
-                    x
-                ),  # This converts the taxonomic groupings from a string-ified list to a real list
-                "taxon_order": taxon_color_dict.keys(),
-                "color_order": taxon_color_dict.values(),
-                "textlabel": "Broad Taxon",
-                "skip_hover": True,
-            },
-            "sequence.length": {
-                "type": "continuous",
-                "fillna": 0,
-                "textlabel": "Length",
-                "color_scale": arcadia_cividis_r,
-            },
-            "source.method": {
-                "type": "categorical",
-                "fillna": "None",
-                "color_dict": source_color_dict,
-                "textlabel": "Source",
-            },
-        }
+    # use this dictionary as default plotting rules
+    # the order of elements in this dictionary determines their order
+    # both in the plotting dropdown list and the hovertext
+    # long text (>40 characters) in some hovertext fields is now wrapped
+    plotting_rules = {
+        "Protein names": {
+            "type": "hovertext",  # this data only shows up in hovertext
+            "fillna": "",
+            "textlabel": "Protein name",
+        },
+        "Gene Names (primary)": {
+            "type": "hovertext",  # this data only shows up in hovertext
+            "fillna": "",
+            "textlabel": "Gene name",
+        },
+        "Organism": {
+            "type": "hovertext",  # this data only shows up in hovertext
+            "fillna": "",
+            "textlabel": "Organism",
+        },
+        "LeidenCluster": {
+            "type": "categorical",
+            "fillna": "None",
+            "apply": lambda x: str(
+                x
+            ),  # Leiden cluster is often read as int; this forces it to be string
+            "color_order": apc.Palettes["arcadia:AccentAllOrdered"].colors,
+            "textlabel": "Leiden Cluster",
+        },
+        "Annotation": {
+            "type": "categorical",
+            "fillna": 0,
+            "apply": lambda x: str(
+                int(x)
+            ),  # Annotation score is parsed as float but we want it to be string
+            "color_dict": ANNOTATION_SCORE_COLOR_DICT,
+            "textlabel": "Annotation Score",
+        },
+        "Lineage": {
+            "type": "taxonomic",
+            "fillna": "[]",
+            "apply": lambda x: eval(
+                x
+            ),  # This converts the taxonomic groupings from a string-ified list to a real list
+            "taxon_order": taxon_color_dict.keys(),
+            "color_order": taxon_color_dict.values(),
+            "textlabel": "Broad Taxon",
+            "skip_hover": True,
+        },
+        "Length": {
+            "type": "continuous",
+            "fillna": 0,
+            "textlabel": "Length",
+            "color_scale": arcadia_cividis_r,
+        },
+        "source.method": {
+            "type": "categorical",
+            "fillna": "None",
+            "color_dict": SOURCE_COLOR_DICT,
+            "textlabel": "Source",
+        },
+        "pdb_origin": {
+            "type": "categorical",
+            "fillna": "None",
+            "color_dict": PDB_ORIGIN_COLOR_DICT,
+            "textlabel": "PDB Origin",
+        },
+        "pdb_confidence": {
+            "type": "continuous",
+            "fillna": -1,
+            "textlabel": "Mean pLDDT",
+            "color_scale": PLDDT_CMAP,
+            "cmin": 0,
+            "cmax": 100,
+            "apply": lambda x: round(x, num_decimals),
+        },
+    }
 
     # Add additional plotting rules for each keyid (usually the input protein)
     if keyids is not None:
@@ -506,6 +321,7 @@ def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") ->
             # Add a plot for tmscore to each input protein
             plotting_rules[f"TMscore_v_{keyid}"] = {
                 "type": "continuous",
+                "apply": lambda x: round(x, num_decimals),
                 "fillna": -0.01,
                 "textlabel": f"TMscore vs. {keyid}",
                 "color_scale": arcadia_viridis,
@@ -514,6 +330,7 @@ def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") ->
             }
             plotting_rules[f"fident_v_{keyid}"] = {
                 "type": "continuous",
+                "apply": lambda x: round(x, num_decimals),
                 "fillna": -0.01,
                 "textlabel": f"Fraction seq identity vs. {keyid}",
                 "color_scale": arcadia_magma,
@@ -522,6 +339,7 @@ def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") ->
             }
             plotting_rules[f"concordance_v_{keyid}"] = {
                 "type": "continuous",
+                "apply": lambda x: round(x, num_decimals),
                 "fillna": -1.01,
                 "textlabel": f"Concordance vs. {keyid}",
                 "color_scale": arcadia_poppies_r,
@@ -537,22 +355,408 @@ def generate_plotting_rules(taxon_focus: str, keyids=None, version="current") ->
                 "textlabel": f"Blast/Foldseek Hit to {keyid}",
             }
 
+    # wordwrap long columns in hovertext
+    if wordwrap:
+        for rule in plotting_rules:
+            if rule in ["Protein names", "Gene Names (primary)", "Organism"]:
+                plotting_rules[rule]["apply"] = (
+                    lambda x: "</br>".join(textwrap.wrap(x, width=40)),
+                )
+
     return plotting_rules
+
+
+def preprocess_dataframe(
+    plotting_rules: dict,
+    df: pd.DataFrame,
+):
+    """
+    Preprocesses a dataframe based on the plotting rules.
+    Fills NAs and applies functions as needed.
+
+    Args:
+        plotting_rules (dict): plotting rules dictionary.
+        df (pd.DataFrame): dataframe to preprocess.
+    """
+    for col in plotting_rules:
+        if col not in df.columns:
+            continue
+
+        # if the plotting rule 'fillna' is present, fills NAs with that value
+        if "fillna" in plotting_rules[col].keys():
+            df[col] = df[col].fillna(plotting_rules[col]["fillna"])
+
+        # if the plotting rule 'apply' is present, applies that function
+        if "apply" in plotting_rules[col].keys():
+            df[col] = df[col].apply(plotting_rules[col]["apply"])
+
+
+def generate_hovertemplate(
+    plotting_rules: dict,
+    df: pd.DataFrame,
+    custom_data: list,
+):
+    """
+    Generates a hovertemplate based on the plotting rules.
+    Plotly hovertemplates are a text string that can be formatted with custom data.
+
+    Args:
+        plotting_rules (dict): plotting rules dictionary.
+        df (pd.DataFrame): dataframe to use for generating hovertemplate.
+    """
+    # generate a hover template text string
+    # custom data in plotly is indexed by order
+    hovertemplate_generator = ["<b>%{customdata[0]}</b></br>––––––––––––"]
+    # pass in the custom data columns
+    # this sets protid as customdata[0]
+    # and the rest of the plotting rules in order
+
+    # iterate through plotting rules, applying relevant rules
+    for col in plotting_rules:
+        if col not in df.columns:
+            continue
+
+        # if you want to skip an element from being added to hover text
+        if "skip_hover" in plotting_rules[col].keys():
+            continue
+
+        # sets up hover text based on 'textlabel' attributes
+        if "textlabel" in plotting_rules[col].keys():
+            hovertext_label = plotting_rules[col]["textlabel"]
+        else:
+            hovertext_label = col
+
+        # generates hoverlabel custom text string for that column
+        # This doesn't work properly if the column is NA for that value.
+        col_index = custom_data.index(col)
+
+        hovertemplate_item = "<b>" + hovertext_label + "</b>: %{customdata[" + str(col_index) + "]}"
+        hovertemplate_generator.append(hovertemplate_item)
+
+    hovertemplate = "<br>".join(hovertemplate_generator)
+
+    return hovertemplate
+
+
+def generate_scatterplot(
+    plotting_rule: dict,
+    col: str,
+    df: pd.DataFrame,
+    custom_data: list,
+    dim1: str,
+    dim2: str,
+):
+    """
+    Generates a scatterplot based on the plotting rules.
+
+    Args:
+        plotting_rule (dict): plotting rule dictionary for the specific column.
+        col (str): column name to plot based on rules.
+        df (pd.DataFrame): dataframe to use for generating hovertemplate.
+        custom_data (list): list of custom data columns that were included in the hovertemplate.
+        dim1 (str): name of first dimension, the x value.
+        dim2 (str): name of second dimension, the y value.
+    """
+    # Plotting rules for categorical plots
+    if plotting_rule["type"] == "categorical":
+        color_keys = np.sort(df[col].unique())
+
+        # if a color dict is specified, use that color dict
+        if "color_dict" in plotting_rule.keys():
+            colors_dict = plotting_rule["color_dict"]
+
+            # make sure there's at least one entry for every possible value for that column
+            # in the future, should automatically add extra colors.
+            if not all([entry in colors_dict.keys() for entry in color_keys]):
+                raise Exception("color_dict is missing some entries.")
+
+        # if a color dict is not provided, but a color order is, use that to make a color dict
+        elif "color_order" in plotting_rule.keys():
+            color_order = list(plotting_rule["color_order"])
+
+            # TODO: consider whether we should support this use case
+            # TODO: maybe we serialize a palette and save it to a file?
+
+            # make sure there's enough colors to make a dict with
+            # if not, extend available colors
+            if len(color_order) < len(color_keys):
+                more_colors = apc.extend_colors(color_order, len(color_keys))
+
+                # extend color order with new colors
+                color_order = more_colors
+
+            # make color dict
+            colors_dict = dict(zip(color_keys, color_order))
+
+        # set remaining variables to pass to the plotting function
+        category_orders = {col: color_keys}
+        color_scale = None
+
+    # Plotting rules for continuous plots
+    elif plotting_rule["type"] == "continuous":
+        if "color_scale" in plotting_rule.keys():
+            color_scale = plotting_rule["color_scale"]
+        else:
+            color_scale = "viridis"
+
+        # set remaining variables to pass to the plotting function
+        category_orders = None
+        colors_dict = None
+
+    # Plotting rules for taxonomic plots
+    elif plotting_rule["type"] == "taxonomic":
+        # Check to make sure there's a taxon order
+        if "taxon_order" in plotting_rule.keys():
+            taxon_order = plotting_rule["taxon_order"]
+        else:
+            raise Exception('Please provide a "taxon_order" list in the plotting rules.')
+
+        # Set color keys to taxon order
+        color_keys = taxon_order
+
+        # if a color dict is specified, use that color dict
+        if "color_dict" in plotting_rule.keys():
+            colors_dict = plotting_rule["color_dict"]
+
+            # make sure there's at least one entry for every possible value for that column
+            # in the future, should automatically add extra colors.
+            if not all([entry in colors_dict.keys() for entry in color_keys]):
+                raise Exception("color_dict is missing some entries.")
+
+        # if a color dict is not provided, but a color order is, use that to make a color dict
+        elif "color_order" in plotting_rule.keys():
+            color_order = plotting_rule["color_order"]
+
+            # make sure there's enough colors to make a dict with
+            # if not, extend available colors
+            if len(color_order) < len(color_keys):
+                # extend color order with new colors
+                color_order = apc.extend_colors(color_order, len(color_keys))
+
+            # make colors dict
+            colors_dict = dict(zip(color_keys, color_order))
+
+            # add entry for 'Other'
+            colors_dict["Other"] = apc.All["arcadia:brightgrey"]
+
+        # generate a taxonomic category column using assign_taxon lambda function
+        col_taxonomic = col + "_taxonomic"
+        df[col_taxonomic] = df[col].apply(
+            lambda x, taxon_order=taxon_order: assign_taxon(x, taxon_order, hierarchical=True)
+        )
+        col = col_taxonomic
+        category_orders = {col: color_keys}
+        color_scale = None
+
+    # generate a plot using the above parameters
+    plot = px.scatter(
+        df,
+        dim1,
+        dim2,
+        color=col,
+        hover_name="protid",
+        category_orders=category_orders,
+        color_discrete_map=colors_dict,
+        color_continuous_scale=color_scale,
+        custom_data=custom_data,
+    )
+    return plot
+
+
+def regenerate_scatterplot(
+    plots: dict,
+    plotting_rules: dict,
+    df: pd.DataFrame,
+    scatter_counter: dict,
+    marker_opacity: float = 0.8,
+    marker_size: int = 4,
+):
+    """
+    Regenerates a scatterplot based on the plotting rules.
+
+    Because we want to have a dropdown menu to toggle visibility of different plots,
+    where each plot has variable numbers of traces,
+    and some plots are categorical while others are continuous,
+    and we want to preserve the click/hover functionality of the plot,
+    we need to hack around Plotly's limitations.
+
+    Building initial plots as individual px.scatter objects, then transferring them to a new figure
+    is a way we can achieve this.
+
+    This allows us to have custom color scales, cmin, cmax,
+    and control visibility for groups of traces using a dropdown menu.
+
+    TODO: There may be another way to solve this, but this is the solution that works for now.
+
+    Args:
+        plots (dict): dictionary of plotly scatter objects to transfer to a new figure.
+        plotting_rules (dict): full plotting rules dictionary.
+        df (pd.DataFrame): dataframe to use for generating hovertemplate.
+        marker_opacity (float): opacity of markers  to be passed to go.Scatter or go.Scattergl.
+        marker_size (int): size of markers to be passed to go.Scatter or go.Scattergl.
+    """
+    # create a blank figure
+    fig = go.Figure()
+
+    # iterate through the plots to get their objects
+    for j, (col, plot) in enumerate(plots.items()):
+        # hide all plots except the first one by default
+        if j == 0:
+            vis = True
+        else:
+            vis = False
+
+        # if there are more than 50 different categories, hide the legend
+        # this keeps the plot's aspect ratio from changing too much
+        if scatter_counter[col] > 50:
+            showlegend = False
+        else:
+            showlegend = True
+
+        # transfer each individual plot's traces to the new empty figure
+        for scatter in plot.data:
+            # detect whether a trace is a Scattergl or Scatter object
+            obj_method = go.Scatter
+            if isinstance(scatter, plotly.graph_objs._scattergl.Scattergl):
+                obj_method = go.Scattergl
+
+            # collect color bar style parameters
+            colorbar_dict = COLORBAR_DEFAULT_DICT
+            colorbar_dict["title"] = col
+
+            # Setting `cmin` and `cmax` when using px.scatter requires using `update_layout`,
+            # which may not transfer properly to the new figure.
+            # Also, because the min and max values for each scatter plot are different,
+            # we can't set it globally.
+            # So, we need to set it manually upon adding traces to the new figure.
+            # TODO: There may be another way to solve this,
+            # but this is the solution that works for now.
+            if plotting_rules[col]["type"] == "continuous":
+                # rescale the colorbar to user-defined values if needed
+                # this is needed when (e.g. for pLDDT scores) the maximum value computed
+                # is not the maximum value possible
+                if "cmax" in plotting_rules[col]:
+                    cmax = plotting_rules[col]["cmax"]
+                else:
+                    cmax = df[col].max()
+
+                if "cmin" in plotting_rules[col]:
+                    cmin = plotting_rules[col]["cmin"]
+                else:
+                    cmin = df[col].min()
+
+                if "color_scale" in plotting_rules[col]:
+                    new_color_scale = plotting_rules[col]["color_scale"]
+                else:
+                    new_color_scale = "viridis"
+
+                if "fillna" in plotting_rules[col] and plotting_rules[col]["fillna"] < cmin:
+                    fillna_value = plotting_rules[col]["fillna"]
+                    fillna_fraction = -1 * (cmin - fillna_value) / (cmax - fillna_value)
+
+                    input_values = [fillna_fraction] + [i[0] for i in new_color_scale]
+                    original_colors = [i[1] for i in new_color_scale]
+                    new_values = rescale_list(input_values, 0, 1)
+                    new_values_discretized = new_values[0:2] + new_values[1:]
+
+                    if "na_color" in plotting_rules[col]:
+                        na_color = plotting_rules[col]["na_color"]
+                    else:
+                        na_color = apc.All["arcadia:brightgrey"]
+
+                    new_colors = [na_color] * 2 + original_colors
+
+                    new_color_scale_collector = [
+                        [new_values_discretized[i], new_colors[i]]
+                        for i in np.arange(len(new_values_discretized))
+                    ]
+                    new_color_scale = new_color_scale_collector
+
+                    cmin = plotting_rules[col]["fillna"]
+
+                fig.add_trace(
+                    obj_method(
+                        scatter,
+                        visible=vis,
+                        marker=dict(
+                            color=scatter.marker.color,
+                            colorbar=colorbar_dict,
+                            colorscale=new_color_scale,
+                            opacity=marker_opacity,
+                            size=marker_size,
+                            cmax=cmax,
+                            cmin=cmin,
+                        ),
+                    )
+                )
+            else:
+                fig.add_trace(obj_method(scatter, visible=vis, showlegend=showlegend))
+    return fig
+
+
+def generate_dropdown(scatter_counter, plotting_rules, plots):
+    # define a helper function to determine the visibility toggle list
+    # this sets, for every single trace (each category of each plot gets a trace), its visibility
+    def visibility_list(col):
+        entries = []
+
+        for fig in scatter_counter.keys():
+            if fig == col:
+                entries.extend([True] * scatter_counter[fig])
+            else:
+                entries.extend([False] * scatter_counter[fig])
+
+        return entries
+
+    # collector for buttons
+    buttons = []
+
+    # for each plot, create a button
+    for col in plots.keys():
+        # get the textlabel for that plot if it's provided
+        # otherwise, default to column name
+        if "textlabel" in plotting_rules[col].keys():
+            button_label = plotting_rules[col]["textlabel"]
+        else:
+            button_label = col
+
+        # create a button that toggles visibility based on which data is currently selected
+        button_item = dict(
+            args=["visible", visibility_list(col) + [True]],
+            label=button_label,
+            method="restyle",
+        )
+        # add this button to the selector
+        buttons.append(button_item)
+
+    # collector for dropdown menu
+    dropdown_menu = dict(
+        buttons=list(buttons),
+        showactive=True,
+        x=0.08,
+        xanchor="left",
+        y=1.02,
+        yanchor="bottom",
+        font_size=14,
+        bgcolor="white",
+    )
+
+    return dropdown_menu
 
 
 def plot_interactive(
     coordinates_file: str,
     plotting_rules: dict,
-    marker_size=4,
-    marker_opacity=0.8,
-    output_file="",
-    keyids=None,
-    show=False,
-    plot_width=500,
-    plot_height=550,
+    marker_size: int = 4,
+    marker_opacity: float = 0.8,
+    output_file: Optional[str] = None,
+    keyids: Optional[list] = None,
+    show: bool = False,
+    plot_width: int = 700,
+    plot_height: int = 750,
     plot_bgcolor=apc.All["arcadia:paper"],
     paper_bgcolor="rgba(0,0,0,0)",
-    hide_hover=False,
+    hide_hover: bool = False,
 ):
     """
     Plots all proteins on a 2D interactive Plotly plot using a set of rules.
@@ -623,6 +827,7 @@ def plot_interactive(
         output_file (str): path of destination file.
         keyids (list): list of key protids to assign a star-shaped marker. Usually input proteins.
         show (bool): whether or not to show the plot.
+        hide_hover (bool): whether to override the hover text and just show the protid.
     Returns:
         if show = False, returns the plotly.graphobjects object of the plot.
     """
@@ -630,55 +835,21 @@ def plot_interactive(
     # make a copy of the starting data
     df = pd.read_csv(coordinates_file, sep="\t")
 
-    # generate a hover template text string
-    # custom data in plotly is indexed by order
-    hovertemplate_generator = ["<b>%{customdata[0]}</b></br>––––––––––––"]
-    # pass in the custom data columns
-    # this sets protid as customdata[0]
-    # and the rest of the plotting rules in order
+    dim1 = df.columns[1]
+    dim2 = df.columns[2]
+
+    # preprocesses the dataframe based on the plotting rules
+    preprocess_dataframe(plotting_rules, df)
 
     valid_plotting_rules = [col for col in plotting_rules.keys() if col in df.columns]
     custom_data = ["protid"] + list(valid_plotting_rules)
 
-    # iterate through plotting rules, applying relevant rules
-    for col in plotting_rules:
-        if col not in df.columns:
-            continue
-
-        # if the plotting rule 'fillna' is present, fills NAs with that value
-        if "fillna" in plotting_rules[col].keys():
-            df[col] = df[col].fillna(plotting_rules[col]["fillna"])
-
-        # if the plotting rule 'apply' is present, applies that function
-        if "apply" in plotting_rules[col].keys():
-            df[col] = df[col].apply(plotting_rules[col]["apply"])
-
-        # if you want to skip an element from being added to hover text
-        if "skip_hover" in plotting_rules[col].keys():
-            continue
-
-        # sets up hover text based on 'textlabel' attributes
-        if "textlabel" in plotting_rules[col].keys():
-            hovertext_label = plotting_rules[col]["textlabel"]
-        else:
-            hovertext_label = col
-
-        # generates hoverlabel custom text string for that column
-        # This doesn't work properly if the column is NA for that value.
-        col_index = custom_data.index(col)
-
-        hovertemplate_item = "<b>" + hovertext_label + "</b>: %{customdata[" + str(col_index) + "]}"
-        hovertemplate_generator.append(hovertemplate_item)
-
     # generates a full hovertemplate string from hovertemplate_generator list
-    hovertemplate = "<br>".join(hovertemplate_generator)
+    hovertemplate = generate_hovertemplate(plotting_rules, df, custom_data)
 
+    # if hide_hover is true, override the hovertemplate
     if hide_hover:
         hovertemplate = "<b>%{customdata[0]}</b>"
-
-    # gets the first two PCs or tSNE columns or UMAP columns
-    dim1 = df.columns[1]
-    dim2 = df.columns[2]
 
     # Collector dictionary for making plots
     plots = {}
@@ -688,260 +859,64 @@ def plot_interactive(
     # Then, we transfer the points from the existing plots to a new, single plot
     # This way we can get the toggle system working
     for col in plotting_rules.keys():
+        # ignore invalid rules
         if col not in df.columns:
             continue
 
-        # Plotting rules for categorical plots
-        if plotting_rules[col]["type"] == "categorical":
-            color_keys = np.sort(df[col].unique())
+        plotting_rule = plotting_rules[col]
+        if plotting_rule["type"] == "hovertext":
+            continue
 
-            # if a color dict is specified, use that color dict
-            if "color_dict" in plotting_rules[col].keys():
-                colors_dict = plotting_rules[col]["color_dict"]
+        # Generate a plot based on rules
+        plots[col] = generate_scatterplot(
+            plotting_rules[col],
+            col,
+            df,
+            custom_data,
+            dim1,
+            dim2,
+        )
+        # Update the plot with the hovertemplate
+        plots[col].update_traces(
+            marker=dict(size=marker_size, opacity=marker_opacity),
+            hovertemplate=hovertemplate,
+        )
 
-                # make sure there's at least one entry for every possible value for that column
-                # in the future, should automatically add extra colors.
-                if not all([entry in colors_dict.keys() for entry in color_keys]):
-                    raise Exception("color_dict is missing some entries.")
-
-            # if a color dict is not provided, but a color order is, use that to make a color dict
-            elif "color_order" in plotting_rules[col].keys():
-                color_order = list(plotting_rules[col]["color_order"])
-
-                # make sure there's enough colors to make a dict with
-                # if not, extend available colors
-                if len(color_order) < len(color_keys):
-                    more_colors = extend_colors(color_keys, color_order, steps=[0.7, 0.5, 0.3])
-
-                    # extend color order with new colors
-                    color_order.extend(more_colors[: (len(color_keys) - len(color_order))])
-
-                # make color dict
-                colors_dict = dict(zip(color_keys, color_order))
-
-            # generate a plot using the above parameters
-            plots[col] = px.scatter(
-                df,
-                dim1,
-                dim2,
-                color=col,
-                hover_name="protid",
-                category_orders={col: color_keys},
-                color_discrete_map=colors_dict,
-                custom_data=custom_data,
-            )
-            # add the hovertemplate text and other aspects to the traces for that column
-            plots[col].update_traces(
-                marker=dict(size=marker_size, opacity=marker_opacity),
-                hovertemplate=hovertemplate,
-            )
-
-        # Plotting rules for continuous plots
-        elif plotting_rules[col]["type"] == "continuous":
-            # Color scales seem to be broken for some reason; they always show as Magma.
-            # When plotting a single plot, this works fine.
-            # However, moving the points to a new plot breaks the color scheme.
-            # Try to find a workaround in the future.
-            if "color_scale" in plotting_rules[col].keys():
-                color_scale = plotting_rules[col]["color_scale"]
-            else:
-                color_scale = "viridis"
-
-            # generate a plot using the above parameters
-            plots[col] = px.scatter(
-                df,
-                dim1,
-                dim2,
-                color=col,
-                hover_name="protid",
-                color_continuous_scale=color_scale,
-                custom_data=custom_data,
-            )
-            plots[col].update_traces(
-                marker=dict(size=marker_size, opacity=marker_opacity),
-                hovertemplate=hovertemplate,
-            )
-
-        # Plotting rules for taxonomic plots
-        elif plotting_rules[col]["type"] == "taxonomic":
-            # Check to make sure there's a taxon order
-            if "taxon_order" in plotting_rules[col].keys():
-                taxon_order = plotting_rules[col]["taxon_order"]
-            else:
-                raise Exception('Please provide a "taxon_order" list in the plotting rules.')
-
-            # Set color keys to taxon order
-            color_keys = taxon_order
-
-            # if a color dict is specified, use that color dict
-            if "color_dict" in plotting_rules[col].keys():
-                colors_dict = plotting_rules[col]["color_dict"]
-
-                # make sure there's at least one entry for every possible value for that column
-                # in the future, should automatically add extra colors.
-                if not all([entry in colors_dict.keys() for entry in color_keys]):
-                    raise Exception("color_dict is missing some entries.")
-
-            # if a color dict is not provided, but a color order is, use that to make a color dict
-            elif "color_order" in plotting_rules[col].keys():
-                color_order = plotting_rules[col]["color_order"]
-
-                # make sure there's enough colors to make a dict with
-                # if not, extend available colors
-                if len(color_order) < len(color_keys):
-                    more_colors = extend_colors(color_keys, color_order, steps=[0.7, 0.5, 0.3])
-
-                    # extend color order with new colors
-                    color_order.extend(more_colors)
-
-                # make colors dict
-                colors_dict = dict(zip(color_keys, color_order))
-
-                # add entry for 'Other'
-                colors_dict["Other"] = apc.All["arcadia:brightgrey"]
-
-            # generate a taxonomic category column using assign_taxon lambda function
-            col_taxonomic = col + "_taxonomic"
-            df[col_taxonomic] = df[col].apply(
-                lambda x, taxon_order=taxon_order: assign_taxon(x, taxon_order, hierarchical=True)
-            )
-
-            # plot using the above parameters
-            plots[col] = px.scatter(
-                df,
-                dim1,
-                dim2,
-                color=col_taxonomic,
-                hover_name="protid",
-                color_discrete_map=colors_dict,
-                custom_data=custom_data,
-            )
-            plots[col].update_traces(
-                marker=dict(size=marker_size, opacity=marker_opacity),
-                hovertemplate=hovertemplate,
-            )
-
-    # collector for the number of scatter items
+    # keep track of how many traces there are per plot
+    # for example, a categorical trace would have one trace per category
+    # whereas a continuous trace would have one trace total
+    # this is used to toggle visibility of traces using a dropdown later
     scatter_counter = {}
-    # collector for the order of figures added to the plot
-    fig_order = []
+
+    # iterate through the plots to get their objects
+    for col, plot in plots.items():
+        # counts the number of different scatter traces within the original plot
+        # this is needed to determine the number of true or false values
+        # for the dropdown toggle visibility field
+        scatter_counter[col] = len(plot.data)
 
     # create new empty figure to move every original figure onto
     # this is a workaround to allow colored legends to be preserved
     # and automatically switched using the dropdown
     # the alternative approach forces you to show all legend items at the same time
     # for all colorations, which is messy
+    fig = regenerate_scatterplot(
+        plots,
+        plotting_rules,
+        df,
+        scatter_counter,
+        marker_opacity=marker_opacity,
+        marker_size=marker_size,
+    )
 
-    fig = go.Figure()
+    # generate the dropdown menu with dynamic toggle visibility per trace for each plotting rule
+    dropdown_menu = generate_dropdown(
+        scatter_counter,
+        plotting_rules,
+        plots,
+    )
 
-    # iterate through the plots to get their objects
-    for j, (col, plot) in enumerate(plots.items()):
-        # if it's the first plot, make sure it's visible
-        if j == 0:
-            vis = True
-        # otherwise, hide it
-        else:
-            vis = False
-
-        # appends the figure's name to the list of figure orders
-        fig_order.append(col)
-
-        # counts the number of different scatter traces within the original plot
-        # this is needed to determine the number of true or false values
-        # for the dropdown toggle visibility field
-        scatter_counter[col] = len(plot.data)
-
-        # if there are more than 50 different categories, hide the legend
-        if scatter_counter[col] > 50:
-            showlegend = False
-        else:
-            showlegend = True
-
-        if "textlabel" in plotting_rules[col]:
-            colorbar_title = plotting_rules[col]["textlabel"]
-        else:
-            colorbar_title = col
-
-        colorbar_dict = dict(
-            title=colorbar_title,
-            x=0.5,
-            y=0,
-            orientation="h",
-            xanchor="center",
-            yanchor="top",
-            ticklabelposition="inside top",
-            title_font_size=14,
-            title_side="bottom",
-            len=0.7,
-            thickness=20,
-        )
-
-        # finally, add the original plot to the new plot.
-        for scatter in plot.data:
-            if type(scatter) == plotly.graph_objs._scattergl.Scattergl:
-                obj_method = go.Scattergl
-            elif type(scatter) == plotly.graph_objs._scatter.Scatter:
-                obj_method = go.Scatter
-
-            if plotting_rules[col]["type"] == "continuous":
-                if "cmax" in plotting_rules[col]:
-                    cmax = plotting_rules[col]["cmax"]
-                else:
-                    cmax = df[col].max()
-
-                if "cmin" in plotting_rules[col]:
-                    cmin = plotting_rules[col]["cmin"]
-                else:
-                    cmin = df[col].min()
-
-                if "color_scale" in plotting_rules[col]:
-                    new_color_scale = plotting_rules[col]["color_scale"]
-                else:
-                    new_color_scale = "viridis"
-
-                if "fillna" in plotting_rules[col] and plotting_rules[col]["fillna"] < cmin:
-                    fillna_value = plotting_rules[col]["fillna"]
-                    fillna_fraction = -1 * (cmin - fillna_value) / (cmax - fillna_value)
-
-                    input_values = [fillna_fraction] + [i[0] for i in new_color_scale]
-                    original_colors = [i[1] for i in new_color_scale]
-                    new_values = rescale_list(input_values, 0, 1)
-                    new_values_discretized = new_values[0:2] + new_values[1:]
-
-                    if "na_color" in plotting_rules[col]:
-                        na_color = plotting_rules[col]["na_color"]
-                    else:
-                        na_color = apc.All["arcadia:brightgrey"]
-
-                    new_colors = [na_color] * 2 + original_colors
-
-                    new_color_scale_collector = [
-                        [new_values_discretized[i], new_colors[i]]
-                        for i in np.arange(len(new_values_discretized))
-                    ]
-                    new_color_scale = new_color_scale_collector
-
-                    cmin = plotting_rules[col]["fillna"]
-
-                fig.add_trace(
-                    obj_method(
-                        scatter,
-                        visible=vis,
-                        marker=dict(
-                            color=scatter.marker.color,
-                            colorbar=colorbar_dict,
-                            colorscale=new_color_scale,
-                            opacity=marker_opacity,
-                            size=marker_size,
-                            cmax=cmax,
-                            cmin=cmin,
-                        ),
-                    )
-                )
-            else:
-                fig.add_trace(obj_method(scatter, visible=vis, showlegend=showlegend))
-
-    # if there are any keyids provided, generate an additional plot
+    # if there are any keyids provided, generate an additional plot and add a toggle button
     if keyids is not None:
         # get the positions of the key ids
         keypoints = df[df["protid"].isin(keyids)]
@@ -960,62 +935,12 @@ def plot_interactive(
             )
         )
 
-    # define a helper function to determine the visibility toggle list
-    # this sets, for every single trace (each category of each plot gets a trace), its visibility
-    def visibility_list(col):
-        entries = []
-
-        for fig in fig_order:
-            if fig == col:
-                entries.extend([True] * scatter_counter[fig])
-            else:
-                entries.extend([False] * scatter_counter[fig])
-
-        return entries
-
-    # collector for buttons
-    buttons = []
-
-    # for each plot, create a button
-    for col in plots.keys():
-        # get the textlabel for that plot if it's provided
-        # otherwise, default to column name
-        if "textlabel" in plotting_rules[col].keys():
-            button_label = plotting_rules[col]["textlabel"]
-        else:
-            button_label = col
-
-        # create a button that toggles visibility based on which data is currently selected
-        button_item = dict(
-            args=["visible", visibility_list(col) + [True]],
-            label=button_label,
-            method="restyle",
-        )
-        # add this button to the selector
-        buttons.append(button_item)
-
-    # collector for dropdown menu
-    dropdown_menu = dict(
-        buttons=list(buttons),
-        showactive=True,
-        x=0.08,
-        xanchor="left",
-        y=1.02,
-        yanchor="bottom",
-        font_size=14,
-        bgcolor="white",
-    )
-
-    # create a separate button to toggle keyid trace
-    # the visibility will match the visibility of the first plot upon generation
-    # I couldn't find an obvious way to make ONLY this plot's visibility toggle
-    # while preserving the rest...
-    # current behavior is when this button is clicked, the visibility of the keyid stars is toggled
-    # but all other data except the first coloration style are hidden
-    if keyids is not None:
+        # create a separate button to toggle keyid trace
+        # the dictionary within `buttons` allows you to modify just the last trace in the plot
         keyids_button = dict(
             buttons=[
                 dict(
+                    # [parameter to modify, value to modify it at]
                     args=[{"visible": True}, [len(fig.data) - 1]],
                     args2=[{"visible": False}, [len(fig.data) - 1]],
                     label="Input Proteins",
@@ -1060,6 +985,7 @@ def plot_interactive(
         paper_bgcolor=paper_bgcolor,
     )
 
+    # fix the scale of the x and y axes across plots
     xmin = df[dim1].min()
     xmax = df[dim1].max()
     xwiggle = 0.07 * (xmax - xmin)
@@ -1104,6 +1030,7 @@ def plot_interactive(
         )
     )
 
+    # adjust modebar parametrs
     fig.update_layout(
         modebar={
             "bgcolor": "rgba(0,0,0,0)",
@@ -1112,6 +1039,7 @@ def plot_interactive(
         }
     )
 
+    # set configurations for scatter plot
     scatter_config = {
         "displayModeBar": True,
         "scrollZoom": True,
@@ -1119,13 +1047,14 @@ def plot_interactive(
         "modeBarButtonsToRemove": ["zoomIn", "zoomOut"],
     }
 
+    # Use Arial as the default font if possible
     try:
         fig.update_layout(font=dict(family="Arial"))
     except Exception:
         pass
 
     # save if filename is provided
-    if output_file != "":
+    if output_file is not None:
         fig.write_html(output_file, config=scatter_config)
 
     # show if desired

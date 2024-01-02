@@ -5,9 +5,9 @@ import re
 from io import StringIO
 from pathlib import Path
 
-import arcadia_pycolor as apc
 import numpy as np
 import pandas as pd
+from color_utils import RESIDUE_CONFIDENCE_COLORS
 
 __all__ = [
     "fetch_atoms",
@@ -21,13 +21,6 @@ __all__ = [
     "assign_origin",
     "assess_pdbs",
 ]
-
-RESIDUE_CONFIDENCE_COLORS = {
-    "very_high": "#4A72B0",
-    "confident": apc.All["arcadia:vitalblue"],
-    "low": apc.All["arcadia:canary"],
-    "very_low": apc.All["arcadia:amber"],
-}
 
 RESIDUE_BINS = ["very_low", "low", "confident", "very_high"]
 
