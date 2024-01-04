@@ -32,6 +32,7 @@ SET_DATABASES = [
 ]
 DEFAULT_DATABASES = ["afdb50", "afdb-swissprot", "afdb-proteome"]
 FOLDSEEK_SERVER_TIMEOUT = 60 * 30  # 30 minutes
+PUBLIC_FOLDSEEK_SERVER = "https://search.foldseek.com"
 
 
 # parse command line arguments
@@ -61,7 +62,7 @@ def parse_args():
         help="'all' or any of " + " | ".join([f"'{db}'" for db in SET_DATABASES]),
     )
     parser.add_argument(
-        "-s", "--server", help="The Foldseek server to use.", default="https://search.foldseek.com"
+        "-s", "--server", help="The Foldseek server to use.", default=PUBLIC_FOLDSEEK_SERVER
     )
     args = parser.parse_args()
     return args
@@ -126,17 +127,31 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
         text = file.readlines()
         pdb = "".join(text)
 
+    username = os.environ.get("FOLDSEEK_USERNAME", "")
+    auth = (
+        (username, os.environ["FOLDSEEK_PASSWORD"])
+        if server != PUBLIC_FOLDSEEK_SERVER and "FOLDSEEK_PASSWORD" in os.environ
+        else None
+    )
+
     ### Code below is mostly based on:
     ### <https://github.com/soedinglab/MMseqs2-App/blob/master/docs/api_example.py>
     # submit a new job via the API
-    ticket = (
-        session_with_retry()
-        .post(
-            f"{server}/api/ticket",
-            {"q": pdb, "database[]": query_databases, "mode": mode},
-        )
-        .json()
+    response = session_with_retry().post(
+        f"{server}/api/ticket",
+        {"q": pdb, "database[]": query_databases, "mode": mode},
+        auth=auth,
     )
+
+    if response.status_code == 401:
+        sys.exit(
+            "This server requires authentication. "
+            "Please define a password in the environment variable FOLDSEEK_PASSWORD."
+        )
+    elif response.status_code != 200:
+        sys.exit(f"Error {response.status_code} searching Foldseek: {response.reason}")
+
+    ticket = response.json()
 
     # check to see if the ticket failed to be posted
     # tickets can fail to be posted because of ratelimits
@@ -151,12 +166,13 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     # poll until the job was successful or failed
     repeat = True
     elapsed = 0
-    sleep_time = 30 if "search.foldseek.com" in server else 5
+    sleep_time = 30 if server == PUBLIC_FOLDSEEK_SERVER else 5
     while repeat and elapsed < FOLDSEEK_SERVER_TIMEOUT:
         status = (
             session_with_retry()
             .get(
                 f"{server}/api/ticket/{ticket['id']}",
+                auth=auth,
             )
             .json()
         )
@@ -176,6 +192,7 @@ def foldseek_apiquery(input_file: str, output_file: str, mode: str, database: li
     download = session_with_retry().get(
         f"{server}/api/result/download/{ticket['id']}",
         stream=True,
+        auth=auth,
     )
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "wb") as fd:
