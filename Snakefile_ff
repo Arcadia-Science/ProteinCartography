@@ -90,6 +90,8 @@ rule assess_pdbs:
         inputdir=input_dir,
     benchmark:
         output_dir / benchmarks_dir / "assess_pdbs.txt"
+    conda:
+        "envs/plotting.yml"
     shell:
         """
         python ProteinCartography/assess_pdbs.py -i {params.inputdir} -o {output.pdb_features}
@@ -131,7 +133,7 @@ rule dim_reduction:
     params:
         modes="{modes}",
     conda:
-        "envs/dim_reduction.yml"
+        "envs/analysis.yml"
     benchmark:
         output_dir / benchmarks_dir / "{modes}.dim_reduction.txt"
     shell:
@@ -149,7 +151,7 @@ rule leiden_clustering:
     output:
         output_dir / clusteringresults_dir / "leiden_features.tsv",
     conda:
-        "envs/leiden_clustering.yml"
+        "envs/analysis.yml"
     benchmark:
         output_dir / benchmarks_dir / "leiden_clustering.txt"
     shell:
@@ -171,6 +173,8 @@ rule input_distances:
         protid="{keyid}",
     benchmark:
         output_dir / benchmarks_dir / "{keyid}.input_distances.txt"
+    conda:
+        "envs/pandas.yml"
     shell:
         """
         python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
@@ -205,6 +209,8 @@ rule aggregate_features:
         override=OVERRIDE_FILE,
     benchmark:
         output_dir / benchmarks_dir / "aggregate_features.txt"
+    conda:
+        "envs/pandas.yml"
     shell:
         """
         python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
