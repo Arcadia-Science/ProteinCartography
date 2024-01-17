@@ -27,24 +27,26 @@ def run_blast(
     """
     database = "nr"
     result = subprocess.run(
-        [
-            "blastp",
-            "-remote",
-            "-db",
-            database,
-            "-query",
-            query,
-            "-out",
-            out,
-            "-max_target_seqs",
-            str(max_target_seqs),
-            "-outfmt",
-            outfmt,
-            "-word_size",
-            str(word_size),
-            "-evalue",
-            str(evalue),
-        ],
+        " ".join(
+            [
+                "blastp",
+                "-remote",
+                "-db",
+                database,
+                "-query",
+                query,
+                "-out",
+                out,
+                "-max_target_seqs",
+                str(max_target_seqs),
+                "-outfmt",
+                f"'{outfmt}'",
+                "-word_size",
+                str(word_size),
+                "-evalue",
+                str(evalue),
+            ]
+        ),
         capture_output=True,
         shell=True,
     )
