@@ -34,7 +34,7 @@ Our pipeline starts with user-provided protein(s) of interest and searches the a
     snakemake --snakefile Snakefile --configfile demo/config_actin.yml --use-conda --cores n
     ```
 5. Inspect results.
-    In the `demo/output/clusteringresults/` directory, you should find the following files:
+    In the `demo/output/final_results/` directory, you should find the following files:
     - `actin_aggregated_features.tsv`: metadata file containing protein feature hits
     - `actin_aggregated_features_pca_umap.html`: interactive UMAP scatter plot of results
     - `actin_aggregated_features_pca_tsne.html`: interactive t-SNE scatter plot of results
@@ -123,11 +123,11 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
     - The pipeline does not yet support PDBs with multiple chains.
 3. Make a `uniprot_features.tsv` file.
     You can generate this one of two ways. If you have a list of UniProt accessions, you can provide that as a .txt file and automatically pull down the correct annotations. Alternatively, you can manually generate the file.
-    - **3.1 Generating the file using `query_UniProt.py`**
+    - **3.1 Generating the file using `fetch_uniprot_metadata.py`**
         - Create a `uniprot_ids.txt` file that contains a list of UniProt accessions, one per line.
         - Run the following code from the base of the GitHub repository. Modify the input folder path to your input folder.
             ```
-            python ProteinCartography/query_uniprot.py -i uniprot_ids.txt -o input_ff/uniprot_features.tsv
+            python ProteinCartography/fetch_uniprot_metadata.py -i uniprot_ids.txt -o input_ff/uniprot_features.tsv
             ```
     - **3.2 Manually generating the file**
         - For each protid in the dataset, you should gather relevant protein metadata.
@@ -165,7 +165,7 @@ The **Cluster** mode starts at the "Clustering" step.
 
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob).
-    - TODO: This can fail for large proteins (>700aa) due to remote BLAST CPU limits. To overcome this error, you can manually run BLAST locally or via the webserver and create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blasthits.refseq.txt` in the `output/blastresults/` directory.
+    - TODO: This can fail for large proteins (>700aa) due to remote BLAST CPU limits. To overcome this error, you can manually run BLAST locally or via the webserver and create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blast_hits.refseq.txt` in the `output/blast_results/` directory.
 
 ### Download Data
 3. Aggregate the list of Foldseek and BLAST hits from all input files into a single list of UniProt IDs.
@@ -327,17 +327,15 @@ These files end with `'.txt'` and contain a list of accessions (RefSeq, GenBank,
     ...
     ```
 - **Input to:**
-    - [`aggregate_lists.py`](ProteinCartography/aggregate_lists.py)
-    - [`get_source.py`](ProteinCartography/get_source.py)
-    - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
-    - [`query_UniProt.py`](ProteinCartography/query_UniProt.py)
-    - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
+    - [`aggregate_hits.py`](ProteinCartography/aggregate_hits.py)
+    - [`get_source_of_hits.py`](ProteinCartography/get_source_of_hits.py)
+    - [`map_refseq_ids.py`](ProteinCartography/map_refseq_ids.py)
+    - [`fetch_uniprot_metadata.py`](ProteinCartography/fetch_uniprot_metadata.py)
 - **Output from:**
-    - [`aggregate_lists.py`](ProteinCartography/aggregate_lists.py)
-    - [`extract_blasthits.py`](ProteinCartography/extract_blasthits.py)
-    - [`extract_Foldseekhits.py`](ProteinCartography/extract_Foldseekhits.py)
-    - [`map_refseqids.py`](ProteinCartography/map_refseqids.py)
-    - [`rescue_mapping.py`](ProteinCartography/rescue_mapping.py)
+    - [`aggregate_hits.py`](ProteinCartography/aggregate_hits.py)
+    - [`extract_blast_hits.py`](ProteinCartography/extract_blast_hits.py)
+    - [`extract_foldseek_hits.py`](ProteinCartography/extract_foldseek_hits.py)
+    - [`map_refseq_ids.py`](ProteinCartography/map_refseq_ids.py)
 
 ### Matrix File (MTX)
 These files end with `'.tsv'` and contain distance or similarity matrices, usually all-v-all.
@@ -350,11 +348,11 @@ These files end with `'.tsv'` and contain distance or similarity matrices, usual
     | A0A2J8WJR8 | 0.85 | 0.91 |  1   | 0.71 |
     | A0A811ZNA7 | 0.7  | 0.6  | 0.71 |  1   |
 - **Input to:**
-    - [`cluster_similarity.py`](ProteinCartography/cluster_similarity.py)
+    - [`plot_cluster_similarity.py`](ProteinCartography/plot_cluster_similarity.py)
     - [`dim_reduction.py`](ProteinCartography/dim_reduction.py)
-    - [`extract_input_distances.py`](ProteinCartography/extract_input_distances.py)
+    - [`extract_input_protein_distances.py`](ProteinCartography/extract_input_protein_distances.py)
 - **Output from:**
-    - [`Foldseek_clustering.py`](ProteinCartography/Foldseek_clustering.py)
+    - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
 
 ### Features files (FTF)
 These files end with `'.tsv'` and contain a `protid` column, which is the unique identifier of each protein in the dataset.
@@ -376,11 +374,11 @@ The remaining columns are metadata for each protein. These metadata can be of an
 - **Output from:**
     - [`aggregate_fident.py`](ProteinCartography/aggregate_fident.py)
     - [`calculate_convergence.py`](ProteinCartography/calculate_convergence.py)
-    - [`extract_input_distances.py`](ProteinCartography/extract_input_distances.py)
-    - [`Foldseek_clustering.py`](ProteinCartography/Foldseek_clustering.py)
-    - [`get_source.py`](ProteinCartography/get_source.py)
+    - [`extract_input_protein_distances.py`](ProteinCartography/extract_input_protein_distances.py)
+    - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
+    - [`get_source_of_hits.py`](ProteinCartography/get_source_of_hits.py)
     - [`leiden_clustering.py`](ProteinCartography/leiden_clustering.py)
-    - [`query_UniProt.py`](ProteinCartography/query_UniProt.py)
+    - [`fetch_uniprot_metadata.py`](ProteinCartography/fetch_uniprot_metadata.py)
 
 #### Feature file main columns
 

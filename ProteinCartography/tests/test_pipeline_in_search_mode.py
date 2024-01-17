@@ -28,8 +28,8 @@ def config_filepath(tmp_path):
         "analysis_name": "test",
         "foldseek_databases": ["afdb50", "afdb-swissprot", "afdb-proteome"],
         "plotting_modes": ["pca_umap"],
-        "max_blasthits": 10,
-        "max_foldseekhits": 10,
+        "max_blast_hits": 10,
+        "max_foldseek_hits": 10,
         "max_structures": 10,
         "taxon_focus": "euk",
         "uniprot_additional_fields": [],
@@ -60,7 +60,8 @@ def stage_inputs(integration_test_artifacts_dirpath, config_filepath):
     # for now, hard-code the dataset name
     dataset_name = "actin"
     shutil.copytree(
-        integration_test_artifacts_dirpath / dataset_name / "input", config["input_dir"]
+        integration_test_artifacts_dirpath / "search-mode" / dataset_name / "input",
+        config["input_dir"],
     )
 
 
@@ -111,9 +112,9 @@ def set_env_variables():
 
 @pytest.mark.usefixtures("stage_inputs")
 @pytest.mark.usefixtures("set_env_variables")
-def test_pipeline_with_mocked_api_calls(snakefile_filepath, config_filepath):
+def test_pipeline_in_search_mode_with_mocked_api_calls(snakefile_filepath, config_filepath):
     """
-    Run the pipeline with the test config file, the temporary snakefile,
+    Run the pipeline in "search" mode with the test config file, the temporary snakefile,
     and mocked API calls
     """
 
@@ -130,12 +131,12 @@ def test_pipeline_with_mocked_api_calls(snakefile_filepath, config_filepath):
 
     # check (some of) the expected output files
     expected_output_filepaths = [
-        output_dirpath / "clusteringresults" / f"{config['analysis_name']}{appendix}"
+        output_dirpath / "final_results" / f"{config['analysis_name']}_{appendix}"
         for appendix in [
-            "_leiden_similarity.html",
-            "_strucluster_similarity.html",
-            "_semantic_analysis.pdf",
-            "_semantic_analysis.html",
+            "leiden_similarity.html",
+            "strucluster_similarity.html",
+            "semantic_analysis.pdf",
+            "semantic_analysis.html",
         ]
     ]
     for filepath in expected_output_filepaths:
@@ -148,7 +149,7 @@ def test_pipeline_with_mocked_api_calls(snakefile_filepath, config_filepath):
     # (the 10 determined by the `max_structures` config param, plus the input structure),
     # so the dataframe should have 11 rows and 12 columns (since the first column is the index)
     similarity_matrix_filepath = (
-        output_dirpath / "clusteringresults" / "all_by_all_tmscore_pivoted.tsv"
+        output_dirpath / "foldseek_clustering_results" / "all_by_all_tmscore_pivoted.tsv"
     )
     similarity_matrix = pd.read_csv(similarity_matrix_filepath, sep="\t")
     assert similarity_matrix.shape == (11, 12)

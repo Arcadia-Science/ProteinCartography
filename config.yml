@@ -40,7 +40,7 @@ foldseek_databases:
 ##################
 
 # Set maximum number of BLAST hits to retrieve
-max_blasthits: 3000
+max_blast_hits: 3000
 # The blast word size: the length of exact matches to start the candidate alignments.
 blast_word_size: 5
 # The blast_word_size to use if the initial attempt with blast_word_size has failed.
@@ -53,7 +53,7 @@ blast_num_attempts: 3
 # Set maximum number of Foldseek hits to retain
 # (the foldseek API does not provide a way to limit the number of Foldseek hits returned,
 # so this is used to truncate the list of retrieved hits)
-max_foldseekhits: 3000
+max_foldseek_hits: 3000
 
 ######################
 # Structure settings #

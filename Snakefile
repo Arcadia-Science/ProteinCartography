@@ -9,37 +9,30 @@ configfile: "./config.yml"
 
 
 # Set the input directory
-#### In the future, also accept Uniprot accession numbers, which will be auto-queried and downloaded
-input_dir = Path(config["input_dir"])
-
-# Set the prefix of the output file of the analysis
-analysis_name = config["analysis_name"]
+INPUT_DIR = Path(config["input_dir"])
 
 # put most things into the output directory
-output_dir = Path(config["output_dir"])
+OUTPUT_DIR = Path(config["output_dir"])
 
-# Check for an override file, setting a variable if it exists
-# note: `OVERRIDE_FILE` cannot be `None` because it is passed to a CLI option
+# Set the prefix of the output file of the analysis
+ANALYSIS_NAME = config["analysis_name"]
+
+# an optional user-provided override file
+OVERRIDE_FILE = INPUT_DIR / config.get("override_file", "")
+
+# if the override file doesn't exist, ignore it
+# note: `OVERRIDE_FILE` cannot be set to `None` because it is passed to a CLI option
 # in the `aggregate_features` rule, and snakemake serializes `None` to 'None';
-# using an empty string instead results in the CLI option being passed no value
-if "override_file" in config:
-    OVERRIDE_FILE = input_dir / config["override_file"]
-
-    # If it isn't a real file, ignore it
-    if not os.path.exists(OVERRIDE_FILE):
-        OVERRIDE_FILE = ""
-else:
+# instead, we must use an empty string, so that the CLI option is passed no value
+if not OVERRIDE_FILE.is_file():
     OVERRIDE_FILE = ""
 
-if "taxon_focus" in config:
-    TAXON_FOCUS = config["taxon_focus"]
-else:
-    TAXON_FOCUS = "euk"
+TAXON_FOCUS = config.get("taxon_focus", "euk")
 
 UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 
-MAX_BLASTHITS = int(config["max_blasthits"])
-MAX_FOLDSEEKHITS = int(config["max_foldseekhits"])
+MAX_BLAST_HITS = int(config["max_blast_hits"])
+MAX_FOLDSEEK_HITS = int(config["max_foldseek_hits"])
 
 BLAST_EVALUE = float(config["blast_evalue"])
 BLAST_WORD_SIZE = int(config["blast_word_size"])
@@ -55,25 +48,34 @@ MODES = config["plotting_modes"]
 MIN_LENGTH = int(config["min_length"])
 MAX_LENGTH = int(config["max_length"])
 
-# these directories fall within the output directory
-blastresults_dir = Path("blastresults/")
-foldseekresults_dir = Path("foldseekresults/")
-foldseekclustering_dir = Path("foldseekclustering/")
+BENCHMARKS_DIR = OUTPUT_DIR / "benchmarks"
 
-# directory in which to copy or download PDB files
-pdb_download_dir = output_dir / foldseekclustering_dir
+# results from running blastp with the input proteins
+BLAST_RESULTS_DIR = OUTPUT_DIR / "blast_results"
 
-clusteringresults_dir = Path("clusteringresults/")
-benchmarks_dir = Path("benchmarks/")
+# results from calling the foldseek web API with the input proteins
+FOLDSEEK_RESULTS_DIR = OUTPUT_DIR / "foldseek_results"
 
-# gets the protein ID based on FASTA file name
-# flexibly checks if fasta file is correct suffix
+# metadata related to the hits (proteins) from blast and foldseek
+PROTEIN_FEATURES_DIR = OUTPUT_DIR / "protein_features"
+
+# PDBs downloaded from AlphaFold
+PROTEIN_STRUCTURES_DIR = OUTPUT_DIR / "protein_structures"
+
+# results from running foldseek to cluster the PDBs
+FOLDSEEK_CLUSTERING_DIR = OUTPUT_DIR / "foldseek_clustering_results"
+
+# final output results (plots and aggregated TSV files)
+FINAL_RESULTS_DIR = OUTPUT_DIR / "final_results"
+
+# create a list of protein IDs from the FASTA files in the input directory,
+# allowing for multiple FASTA file formats
 FASTA_FORMATS = [".fa", ".fasta", ".fna", ".faa"]
-PROTID = []
-for file in os.listdir(input_dir):
-    if any(file.lower().endswith(suffix) for suffix in FASTA_FORMATS):
-        file_id = os.path.splitext(file)[0]
-        PROTID.append(file_id)
+PROTIDS = []
+for filename in os.listdir(INPUT_DIR):
+    if any(filename.lower().endswith(suffix) for suffix in FASTA_FORMATS):
+        protid = os.path.splitext(filename)[0]
+        PROTIDS.append(protid)
 
 BLAST_OUTPUT_FIELDS = [
     "qseqid",
@@ -97,24 +99,11 @@ BLAST_OUTPUT_FIELDS = [
 BLAST_OUTFMT = '"' + " ".join(["6"] + BLAST_OUTPUT_FIELDS) + '"'
 
 
-rule all:
-    input:
-        expand(
-            output_dir
-            / clusteringresults_dir
-            / (analysis_name + "_aggregated_features_{modes}.html"),
-            modes=MODES,
-        ),
-        output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html"),
-        output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html"),
-        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf"),
-        output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html"),
-        expand(
-            output_dir
-            / clusteringresults_dir
-            / (analysis_name + "_{protid}_distribution_analysis.svg"),
-            protid=PROTID,
-        ),
+wildcard_constraints:
+    # constrain the `protid` wildcard to an ID in `PROTIDS`
+    protid="|".join(PROTIDS),
+    # constrain the `mode` wildcard to one of the plotting modes specified in the config file
+    mode="|".join(MODES),
 
 
 rule make_pdb:
@@ -123,27 +112,27 @@ rule make_pdb:
     This rule is only touched if a .pdb file doesn't already exist.
     """
     input:
-        cds=input_dir / "{protid}.fasta",
+        fasta_file=INPUT_DIR / "{protid}.fasta",
     output:
-        pdb=input_dir / "{protid}.pdb",
+        pdb_file=INPUT_DIR / "{protid}.pdb",
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.make_pdb.txt"
+        BENCHMARKS_DIR / "{protid}.make_pdb.txt"
     conda:
         "envs/web_apis.yml"
     shell:
         """
-        python ProteinCartography/esmfold_apiquery.py -i {input.cds}
+        python ProteinCartography/esmfold_apiquery.py -i {input.fasta_file}
         """
 
 
 rule copy_pdb:
     """
-    Copies existing or generated PDBs to the Foldseek clustering folder.
+    Copies existing or generated PDBs to the protein structures folder.
     """
     input:
-        input_dir / "{protid}.pdb",
+        INPUT_DIR / "{protid}.pdb",
     output:
-        pdb_download_dir / "{protid}.pdb",
+        PROTEIN_STRUCTURES_DIR / "{protid}.pdb",
     shell:
         """
         cp {input} {output}
@@ -157,18 +146,11 @@ rule run_blast:
     Large proteins will cause remote BLAST to fail; you can still perform a manual BLAST search to get around this.
     """
     input:
-        fasta_file=input_dir / "{protid}.fasta",
+        fasta_file=INPUT_DIR / "{protid}.fasta",
     output:
-        blast_results=output_dir / blastresults_dir / "{protid}.blastresults.tsv",
-    params:
-        max_target_seqs=MAX_BLASTHITS,
-        outfmt=BLAST_OUTFMT,
-        word_size=BLAST_WORD_SIZE,
-        word_size_backoff=BLAST_WORD_SIZE_BACKOFF,
-        evalue=BLAST_EVALUE,
-        num_attempts=BLAST_NUM_ATTEMPTS,
+        blast_results=BLAST_RESULTS_DIR / "{protid}.blast_results.tsv",
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.run_blast.txt"
+        BENCHMARKS_DIR / "{protid}.run_blast.txt"
     conda:
         "envs/blast.yml"
     shell:
@@ -176,12 +158,12 @@ rule run_blast:
         python ProteinCartography/run_blast.py \
           --query {input.fasta_file} \
           --out {output.blast_results} \
-          --max_target_seqs {params.max_target_seqs} \
-          --outfmt {params.outfmt} \
-          --word_size {params.word_size} \
-          --word_size_backoff {params.word_size_backoff} \
-          --num_attempts {params.num_attempts} \
-          --evalue {params.evalue}
+          --max_target_seqs {MAX_BLAST_HITS} \
+          --outfmt {BLAST_OUTFMT} \
+          --word_size {BLAST_WORD_SIZE} \
+          --word_size_backoff {BLAST_WORD_SIZE_BACKOFF} \
+          --num_attempts {BLAST_NUM_ATTEMPTS} \
+          --evalue {BLAST_EVALUE}
         """
 
 
@@ -190,37 +172,34 @@ rule extract_blast_hits:
     Extracts the top hits from the BLAST results file.
     """
     input:
-        blastresults=output_dir / blastresults_dir / "{protid}.blastresults.tsv",
+        blast_results=BLAST_RESULTS_DIR / "{protid}.blast_results.tsv",
     output:
-        refseqhits=output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt",
-    params:
-        blast_outfmt=BLAST_OUTFMT,
+        blast_hits=BLAST_RESULTS_DIR / "{protid}.blast_hits.refseq.txt",
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.extract_blast_hits.txt"
+        BENCHMARKS_DIR / "{protid}.extract_blast_hits.txt"
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/extract_blasthits.py -i {input.blastresults} -o {output.refseqhits} -B {params.blast_outfmt}
+        python ProteinCartography/extract_blast_hits.py -i {input.blast_results} -o {output.blast_hits} -B {BLAST_OUTFMT}
         """
 
 
-rule map_refseqids:
+rule map_refseq_ids:
     """
-    Using List of RefSeq IDs, query the Uniprot ID mapping tool using bioservices UniProt.
-    Returns a list of UniProt IDs.
+    Map a list of RefSeq IDs to UniProt IDs using the Uniprot ID mapping API or bioservices.
     """
     input:
-        refseqhits=output_dir / blastresults_dir / "{protid}.blasthits.refseq.txt",
+        blast_hits=rules.extract_blast_hits.output.blast_hits,
     output:
-        uniprothits=output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt",
+        blast_hits_uniprot_ids=BLAST_RESULTS_DIR / "{protid}.blast_hits.uniprot.txt",
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.map_refseqids.txt"
+        BENCHMARKS_DIR / "{protid}.map_refseq_ids.txt"
     conda:
         "envs/web_apis.yml"
     shell:
         """
-        python ProteinCartography/map_refseqids.py -i {input.refseqhits} -o {output.uniprothits}
+        python ProteinCartography/map_refseq_ids.py -i {input.blast_hits} -o {output.blast_hits_uniprot_ids}
         """
 
 
@@ -234,39 +213,34 @@ rule run_foldseek:
     Note: the foldseek web API returns a limited number of hits; up to 1000 per database
     """
     input:
-        cds=input_dir / "{protid}.pdb",
+        pdb_file=INPUT_DIR / "{protid}.pdb",
     output:
-        targz=output_dir / foldseekresults_dir / "{protid}.fsresults.tar.gz",
-        unpacked=directory(output_dir / foldseekresults_dir / "{protid}"),
-        m8files=expand(
-            output_dir / foldseekresults_dir / "{{protid}}" / "alis_{db}.m8", db=FS_DATABASES
-        ),
+        foldseek_output=FOLDSEEK_RESULTS_DIR / "{protid}.fsresults.tar.gz",
+        m8_files_dir=directory(FOLDSEEK_RESULTS_DIR / "{protid}"),
+        m8_files=expand(FOLDSEEK_RESULTS_DIR / "{{protid}}" / "alis_{db}.m8", db=FS_DATABASES),
     params:
         fs_databases=expand("{fs_databases}", fs_databases=FS_DATABASES),
-        fs_server_arg=FS_SERVER_ARG,
     conda:
         "envs/web_apis.yml"
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.run_foldseek.txt"
+        BENCHMARKS_DIR / "{protid}.run_foldseek.txt"
     shell:
         """
-        python ProteinCartography/foldseek_apiquery.py -i {input.cds} -o {output.targz} {params.fs_server_arg} -d {params.fs_databases}
-        tar -xvf {output.targz} -C {output.unpacked}
+        python ProteinCartography/foldseek_apiquery.py -i {input.pdb_file} -o {output.foldseek_output} {FS_SERVER_ARG} -d {params.fs_databases}
+        tar -xvf {output.foldseek_output} -C {output.m8_files_dir}
         """
 
 
 rule extract_foldseek_hits:
     input:
-        m8files=rules.run_foldseek.output.m8files,
+        m8_files=rules.run_foldseek.output.m8_files,
     output:
-        foldseekhits=output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt",
-    params:
-        max_foldseekhits=MAX_FOLDSEEKHITS,
+        foldseek_hits=FOLDSEEK_RESULTS_DIR / "{protid}.foldseek_hits.txt",
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/extract_foldseekhits.py -i {input.m8files} -o {output.foldseekhits} -m {params.max_foldseekhits}
+        python ProteinCartography/extract_foldseek_hits.py -i {input.m8_files} -o {output.foldseek_hits} -m {MAX_FOLDSEEK_HITS}
         """
 
 
@@ -277,78 +251,71 @@ rule aggregate_foldseek_fraction_seq_identity:
     This will probably be replaced in the future by an all-v-all sequence identity comparison using FAMSA, WITCH, or other approach.
     """
     input:
-        m8files=expand(
-            output_dir / foldseekresults_dir / "{{protid}}" / "alis_{db}.m8", db=FS_DATABASES
-        ),
+        m8_files=rules.run_foldseek.output.m8_files,
     output:
-        fident_features=output_dir / clusteringresults_dir / "{protid}_fident_features.tsv",
+        fident_features=PROTEIN_FEATURES_DIR / "{protid}_fident_features.tsv",
     params:
         protid="{protid}",
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.aggregate_foldseek_fident.txt"
+        BENCHMARKS_DIR / "{protid}.aggregate_foldseek_fident.txt"
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/aggregate_foldseek_fraction_seq_identity.py -i {input.m8files} -o {output.fident_features} -p {params.protid}
+        python ProteinCartography/aggregate_foldseek_fraction_seq_identity.py -i {input.m8_files} -o {output.fident_features} -p {params.protid}
         """
 
 
-rule aggregate_lists:
+rule aggregate_hits:
     """
     Take all Uniprot ID lists and make them one big ID list, removing duplicates.
     """
     input:
-        expand(output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid=PROTID),
-        expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid=PROTID),
+        expand(rules.map_refseq_ids.output.blast_hits_uniprot_ids, protid=PROTIDS),
+        expand(rules.extract_foldseek_hits.output.foldseek_hits, protid=PROTIDS),
     output:
-        jointlist=output_dir / clusteringresults_dir / "jointhits.txt",
+        aggregated_hits=PROTEIN_FEATURES_DIR / "aggregated_hits.txt",
     benchmark:
-        output_dir / benchmarks_dir / "aggregate_lists.txt"
+        BENCHMARKS_DIR / "aggregate_hits.txt"
     shell:
         """
-        python ProteinCartography/aggregate_lists.py -i {input} -o {output.jointlist}
+        python ProteinCartography/aggregate_hits.py -i {input} -o {output}
         """
 
 
 rule fetch_uniprot_metadata:
     """
-    Use the output.jointlist file to query Uniprot and download all metadata as a big ol' TSV.
+    Query Uniprot for the aggregated hits and download all metadata as a big ol' TSV.
     """
     input:
-        output_dir / clusteringresults_dir / "jointhits.txt",
+        rules.aggregate_hits.output.aggregated_hits,
     output:
-        output_dir / clusteringresults_dir / "uniprot_features.tsv",
-    params:
-        additional_fields=UNIPROT_ADDITIONAL_FIELDS,
+        uniprot_features=PROTEIN_FEATURES_DIR / "uniprot_features.tsv",
     benchmark:
-        output_dir / benchmarks_dir / "get_uniprot_metadata.txt"
+        BENCHMARKS_DIR / "fetch_uniprot_metadata.txt"
     conda:
         "envs/web_apis.yml"
     shell:
         """
-        python ProteinCartography/fetch_uniprot_metadata.py -i {input} -o {output} -a {params.additional_fields}
+        python ProteinCartography/fetch_uniprot_metadata.py -i {input} -o {output.uniprot_features} -a {UNIPROT_ADDITIONAL_FIELDS}
         """
 
 
-rule filter_uniprot_hits:
+rule filter_aggregated_hits:
     """
     Use the metadata features from Uniprot to filter hits based on sequence status, fragment, and size.
     """
     input:
-        output_dir / clusteringresults_dir / "uniprot_features.tsv",
+        rules.fetch_uniprot_metadata.output.uniprot_features,
     output:
-        output_dir / clusteringresults_dir / "alphafold_querylist.txt",
-    params:
-        min_length=MIN_LENGTH,
-        max_length=MAX_LENGTH,
+        filtered_aggregated_hits=PROTEIN_FEATURES_DIR / "filtered_aggregated_hits.txt",
     benchmark:
-        output_dir / benchmarks_dir / "filter_uniprot_hits.txt"
+        BENCHMARKS_DIR / "filter_aggregated_hits.txt"
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length} -M {params.max_length}
+        python ProteinCartography/filter_aggregated_hits.py -i {input} -o {output.filtered_aggregated_hits} -m {MIN_LENGTH} -M {MAX_LENGTH}
         """
 
 
@@ -357,18 +324,16 @@ checkpoint download_pdbs:
     Download all PDB files from AlphaFold
     """
     input:
-        jointlist=output_dir / clusteringresults_dir / "alphafold_querylist.txt",
+        rules.filter_aggregated_hits.output.filtered_aggregated_hits,
     output:
-        output_dir=directory(pdb_download_dir),
-    params:
-        max_structures=MAX_STRUCTURES,
+        protein_structures_dir=directory(PROTEIN_STRUCTURES_DIR),
     benchmark:
-        output_dir / benchmarks_dir / "download_pdbs.txt"
+        BENCHMARKS_DIR / "download_pdbs.txt"
     conda:
         "envs/web_apis.yml"
     shell:
         """
-        python ProteinCartography/download_pdbs.py -i {input.jointlist} -o {output.output_dir} -M {params.max_structures}
+        python ProteinCartography/download_pdbs.py -i {input} -o {output.protein_structures_dir} -M {MAX_STRUCTURES}
         """
 
 
@@ -378,14 +343,14 @@ def checkpoint_download_pdbs(wildcards):
     (both those downloaded in `download_pdbs` and those corresponding to the input proteins)
     """
     # the directory containing the PDB files
-    pdb_dirpath = checkpoints.download_pdbs.get(**wildcards).output.output_dir
+    pdb_dirpath = checkpoints.download_pdbs.get(**wildcards).output.protein_structures_dir
 
     # the paths to the PDB files downloaded in `download_pdbs`
     pdb_filepaths = sorted(Path(pdb_dirpath).glob("*.pdb"))
 
     # append the paths to the PDB files corresponding to the input proteins
-    # note: this triggers the `copy_pdb` rule to copy the input PDB files from `input_dir`
-    pdb_filepaths += expand(pdb_download_dir / "{protid}.pdb", protid=PROTID)
+    # note: this triggers the `copy_pdb` rule to copy the input PDB files from `INPUT_DIR`
+    pdb_filepaths += expand(PROTEIN_STRUCTURES_DIR / "{protid}.pdb", protid=PROTIDS)
     return pdb_filepaths
 
 
@@ -397,16 +362,14 @@ rule assess_pdbs:
     input:
         checkpoint_download_pdbs,
     output:
-        pdb_features=output_dir / clusteringresults_dir / "pdb_features.tsv",
-    params:
-        pdb_download_dir=pdb_download_dir,
+        pdb_features=PROTEIN_FEATURES_DIR / "pdb_features.tsv",
     benchmark:
-        output_dir / benchmarks_dir / "assess_pdbs.txt"
+        BENCHMARKS_DIR / "assess_pdbs.txt"
     conda:
         "envs/plotting.yml"
     shell:
         """
-        python ProteinCartography/assess_pdbs.py -i {params.pdb_download_dir} -o {output.pdb_features}
+        python ProteinCartography/assess_pdbs.py -i {PROTEIN_STRUCTURES_DIR} -o {output.pdb_features}
         """
 
 
@@ -417,21 +380,18 @@ rule foldseek_clustering:
     input:
         checkpoint_download_pdbs,
     output:
-        allvall_pivot=output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
-        struclusters_features=output_dir / clusteringresults_dir / "struclusters_features.tsv",
-    params:
-        querydir=pdb_download_dir,
-        resultsdir=output_dir / clusteringresults_dir,
+        all_by_all_tmscores=FOLDSEEK_CLUSTERING_DIR / "all_by_all_tmscore_pivoted.tsv",
+        struclusters_features=FOLDSEEK_CLUSTERING_DIR / "struclusters_features.tsv",
     conda:
         "envs/foldseek.yml"
     resources:
         mem_mb=32 * 1000,
     threads: 16
     benchmark:
-        output_dir / benchmarks_dir / "foldseek_clustering.txt"
+        BENCHMARKS_DIR / "foldseek_clustering.txt"
     shell:
         """
-        python ProteinCartography/foldseek_clustering.py -q {params.querydir} -r {params.resultsdir}
+        python ProteinCartography/foldseek_clustering.py -q {PROTEIN_STRUCTURES_DIR} -r {FOLDSEEK_CLUSTERING_DIR}
         """
 
 
@@ -442,18 +402,18 @@ rule dim_reduction:
     Write helper functions to save the dataframes only called by main()
     """
     input:
-        output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
+        rules.foldseek_clustering.output.all_by_all_tmscores,
     output:
-        output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted_{modes}.tsv",
+        all_by_all_tmscores=FOLDSEEK_CLUSTERING_DIR / "all_by_all_tmscore_pivoted_{mode}.tsv",
     params:
-        modes="{modes}",
+        mode="{mode}",
     conda:
         "envs/analysis.yml"
     benchmark:
-        output_dir / benchmarks_dir / "{modes}.dim_reduction.txt"
+        BENCHMARKS_DIR / "{mode}.dim_reduction.txt"
     shell:
         """
-        python ProteinCartography/dim_reduction.py -i {input} -m {params.modes}
+        python ProteinCartography/dim_reduction.py -i {input} -m {params.mode}
         """
 
 
@@ -462,85 +422,83 @@ rule leiden_clustering:
     Performs Leiden clustering on the data using scanpy's implementation.
     """
     input:
-        output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
+        rules.foldseek_clustering.output.all_by_all_tmscores,
     output:
-        output_dir / clusteringresults_dir / "leiden_features.tsv",
+        leiden_features=FOLDSEEK_CLUSTERING_DIR / "leiden_features.tsv",
     conda:
         "envs/analysis.yml"
     benchmark:
-        output_dir / benchmarks_dir / "leiden_clustering.txt"
+        BENCHMARKS_DIR / "leiden_clustering.txt"
     shell:
         """
-        python ProteinCartography/leiden_clustering.py -i {input} -o {output}
+        python ProteinCartography/leiden_clustering.py -i {input} -o {output.leiden_features}
         """
 
 
-rule input_distances:
+rule extract_input_protein_distances:
     """
     Extracts the distances from input proteins to other proteins in the dataset.
-    Adds them as options for the visualization plot.
     """
     input:
-        output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
+        rules.foldseek_clustering.output.all_by_all_tmscores,
     output:
-        output_dir / clusteringresults_dir / "{protid}_distance_features.tsv",
+        distance_features=PROTEIN_FEATURES_DIR / "{protid}_distance_features.tsv",
     params:
         protid="{protid}",
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.input_distances.txt"
+        BENCHMARKS_DIR / "{protid}.input_distances.txt"
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/extract_input_distances.py -i {input} -o {output} -p {params.protid}
+        python ProteinCartography/extract_input_protein_distances.py -i {input} -o {output.distance_features} -p {params.protid}
         """
 
 
 rule calculate_concordance:
     """
-    Currently, this subtracts the fraction sequence identity from the TM-score to get a measure of whether something is more similar in sequence or structure.
+    Currently, this subtracts the fraction sequence identity from the TM-score
+    to get a measure of whether something is more similar in sequence or structure.
 
-    We're working on developing some kind of test statistic that evaluates the significance of this difference from some expectation.
+    We're working on developing some kind of test statistic that evaluates the significance
+    of this difference from some expectation.
     """
     input:
-        tmscore_file=output_dir / clusteringresults_dir / "{protid}_distance_features.tsv",
-        fident_file=output_dir / clusteringresults_dir / "{protid}_fident_features.tsv",
+        distance_features=rules.extract_input_protein_distances.output.distance_features,
+        fident_features=rules.aggregate_foldseek_fraction_seq_identity.output.fident_features,
     params:
         protid="{protid}",
     output:
-        output_dir / clusteringresults_dir / "{protid}_concordance_features.tsv",
+        concordance_features=PROTEIN_FEATURES_DIR / "{protid}_concordance_features.tsv",
     benchmark:
-        output_dir / benchmarks_dir / "{protid}.calculate_concordance.txt"
+        BENCHMARKS_DIR / "{protid}.calculate_concordance.txt"
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/calculate_concordance.py -t {input.tmscore_file} -f {input.fident_file} -o {output} -p {params.protid}
+        python ProteinCartography/calculate_concordance.py -t {input.distance_features} -f {input.fident_features} -o {output.concordance_features} -p {params.protid}
         """
 
 
-rule get_source:
+rule get_source_of_hits:
     """
-    Checks the blasthits and foldseekhits files to determine the source of each protein.
-    Adds this info to the visualization plot.
+    Checks the blast hits and foldseek hits to determine the source of each protein.
     """
     input:
-        pivoted=output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
-        hitfiles=expand(
-            output_dir / foldseekresults_dir / "{protid}.foldseekhits.txt", protid=PROTID
-        )
-        + expand(output_dir / blastresults_dir / "{protid}.blasthits.uniprot.txt", protid=PROTID),
+        tm_scores=rules.foldseek_clustering.output.all_by_all_tmscores,
+        hit_files=(
+            expand(rules.extract_foldseek_hits.output.foldseek_hits, protid=PROTIDS)
+            + expand(rules.map_refseq_ids.output.blast_hits_uniprot_ids, protid=PROTIDS)
+        ),
     output:
-        pivot=output_dir / clusteringresults_dir / "source_features.tsv",
-    params:
-        protid=PROTID,
+        source_features=PROTEIN_FEATURES_DIR / "source_features.tsv",
     benchmark:
-        output_dir / benchmarks_dir / "get_source.txt"
+        BENCHMARKS_DIR / "get_source_of_hits.txt"
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/get_source.py -i {input.pivoted} -f {input.hitfiles} -o {output.pivot} -k {params.protid}
+        python ProteinCartography/get_source_of_hits.py -i {input.tm_scores} -f {input.hit_files} -o {output.source_features} -k {PROTIDS}
         """
 
 
@@ -549,27 +507,25 @@ rule aggregate_features:
     Aggregate all TSV features provided by user in some specific directory, making one big TSV
     """
     input:
-        output_dir / clusteringresults_dir / "struclusters_features.tsv",
-        output_dir / clusteringresults_dir / "uniprot_features.tsv",
-        output_dir / clusteringresults_dir / "leiden_features.tsv",
-        expand(output_dir / clusteringresults_dir / "{protid}_distance_features.tsv", protid=PROTID),
-        expand(output_dir / clusteringresults_dir / "{protid}_fident_features.tsv", protid=PROTID),
+        rules.foldseek_clustering.output.struclusters_features,
+        rules.fetch_uniprot_metadata.output.uniprot_features,
+        rules.leiden_clustering.output.leiden_features,
+        expand(rules.extract_input_protein_distances.output.distance_features, protid=PROTIDS),
         expand(
-            output_dir / clusteringresults_dir / "{protid}_concordance_features.tsv", protid=PROTID
+            rules.aggregate_foldseek_fraction_seq_identity.output.fident_features, protid=PROTIDS
         ),
-        output_dir / clusteringresults_dir / "source_features.tsv",
-        output_dir / clusteringresults_dir / "pdb_features.tsv",
+        expand(rules.calculate_concordance.output.concordance_features, protid=PROTIDS),
+        rules.get_source_of_hits.output.source_features,
+        rules.assess_pdbs.output.pdb_features,
     output:
-        output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv"),
-    params:
-        override=OVERRIDE_FILE,
+        aggregated_features=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_aggregated_features.tsv",
     benchmark:
-        output_dir / benchmarks_dir / "aggregate_features.txt"
+        BENCHMARKS_DIR / "aggregate_features.txt"
     conda:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/aggregate_features.py -i {input} -o {output} -v {params.override}
+        python ProteinCartography/aggregate_features.py -i {input} -o {output.aggregated_features} -v {OVERRIDE_FILE}
         """
 
 
@@ -581,21 +537,20 @@ rule plot_interactive:
     Should have means to set a palette for each individual plot type, maybe as JSON?
     """
     input:
-        dimensions=output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted_{modes}.tsv",
-        features=output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features.tsv"),
+        tm_scores=rules.dim_reduction.output.all_by_all_tmscores,
+        features=rules.aggregate_features.output.aggregated_features,
     output:
-        output_dir / clusteringresults_dir / (analysis_name + "_aggregated_features_{modes}.html"),
+        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_aggregated_features_{{mode}}.html",
     params:
-        modes="{modes}",
-        protid=expand("{protid}", protid=PROTID),
-        taxon_focus=TAXON_FOCUS,
+        mode="{mode}",
+        protids=expand("{protid}", protid=PROTIDS),
     conda:
         "envs/plotting.yml"
     benchmark:
-        output_dir / benchmarks_dir / "{modes}.plot_interactive.txt"
+        BENCHMARKS_DIR / "{mode}.plot_interactive.txt"
     shell:
         """
-        python ProteinCartography/plot_interactive.py -d {input.dimensions} -f {input.features} -o {output} -t {params.modes} -k {params.protid} -x {params.taxon_focus}
+        python ProteinCartography/plot_interactive.py -d {input.tm_scores} -f {input.features} -o {output.html} -t {params.mode} -k {params.protids} -x {TAXON_FOCUS}
         """
 
 
@@ -607,20 +562,20 @@ rule plot_similarity_leiden:
     The other cells show how similar other clusters are to each other.
     """
     input:
-        matrix=output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
-        features=output_dir / clusteringresults_dir / "leiden_features.tsv",
+        tm_scores=rules.foldseek_clustering.output.all_by_all_tmscores,
+        features=rules.leiden_clustering.output.leiden_features,
     output:
-        tsv=output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.tsv"),
-        html=output_dir / clusteringresults_dir / (analysis_name + "_leiden_similarity.html"),
+        tsv=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_leiden_similarity.tsv",
+        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_leiden_similarity.html",
     params:
         column="LeidenCluster",
     conda:
         "envs/plotting.yml"
     benchmark:
-        output_dir / benchmarks_dir / "plot_similarity_leiden.txt"
+        BENCHMARKS_DIR / "plot_similarity_leiden.txt"
     shell:
         """
-        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
+        python ProteinCartography/plot_cluster_similarity.py -m {input.tm_scores} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
         """
 
 
@@ -630,22 +585,24 @@ rule plot_similarity_strucluster:
     For each cluster, calculates the mean TM-score of all structures in that cluster versus all other clusters.
     The diagonal of the plot shows how similar proteins are within a given cluster.
     The other cells show how similar other clusters are to each other.
+
+    TODO (KC): this rule is almost identical to `plot_similarity_leiden`
     """
     input:
-        matrix=output_dir / clusteringresults_dir / "all_by_all_tmscore_pivoted.tsv",
-        features=output_dir / clusteringresults_dir / "struclusters_features.tsv",
+        tm_scores=rules.foldseek_clustering.output.all_by_all_tmscores,
+        features=rules.foldseek_clustering.output.struclusters_features,
     output:
-        tsv=output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.tsv"),
-        html=output_dir / clusteringresults_dir / (analysis_name + "_strucluster_similarity.html"),
+        tsv=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_strucluster_similarity.tsv",
+        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_strucluster_similarity.html",
     params:
         column="StruCluster",
     conda:
         "envs/plotting.yml"
     benchmark:
-        output_dir / benchmarks_dir / "plot_similarity_strucluster.txt"
+        BENCHMARKS_DIR / "plot_similarity_strucluster.txt"
     shell:
         """
-        python ProteinCartography/cluster_similarity.py -m {input.matrix} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
+        python ProteinCartography/plot_cluster_similarity.py -m {input.tm_scores} -f {input.features} -c {params.column} -T {output.tsv} -H {output.html}
         """
 
 
@@ -654,23 +611,20 @@ rule plot_semantic_analysis:
     Plots a semantic analysis chart for groups within the data.
     """
     input:
-        features_file=output_dir
-        / clusteringresults_dir
-        / (analysis_name + "_aggregated_features.tsv"),
+        features=rules.aggregate_features.output.aggregated_features,
     output:
-        pdf=output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.pdf"),
-        interactive=output_dir / clusteringresults_dir / (analysis_name + "_semantic_analysis.html"),
+        pdf=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis.pdf",
+        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis.html",
     params:
         agg_column="LeidenCluster",
         annot_column="'Protein names'",
-        analysis_name=analysis_name,
     conda:
         "envs/plotting.yml"
     benchmark:
-        output_dir / benchmarks_dir / "plot_semantic_analysis.txt"
+        BENCHMARKS_DIR / "plot_semantic_analysis.txt"
     shell:
         """
-        python ProteinCartography/semantic_analysis.py -f {input.features_file} -c {params.agg_column} -n {params.annot_column} -o {output.pdf} -i {output.interactive} -a {params.analysis_name}
+        python ProteinCartography/semantic_analysis.py -f {input.features} -c {params.agg_column} -n {params.annot_column} -o {output.pdf} -i {output.html} -a {ANALYSIS_NAME}
         """
 
 
@@ -679,18 +633,36 @@ rule plot_cluster_distributions:
     Plots distributions of key values per cluster for each input protein.
     """
     input:
-        features_file=output_dir
-        / clusteringresults_dir
-        / (analysis_name + "_aggregated_features.tsv"),
+        features=rules.aggregate_features.output.aggregated_features,
     output:
-        output_dir / clusteringresults_dir / (analysis_name + "_{protid}_distribution_analysis.svg"),
+        svg=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_{{protid}}_distribution_analysis.svg",
     params:
         protid="{protid}",
     conda:
         "envs/plotting.yml"
     benchmark:
-        output_dir / benchmarks_dir / "plot_cluster_distributions_{protid}.txt"
+        BENCHMARKS_DIR / "plot_cluster_distributions_{protid}.txt"
     shell:
         """
-        python ProteinCartography/plot_cluster_distributions.py -i {input.features_file} -o {output} -k {params.protid}
+        python ProteinCartography/plot_cluster_distributions.py -i {input.features} -o {output.svg} -k {params.protid}
         """
+
+
+rule all:
+    """
+    This is a pseudo-rule that defines the final outputs of the pipeline
+
+    Note: this rule appears at the end, rather than the beginning, of the snakefile
+    in order to allow the definition of its inputs in terms of the outputs of other rules
+    (whose definitions must appear before this rule)
+    """
+    # we use `default_target` to tell snakemake that this is the first rule to run
+    # (it otherwise defaults to running the first rule in the snakefile)
+    default_target: True
+    input:
+        rules.plot_similarity_leiden.output.html,
+        rules.plot_similarity_strucluster.output.html,
+        rules.plot_semantic_analysis.output.html,
+        rules.plot_semantic_analysis.output.pdf,
+        expand(rules.plot_interactive.output.html, mode=MODES),
+        expand(rules.plot_cluster_distributions.output.svg, protid=PROTIDS),

@@ -34,6 +34,7 @@ override_file: "features_override.tsv"
 # A features file (usually retrieved from Uniprot) that contains
 # protein metadata for visualization. Uses the same columns as the
 # override_file.
+# Note: the path to this file should be relative to the input_dir specified above
 features_file: "uniprot_features.tsv"
 
 #####################
@@ -56,5 +57,5 @@ taxon_focus: 'euk'
 # similar to the Input proteins in the From-Query mode of the pipeline,
 # by passing a list of protids below.
 # Un-comment the lines below to use this.
-#keyids:
+#key_protids:
 #  - 'Q9I2Q1'
