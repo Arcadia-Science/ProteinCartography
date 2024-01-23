@@ -83,7 +83,7 @@ def snakefile_filepath(repo_dirpath):
 
 
 @pytest.fixture
-def set_env_variables():
+def set_env_variables(pytestconfig):
     """
     Set the env variable used to mock the API responses
     made by the python scripts that are called by the snakemake rules
@@ -93,17 +93,18 @@ def set_env_variables():
     """
 
     # the names of the proteincartography-specific env variables
-    was_called_by_pytest = "PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST"
+    should_use_mocks = "PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS"
     should_log_api_requests = "PROTEINCARTOGRAPHY_SHOULD_LOG_API_REQUESTS"
 
-    os.environ[was_called_by_pytest] = "true"
+    if not pytestconfig.getoption("no_mocks"):
+        os.environ[should_use_mocks] = "true"
 
     # don't log API requests during the tests
     should_log_api_requests_value = os.environ.pop(should_log_api_requests, None)
 
     yield
 
-    os.environ.pop(was_called_by_pytest)
+    os.environ.pop(should_use_mocks, None)
 
     # as a convenience, restore the logging env variable to its original value
     if should_log_api_requests_value is not None:

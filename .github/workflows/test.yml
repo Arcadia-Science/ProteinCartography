@@ -9,6 +9,8 @@ on:
   pull_request:
     branches:
       - main
+    # 'synchronize' means the PR was updated with new commits
+    types: [opened, reopened, labeled, synchronize]
 
 jobs:
   test:
@@ -63,3 +65,8 @@ jobs:
       - name: Run the tests
         run: |
           pytest -vv -s .
+
+      - name: Run the tests without mocks
+        if: contains(github.event.pull_request.labels.*.name, 'run-slow-tests')
+        run: |
+          make test-without-mocks

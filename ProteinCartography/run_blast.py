@@ -8,7 +8,7 @@ from tests import mocks
 
 # if necessary, mock the `run_blast` method
 # see comments in `tests.mocks` for more details
-if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
+if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
     mocks.mock_run_blast()
 
 

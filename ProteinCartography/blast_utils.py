@@ -48,5 +48,6 @@ def run_blast(
             ]
         ),
         capture_output=True,
+        shell=True,
     )
     return result
