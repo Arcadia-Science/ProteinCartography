@@ -54,7 +54,8 @@ def post_esmfold_apiquery(fasta: str):
         fasta (str): string of valid amino acids for query.
     """
     # Here we're making the request with verify=False to disable SSL
-    # This may be a security concern, but is (hopefully) temporary until the ESM Atlas SSL certificates are fixed
+    # This may be a security concern, but is (hopefully)
+    # temporary until the ESM Atlas SSL certificates are fixed
     result = session_with_retry().post(
         "https://api.esmatlas.com/foldSequence/v1/pdb/", data=fasta, verify=False
     )
