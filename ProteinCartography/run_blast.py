@@ -4,6 +4,7 @@ import os
 import sys
 
 import blast_utils
+import constants
 from tests import mocks
 
 # if necessary, mock the `run_blast` method
@@ -26,7 +27,7 @@ def parse_args():
     )
     parser.add_argument(
         "--outfmt",
-        required=True,
+        default=constants.BLAST_OUTFMT,
         help="query format string.",
     )
     parser.add_argument(

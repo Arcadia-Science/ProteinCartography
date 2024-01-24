@@ -6,7 +6,7 @@ import re
 import numpy as np
 import pandas as pd
 from api_utils import UniProtWithExpBackoff, session_with_retry
-from constants import UniProtServices
+from constants import UniProtService
 from tests import mocks
 
 # if necessary, mock the `uniprot.search` method (used by `query_uniprot`)
@@ -59,7 +59,7 @@ def parse_args():
         help="path of destination uniprot_features.tsv file",
     )
     parser.add_argument(
-        "-s", "--service", default=UniProtServices.BIOSERVICES.value, help="how to fetch metadata"
+        "-s", "--service", default=UniProtService.BIOSERVICES.value, help="how to fetch metadata"
     )
     parser.add_argument(
         "-a",
@@ -79,7 +79,7 @@ def query_uniprot(
     sub_batch_size=300,
     fmt="tsv",
     fields=DEFAULT_FIELDS,
-    service=UniProtServices.BIOSERVICES.value,
+    service=UniProtService.BIOSERVICES,
 ):
     """
     Takes an input list of accessions and gets the full information set from Uniprot
@@ -130,14 +130,14 @@ def query_uniprot(
 
     def get_batch(query_string: str):
         # Generator function to fetch data in batches
-        if service == UniProtServices.REST.value:
+        if service == UniProtService.REST:
             batch_url = f"https://rest.uniprot.org/uniprotkb/search?query={query_string}&format={fmt}&fields={fields_string}&size={sub_batch_size}"
             while batch_url:
                 response = session.get(batch_url)
                 response.raise_for_status()
                 yield response.text
                 batch_url = get_next_link(response.headers)
-        elif service == UniProtServices.BIOSERVICES.value:
+        elif service == UniProtService.BIOSERVICES:
             uniprot = UniProtWithExpBackoff()
             results = uniprot.search(
                 query_string, columns=fields_string, size=sub_batch_size, progress=False
@@ -211,7 +211,7 @@ def main():
 
     input_file = args.input
     output_file = args.output
-    service = args.service
+    service = UniProtService(args.service)
     additional_fields = args.additional_fields
 
     fields = DEFAULT_FIELDS

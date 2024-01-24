@@ -1,31 +1,11 @@
 #!/usr/bin/env python
 import argparse
 
+import constants
 import pandas as pd
 
 # only import these functions when using import *
 __all__ = ["extract_blast_hits"]
-
-BLAST_DEFAULTS = [
-    "qseqid",
-    "sseqid",
-    "pident",
-    "length",
-    "mismatch",
-    "gapopen",
-    "qstart",
-    "qend",
-    "sstart",
-    "send",
-    "evalue",
-    "bitscore",
-    "sacc",
-    "saccver",
-    "sgi",
-    "staxids",
-    "scomnames",
-]
-BLAST_DEFAULT_STRING = " ".join(["6"] + BLAST_DEFAULTS)
 
 
 # parse command line arguments
@@ -46,8 +26,8 @@ def parse_args():
     parser.add_argument(
         "-B",
         "--blast-format-string",
-        default=BLAST_DEFAULT_STRING,
-        help=f"BLAST query format string.\n Default {BLAST_DEFAULT_STRING}",
+        default=constants.BLAST_OUTFMT,
+        help=f"BLAST query format string.\n Defaults to '{constants.BLAST_OUTFMT}'",
     )
     args = parser.parse_args()
 
@@ -55,7 +35,7 @@ def parse_args():
 
 
 # take an input blastresults file and create a .txt file from that
-def extract_blast_hits(input_file: str, output_file: str, names=BLAST_DEFAULTS):
+def extract_blast_hits(input_file: str, output_file: str, column_names: list):
     """
     Takes an input blast_results.tsv file, reads the accessions,
     and prints unique hits to a .txt file, one per line.
@@ -65,7 +45,7 @@ def extract_blast_hits(input_file: str, output_file: str, names=BLAST_DEFAULTS):
         output_file (str): path of destination blast_hits.txt file.
         names (str): names of columns of blast results.
     """
-    df = pd.read_csv(input_file, sep="\t", names=names)
+    df = pd.read_csv(input_file, sep="\t", names=column_names)
 
     hits = df["sacc"].unique()
 
@@ -79,16 +59,10 @@ def extract_blast_hits(input_file: str, output_file: str, names=BLAST_DEFAULTS):
 # run this if called from the interpreter
 def main():
     args = parse_args()
-    input_file = args.input
-    output_file = args.output
-    blast_format_string = args.blast_format_string
-
-    if blast_format_string == BLAST_DEFAULT_STRING:
-        blast_format_list = BLAST_DEFAULTS
-    else:
-        blast_format_list = [i for i in blast_format_string.split(" ") if i != "6"]
-
-    extract_blast_hits(input_file, output_file, names=blast_format_list)
+    blast_column_names = [name for name in args.blast_format_string.split(" ") if name != "6"]
+    extract_blast_hits(
+        input_file=args.input, output_file=args.output, column_names=blast_column_names
+    )
 
 
 # check if called from interpreter

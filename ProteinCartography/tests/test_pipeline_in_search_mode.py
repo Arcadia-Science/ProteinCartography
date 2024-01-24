@@ -23,23 +23,14 @@ def config_filepath(tmp_path):
     Generate a config file for testing the pipeline
     """
     config = {
+        "mode": "search",
+        "analysis_name": "test",
         "input_dir": str(tmp_path / "input"),
         "output_dir": str(tmp_path / "output"),
-        "analysis_name": "test",
-        "foldseek_databases": ["afdb50", "afdb-swissprot", "afdb-proteome"],
         "plotting_modes": ["pca_umap"],
         "max_blast_hits": 10,
         "max_foldseek_hits": 10,
         "max_structures": 10,
-        "taxon_focus": "euk",
-        "uniprot_additional_fields": [],
-        "min_length": 0,
-        "max_length": 0,
-        "resources": {"mem_mb": 16 * 1000},
-        "cores": 8,
-        "max-jobs-per-second": 1,
-        "max-status-checks-per-second": 10,
-        "local-cores": 10,
     }
 
     filepath = tmp_path / "config.yaml"
@@ -63,23 +54,6 @@ def stage_inputs(integration_test_artifacts_dirpath, config_filepath):
         integration_test_artifacts_dirpath / "search-mode" / dataset_name / "input",
         config["input_dir"],
     )
-
-
-@pytest.fixture
-def snakefile_filepath(repo_dirpath):
-    """
-    Generate a temporary snakefile for testing the pipeline
-
-    Note: currently this is just a copy of the real snakefile,
-    but in the future we may need to modify it for testing (to, e.g., override certain rules)
-    """
-    # note: snakemake requires that the `envs/` dir be relative to the dir containing the snakefile,
-    # so we cannot write the modified snakefile to the tmp_path directory but instead must write it
-    # to the repo directory and manually remove it after the test has run
-    filepath = repo_dirpath / "Snakefile_tmp"
-    shutil.copy(repo_dirpath / "Snakefile", filepath)
-    yield filepath
-    os.remove(filepath)
 
 
 @pytest.fixture
@@ -113,14 +87,14 @@ def set_env_variables(pytestconfig):
 
 @pytest.mark.usefixtures("stage_inputs")
 @pytest.mark.usefixtures("set_env_variables")
-def test_pipeline_in_search_mode_with_mocked_api_calls(snakefile_filepath, config_filepath):
+def test_pipeline_in_search_mode_with_mocked_api_calls(repo_dirpath, config_filepath):
     """
     Run the pipeline in "search" mode with the test config file, the temporary snakefile,
     and mocked API calls
     """
 
     snakemake.snakemake(
-        snakefile=snakefile_filepath,
+        snakefile=(repo_dirpath / "Snakefile"),
         configfiles=[config_filepath],
         use_conda=True,
         cores=8,

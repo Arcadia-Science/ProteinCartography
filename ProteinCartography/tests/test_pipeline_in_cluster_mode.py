@@ -13,11 +13,13 @@ def config_filepath(tmp_path):
     Generate a config file for testing the pipeline in "cluster" mode
     """
     config = {
+        "mode": "cluster",
+        "analysis_name": "test",
         "input_dir": str(tmp_path / "input"),
         "output_dir": str(tmp_path / "output"),
-        "analysis_name": "test",
         "plotting_modes": ["pca_umap"],
-        "taxon_focus": "euk",
+        "features_file": "uniprot_features.tsv",
+        "key_protids": ["P60709"],
     }
 
     filepath = tmp_path / "config.yaml"
@@ -43,22 +45,14 @@ def stage_inputs(integration_test_artifacts_dirpath, config_filepath):
     )
 
 
-@pytest.fixture
-def snakefile_filepath(repo_dirpath):
-    """
-    The path to the cluster-mode Snakefile
-    """
-    return repo_dirpath / "Snakefile_ff"
-
-
 @pytest.mark.usefixtures("stage_inputs")
-def test_pipeline_in_cluster_mode(snakefile_filepath, config_filepath):
+def test_pipeline_in_cluster_mode(repo_dirpath, config_filepath):
     """
     Run the pipeline in "cluster" mode with the test config file
     """
 
     snakemake.snakemake(
-        snakefile=snakefile_filepath,
+        snakefile=(repo_dirpath / "Snakefile"),
         configfiles=[config_filepath],
         use_conda=True,
         cores=8,

@@ -59,12 +59,12 @@ jobs:
 
       - name: Create the snakemake conda envs
         run: |
-          snakemake --configfile demo/config_actin.yml --use-conda --conda-create-envs-only --cores 1
+          snakemake --configfile demo/search-mode/config_actin.yml --use-conda --conda-create-envs-only --cores 1
         if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
 
       - name: Run the tests
         run: |
-          pytest -vv -s .
+          make test
 
       - name: Run the tests without mocks
         if: contains(github.event.pull_request.labels.*.name, 'run-slow-tests')
