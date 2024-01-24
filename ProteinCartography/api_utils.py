@@ -7,7 +7,6 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tests import artifact_generation_utils, mocks
 
-
 __all__ = ["session_with_retry", "DefaultExpBackoffRetry", "UniProtWithExpBackoff"]
 
 USER_AGENT_HEADER = {"User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1"}
