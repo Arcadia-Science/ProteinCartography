@@ -1,0 +1,8 @@
+mode: "search"
+analysis_name: "actin-demo"
+input_dir: "demo/search-mode/input/"
+output_dir: "demo/search-mode/output/"
+
+max_blast_hits: 3000
+max_foldseek_hits: 3000
+max_structures: 5000

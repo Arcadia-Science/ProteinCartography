@@ -73,7 +73,7 @@ def parse_args():
     )
     parser.add_argument(
         "-x",
-        "--taxon_focus",
+        "--taxon-focus",
         default="euk",
         help=(
             "Coloring scheme/ taxonomic groups for broad taxon plot.\n"

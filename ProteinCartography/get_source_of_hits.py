@@ -52,7 +52,8 @@ def get_source(
 
     Args:
         input_file (str): path to input pivoted results file.
-        hit_files (list): list of filepaths for results files (usually blasthits and foldseekhits).
+        hit_files (list): list of filepaths to the results files
+            (usually blast_hits and foldseek_hits)
         savefile (str): path to destination file.
         groupby (tuple): how to group summary metrics. Defaults to 'method' and 'keyid'.
         methods (tuple): what methods to look for Defaults to 'blast' and 'foldseek'.
