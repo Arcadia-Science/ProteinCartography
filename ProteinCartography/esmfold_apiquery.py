@@ -7,6 +7,7 @@ import warnings
 # depends on api_utils.py
 from api_utils import session_with_retry
 from Bio import SeqIO
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 ### NOTES
 # ESMFold API example from website:
@@ -52,9 +53,10 @@ def post_esmfold_apiquery(fasta: str):
     Args:
         fasta (str): string of valid amino acids for query.
     """
+    # Here we're making the request with verify=False to disable SSL
+    # This may be a security concern, but is (hopefully) temporary until the ESM Atlas SSL certificates are fixed
     result = session_with_retry().post(
-        "https://api.esmatlas.com/foldSequence/v1/pdb/",
-        data=fasta, verify=False
+        "https://api.esmatlas.com/foldSequence/v1/pdb/", data=fasta, verify=False
     )
     if result.status_code == 200:
         return result.text
@@ -125,10 +127,10 @@ def main():
     input_file = args.input
     output_file = args.output
 
-    #Ignore warnings when we make the ESMFold API request
-    #We're disabling SSL which `requests` will otherwise warn us about
+    # Ignore warnings when we make the ESMFold API request
+    # We're disabling SSL which `requests` will otherwise warn us about
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.simplefilter("ignore", category=InsecureRequestWarning)
         esmfold_apiquery(input_file, output_file)
 
 
