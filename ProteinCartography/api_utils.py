@@ -6,7 +6,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tests import artifact_generation_utils, mocks
-import ssl
+
 
 __all__ = ["session_with_retry", "DefaultExpBackoffRetry", "UniProtWithExpBackoff"]
 
@@ -28,12 +28,6 @@ if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
 # it should *not* be set in production.
 if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_LOG_API_REQUESTS") == "true":
     HTTPAdapter = artifact_generation_utils.HTTPAdapterWithLogging  # noqa F811
-
-
-
-#We need to disable SSL due to a certificate error with the ESM Atlas API
-#See https://github.com/facebookresearch/esm/discussions/627
-ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def session_with_retry():

@@ -2,6 +2,7 @@
 import argparse
 import os
 import sys
+import warnings
 
 # depends on api_utils.py
 from api_utils import session_with_retry
@@ -53,7 +54,7 @@ def post_esmfold_apiquery(fasta: str):
     """
     result = session_with_retry().post(
         "https://api.esmatlas.com/foldSequence/v1/pdb/",
-        data=fasta,
+        data=fasta, verify=False
     )
     if result.status_code == 200:
         return result.text
@@ -123,7 +124,12 @@ def main():
 
     input_file = args.input
     output_file = args.output
-    esmfold_apiquery(input_file, output_file)
+
+    #Ignore warnings when we make the ESMFold API request
+    #We're disabling SSL which `requests` will otherwise warn us about
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        esmfold_apiquery(input_file, output_file)
 
 
 # check if called from interpreter
