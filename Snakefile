@@ -353,7 +353,7 @@ rule filter_uniprot_hits:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length} -M {params.max_length}
+        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length} -M {params.max_length} --excluded-protids {PROTID}
         """
 
 
