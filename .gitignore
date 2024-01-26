@@ -5,8 +5,7 @@ envs/src/**
 .snakemake/
 /input/
 /output/
-/demo/output/
-/demo/input/
+/demo/**/output/
 /logs
 /tmp
 

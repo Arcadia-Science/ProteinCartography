@@ -17,11 +17,11 @@ def parse_args():
         "-o", "--output", required=True, help="Path of output aggregated features file."
     )
 
-    # note: the `--override-file` option requires `nargs="?"` because this option will be included
-    # without a value if OVERRIDE_FILE is set to an empty string in the snakemake file
+    # note: this CLI option requires `nargs="?"` because this option will be included
+    # without a value if FEATURES_OVERRIDE_FILE is set to an empty string in the snakemake file
     parser.add_argument(
         "-v",
-        "--override-file",
+        "--features-override-file",
         nargs="?",
         help="Features override file for manual entries.",
     )
@@ -30,7 +30,9 @@ def parse_args():
     return args
 
 
-def aggregate_features(input_files: list, output_file=None, features_override=None) -> pd.DataFrame:
+def aggregate_features(
+    input_files: list, output_file=None, features_override_file=None
+) -> pd.DataFrame:
     """
     Aggregates features from multiple features files by `protid`.
     A features file contains at least one column with the name `protid`
@@ -44,9 +46,9 @@ def aggregate_features(input_files: list, output_file=None, features_override=No
     Args:
         input_files (list): list of filepaths to aggregate.
         output_file (str): path of destination file.
-        features_override (str): path to features override file.
-            The override file contains as its first column a protid
-            for specific proteins in the data.
+        features_override_file (str): path to features override file.
+            The override file is a TSV file that contains as its first column a protid
+            for specific proteins in the dataset.
             The remaining columns can be columns of any of the features files.
             After aggregation, the values of those specific cells will be updated
             to reflect the override file.
@@ -68,9 +70,9 @@ def aggregate_features(input_files: list, output_file=None, features_override=No
             agg_df = agg_df.merge(df, on="protid", how="outer")
 
     # If there's a features override file, use it
-    if features_override is not None:
+    if features_override_file is not None:
         # Read the file
-        features_override_df = pd.read_csv(features_override, sep="\t")
+        features_override_df = pd.read_csv(features_override_file, sep="\t")
 
         # Iterate over protids
         for entry in features_override_df["protid"].values:
@@ -106,9 +108,8 @@ def main():
     args = parse_args()
     input_files = args.input
     output_file = args.output
-    features_override = args.override_file
-
-    aggregate_features(input_files, output_file, features_override)
+    features_override_file = args.features_override_file
+    aggregate_features(input_files, output_file, features_override_file)
 
 
 # check if called from interpreter

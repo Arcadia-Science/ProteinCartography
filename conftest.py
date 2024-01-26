@@ -11,3 +11,15 @@ def repo_dirpath():
 @pytest.fixture
 def integration_test_artifacts_dirpath(repo_dirpath):
     return repo_dirpath / "ProteinCartography" / "tests" / "integration-test-artifacts"
+
+
+def pytest_addoption(parser):
+    """
+    Add custom CLI options for pytest
+    """
+    parser.addoption(
+        "--no-mocks",
+        action="store_true",
+        default=False,
+        help="Run tests without mocks",
+    )
