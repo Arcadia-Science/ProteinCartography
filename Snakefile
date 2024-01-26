@@ -90,14 +90,14 @@ rule make_pdb:
     input:
         fasta_file=INPUT_DIR / "{protid}.fasta",
     output:
-        pdb_file=INPUT_DIR / "{protid}.pdb",
+        pdb_file=DOWNLOADED_PROTEIN_STRUCTURES_DIR / "{protid}.pdb",
     benchmark:
         BENCHMARKS_DIR / "{protid}.make_pdb.txt"
     conda:
         "envs/web_apis.yml"
     shell:
         """
-        python ProteinCartography/esmfold_apiquery.py --input {input.fasta_file}
+        python ProteinCartography/esmfold_apiquery.py --input {input.fasta_file} --output {output.pdb_file}
         """
 
 
@@ -113,6 +113,11 @@ rule copy_pdb:
         """
         cp {input} {output}
         """
+
+
+# first try to copy any user-provided PDB files from the input directory;
+# if they don't exist, generate them using make_pdb
+ruleorder: copy_pdb > make_pdb
 
 
 rule run_blast:
@@ -314,7 +319,8 @@ rule filter_aggregated_hits:
             --input {input} \
             --output {output.filtered_aggregated_hits} \
             --min-length {MIN_LENGTH} \
-            --max-length {MAX_LENGTH}
+            --max-length {MAX_LENGTH} \
+            --excluded-protids {SEARCH_MODE_INPUT_PROTIDS}
         """
 
 

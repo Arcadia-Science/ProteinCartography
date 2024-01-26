@@ -30,6 +30,11 @@ def parse_args():
         default="0",
         help="maximum protein length of proteins to keep. If set to 0, no upper limit is applied.",
     )
+    parser.add_argument(
+        "--excluded-protids",
+        nargs="*",
+        help="a list of protids to exclude from the results",
+    )
     args = parser.parse_args()
 
     return args
@@ -42,6 +47,7 @@ def filter_results(
     filter_fragment=True,
     min_length=0,
     max_length=0,
+    excluded_protids=None,
 ):
     """
     Takes an input uniprot_features.tsv file and filters the results based on fragment status,
@@ -78,6 +84,11 @@ def filter_results(
     if max_length > 0:
         filtered_df = filtered_df[filtered_df["Length"].astype(int) < max_length]
 
+    if excluded_protids is None:
+        excluded_protids = []
+
+    filtered_df = filtered_df[~filtered_df["protid"].isin(excluded_protids)]
+
     with open(output_file, "w+") as f:
         f.writelines([protid + "\n" for protid in filtered_df["protid"]])
 
@@ -88,6 +99,7 @@ def main():
     args = parse_args()
     input_file = args.input
     output_file = args.output
+    excluded_protids = args.excluded_protids
 
     try:
         min_length = int(args.min_length)
@@ -98,7 +110,13 @@ def main():
     except (TypeError, ValueError):
         max_length = 0
 
-    filter_results(input_file, output_file, min_length=min_length, max_length=max_length)
+    filter_results(
+        input_file,
+        output_file,
+        min_length=min_length,
+        max_length=max_length,
+        excluded_protids=excluded_protids,
+    )
 
 
 if __name__ == "__main__":
