@@ -125,7 +125,7 @@ rule make_pdb:
     input:
         cds=input_dir / "{protid}.fasta",
     output:
-        pdb=input_dir / "{protid}.pdb",
+        pdb=pdb_download_dir / "{protid}.pdb",
     benchmark:
         output_dir / benchmarks_dir / "{protid}.make_pdb.txt"
     conda:
@@ -148,6 +148,11 @@ rule copy_pdb:
         """
         cp {input} {output}
         """
+
+
+# first try to copy any user-provided PDB files from the input directory;
+# if they don't exist, generate them using make_pdb
+ruleorder: copy_pdb > make_pdb
 
 
 rule run_blast:
@@ -348,7 +353,7 @@ rule filter_uniprot_hits:
         "envs/pandas.yml"
     shell:
         """
-        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length} -M {params.max_length}
+        python ProteinCartography/filter_uniprot_hits.py -i {input} -o {output} -m {params.min_length} -M {params.max_length} --excluded-protids {PROTID}
         """
 
 
