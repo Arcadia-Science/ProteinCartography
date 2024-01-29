@@ -29,16 +29,16 @@ jobs:
           git remote add public ${{ env.PUBLIC_REPO_URL }}
           git fetch --all
 
-      - name: Check for new commits
+      - name: Check for new commits in the public repo
         run: |
-          NEW_COMMITS=$(git log --oneline --no-merges origin/main..public/main)
+          NEW_COMMITS=$(git log --oneline --no-merges ..public/main)
           if [ -z "$NEW_COMMITS" ]; then
-            echo "There are no new commits in the public repo"
+            echo "There are no new commits in the public repo."
             exit 0
           else
-            echo -e "There are new commits in the public repo:\n \
-            $NEW_COMMITS\n\n \
-            Please use the \"open-public-sync-pr\" GitHub Action to merge them \
-            into the private repo before merging new PRs."
+            echo -e "This action failed because there are new commits in the public repo:\n\
+          $NEW_COMMITS\n\n\
+          Please use the \"open-public-sync-pr\" GitHub Action to merge them \
+          into the private repo before merging new PRs."
             exit 1
           fi
