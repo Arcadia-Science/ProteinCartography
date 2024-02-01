@@ -403,12 +403,6 @@ For either custom proteins provided through `override_file` in either mode, or b
 |`"Length"`| `238` | *(Plotting)* number of amino acids in protein | UniProt |
 
 ---
-### For Developers
-A minimal development environment can be created using the `cartography_dev.yml` file in the `envs/` directory.
-
-```
-conda env create -n cartography_dev --file envs/cartography_dev.yml
-```
 
 ---
 ### `conda` Environments
@@ -421,5 +415,4 @@ The major conda environments are:
 
 ---
 ## Contributing
-
-See how we recognize [feedback and contributions to our code](https://github.com/Arcadia-Science/arcadia-software-handbook/blob/main/guides-and-standards/guide-credit-for-contributions.md).
+Please see the [contributing guidelines](CONTRIBUTING.md) for more information.
