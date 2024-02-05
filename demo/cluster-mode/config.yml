@@ -7,3 +7,6 @@ plotting_modes:
 - "pca_umap"
 
 features_file: "uniprot_features.tsv"
+
+key_protids:
+- "P60709"

@@ -110,7 +110,7 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
         - `output`: directory where all pipeline outputs are placed.
         - `analysis_name`: nickname for the analysis, appended to important output files.
         - `features_file`: path to features file (described below).
-        - (Optional) `keyids`: key `protid` values for proteins to highlight similar to input proteins in the Search mode.
+        - (Optional) `keyids`: a list of one or more key `protid` corresponding to the proteins to highlight in the output plots (similar to how the input proteins are highlighted in 'search' mode). Note: if not provided, the output directory `key_protid_tmscore_results` will be empty, as will the `protein_features/key_protid_tmscore_features.tsv` file.
         - See [`config.yml`](config.yml) for additional parameters.
 - Features file with protein metadata.
     - Usually, we call this file `uniprot_features.tsv` but you can use any name.
@@ -194,19 +194,20 @@ The **Cluster** mode starts at the "Clustering" step.
     - For clustering, we use the defaults of [`scanpy`'s Leiden clustering implementation](https://scanpy.readthedocs.io/en/latest/generated/scanpy.tl.leiden.html#scanpy-tl-leiden).
 
 ### Data Analysis and Aggregation
-9. Generate a variety of `_features.tsv` files.
+A note about nomenclature: the meaning of the phrase `key_protid` used in the filenames below is mode-dependent: in 'search' mode, the 'key' protids are simply the input protids, while in 'cluster' mode, the key protids are the protids specified in the `key_protids` list in the `config.yml` file.
+
+9. Generate a variety of `*_features.tsv` files.
     - Each file has, as its first column, a list of protein ids (protid) that are shared between files.
     - We query UniProt to get all metadata from that service as a `uniprot_features.tsv` file.
     - Foldseek generates a `struclusters_features.tsv` file.
     - We perform Leiden clustering to generate a `leiden_features.tsv` file.
-    - We extract from Foldseek's all-v-all TM-score analysis a distance from every protid to our input protids as `<input_protid>_distance_features.tsv` files.
-    Not available in Cluster mode:
-    - We extract from Foldseek search a fraction sequence identity for every protid in our input protids as `<input_protid>_fident_features.tsv` files.
-    - We subtract the fraction sequence identity from the TM-score to generate a `<input_protid>_convergence_features.tsv` file.
+    - We use Foldseek to calculate the TM-score for the input protids (in search mode) or the 'key' protids (in cluster mode) versus all of the protids to generate a `key_protid_tmscore_features.tsv` file.
+    - We extract from Foldseek search a fraction sequence identity for every protid in our input/key protids as `<key_protid>_fident_features.tsv` files.
+    - We subtract the fraction sequence identity from the TM-score to generate a `<key_protid>_concordance_features.tsv` file.
     - We determine the source of each file in the analysis (whether it was found from blast or Foldseek) as the `source_features.tsv` file.
 
 10. Aggregate features.
-    - All of the features.tsv files are combined into one large `aggregated_features.tsv` file.
+    - All of the `*_features.tsv` files are combined into one large `aggregated_features.tsv` file.
 
 ### Plotting
 11. Calculate per-cluster structural similarities.
@@ -349,7 +350,6 @@ These files end with `'.tsv'` and contain distance or similarity matrices, usual
 - **Input to:**
     - [`plot_cluster_similarity.py`](ProteinCartography/plot_cluster_similarity.py)
     - [`dim_reduction.py`](ProteinCartography/dim_reduction.py)
-    - [`extract_input_protein_distances.py`](ProteinCartography/extract_input_protein_distances.py)
 - **Output from:**
     - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
 
@@ -373,7 +373,7 @@ The remaining columns are metadata for each protein. These metadata can be of an
 - **Output from:**
     - [`aggregate_fident.py`](ProteinCartography/aggregate_fident.py)
     - [`calculate_convergence.py`](ProteinCartography/calculate_convergence.py)
-    - [`extract_input_protein_distances.py`](ProteinCartography/extract_input_protein_distances.py)
+    - [`calculate_key_protid_tmscores.py`](ProteinCartography/calculate_key_protid_tmscores.py)
     - [`foldseek_clustering.py`](ProteinCartography/foldseek_clustering.py)
     - [`get_source_of_hits.py`](ProteinCartography/get_source_of_hits.py)
     - [`leiden_clustering.py`](ProteinCartography/leiden_clustering.py)

@@ -56,6 +56,9 @@ ANALYZED_PROTEIN_STRUCTURES_DIR = (
 # results from running foldseek to cluster the PDBs
 FOLDSEEK_CLUSTERING_DIR = OUTPUT_DIR / "foldseek_clustering_results"
 
+# results from calculating TM-scores with foldseek
+FOLDSEEK_TMSCORES_DIR = OUTPUT_DIR / "key_protid_tmscores_results"
+
 # final output results (plots and aggregated TSV files)
 FINAL_RESULTS_DIR = OUTPUT_DIR / "final_results"
 
@@ -405,6 +408,7 @@ rule foldseek_clustering:
     output:
         all_by_all_tmscores=FOLDSEEK_CLUSTERING_DIR / "all_by_all_tmscore_pivoted.tsv",
         struclusters_features=FOLDSEEK_CLUSTERING_DIR / "struclusters_features.tsv",
+        foldseek_database=FOLDSEEK_CLUSTERING_DIR / "temp" / "temp_db",
     conda:
         "envs/foldseek.yml"
     resources:
@@ -417,6 +421,56 @@ rule foldseek_clustering:
         python ProteinCartography/foldseek_clustering.py \
             --query-folder {ANALYZED_PROTEIN_STRUCTURES_DIR} \
             --results-folder {FOLDSEEK_CLUSTERING_DIR}
+        """
+
+
+rule copy_key_protid_pdbs:
+    """
+    Copies existing or generated PDBs corresponding to the 'key' protids
+    into a separate folder for the Foldseek TM-score calculation.
+
+    Note: the PDB files are copied within the shell script of this rule
+    (rather than at the snakemake level via a parametrized rule)
+    because snakemake does not allow an input file to be in a directory
+    that is also itself an output of another rule.
+    Here, the PDB files copied by this rule may be the output of the `copy_pdb` or `make_pdb` rules,
+    but they are in the `DOWNLOADED_PROTEIN_STRUCTURES_DIR` directory,
+    which is itself the output of the `download_pdbs` rule.
+    """
+    input:
+        get_pdb_filepaths,
+    output:
+        dirpath=directory(FOLDSEEK_TMSCORES_DIR),
+    shell:
+        """
+        mkdir -p "{output.dirpath}"
+        for protid in {KEY_PROTIDS}; do
+        cp "{ANALYZED_PROTEIN_STRUCTURES_DIR}/${{protid}}.pdb" "{output.dirpath}"
+        done
+        """
+
+
+rule calculate_key_protid_tmscores:
+    """
+    Generates complete TM-score comparisons for each
+    input protein against all proteins in the dataset.
+    """
+    input:
+        pdb_dirpath=rules.copy_key_protid_pdbs.output.dirpath,
+        foldseek_database=rules.foldseek_clustering.output.foldseek_database,
+    output:
+        key_protid_tmscores=PROTEIN_FEATURES_DIR / "key_protid_tmscore_features.tsv",
+    conda:
+        "envs/foldseek.yml"
+    benchmark:
+        BENCHMARKS_DIR / "calculate_key_protid_tmscores.txt"
+    shell:
+        """
+        python ProteinCartography/calculate_key_protid_tmscores.py \
+            --query-database {input.foldseek_database} \
+            --target-folder {input.pdb_dirpath} \
+            --results-folder {input.pdb_dirpath} \
+            --features-file {output.key_protid_tmscores}
         """
 
 
@@ -461,27 +515,6 @@ rule leiden_clustering:
         """
 
 
-rule extract_input_protein_distances:
-    """
-    Extracts the distances from input proteins to other proteins in the dataset.
-    """
-    input:
-        rules.foldseek_clustering.output.all_by_all_tmscores,
-    output:
-        distance_features=PROTEIN_FEATURES_DIR / "{protid}_distance_features.tsv",
-    benchmark:
-        BENCHMARKS_DIR / "{protid}.input_distances.txt"
-    conda:
-        "envs/pandas.yml"
-    shell:
-        """
-        python ProteinCartography/extract_input_protein_distances.py \
-            --input {input} \
-            --output {output.distance_features} \
-            --protid {wildcards.protid}
-        """
-
-
 rule calculate_concordance:
     """
     Currently, this subtracts the fraction sequence identity from the TM-score
@@ -491,7 +524,7 @@ rule calculate_concordance:
     of this difference from some expectation.
     """
     input:
-        distance_features=rules.extract_input_protein_distances.output.distance_features,
+        distance_features=rules.calculate_key_protid_tmscores.output.key_protid_tmscores,
         fident_features=rules.aggregate_foldseek_fraction_seq_identity.output.fident_features,
     output:
         concordance_features=PROTEIN_FEATURES_DIR / "{protid}_concordance_features.tsv",
@@ -545,12 +578,16 @@ def get_aggregate_features_input(*_):
     """
     Returns the paths to all TSV files that are used as input to the `aggregate_features` rule
     """
-    # inputs common to both search and cluster modes
+    # Inputs common to both search and cluster modes.
     common_inputs = [
         rules.assess_pdbs.output.pdb_features,
         rules.foldseek_clustering.output.struclusters_features,
         rules.leiden_clustering.output.leiden_features,
+        rules.calculate_key_protid_tmscores.output.key_protid_tmscores,
     ]
+    common_inputs += expand(
+        rules.aggregate_foldseek_fraction_seq_identity.output.fident_features, protid=KEY_PROTIDS
+    )
     common_inputs += expand(
         rules.calculate_concordance.output.concordance_features, protid=KEY_PROTIDS
     )
@@ -559,12 +596,6 @@ def get_aggregate_features_input(*_):
         rules.fetch_uniprot_metadata.output.uniprot_features,
         rules.get_source_of_hits.output.source_features,
     ]
-    search_mode_inputs += expand(
-        rules.aggregate_foldseek_fraction_seq_identity.output.fident_features, protid=KEY_PROTIDS
-    )
-    search_mode_inputs += expand(
-        rules.calculate_concordance.output.concordance_features, protid=KEY_PROTIDS
-    )
 
     cluster_mode_inputs = [FEATURES_FILE]
 
