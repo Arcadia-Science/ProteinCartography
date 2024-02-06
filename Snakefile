@@ -87,13 +87,16 @@ wildcard_constraints:
 
 rule make_pdb:
     """
-    Use the ESMFold API query to generate a pdb from a fasta file.
-    This rule is only touched if a .pdb file doesn't already exist.
+    Use the ESMFold API query to generate a PDB file from a fasta file.
+
+    Note: we mark the input FASTA file as `ancient` to prevent snakemake from running this rule
+    when the PDB file does exist but has a last-modified time prior to that of the FASTA file;
+    because an extant PDB file is, by definition, user-provided, we can assume that it is correct.
     """
     input:
-        fasta_file=INPUT_DIR / "{protid}.fasta",
+        fasta_file=ancient(INPUT_DIR / "{protid}.fasta"),
     output:
-        pdb_file=DOWNLOADED_PROTEIN_STRUCTURES_DIR / "{protid}.pdb",
+        pdb_file=INPUT_DIR / "{protid}.pdb",
     benchmark:
         BENCHMARKS_DIR / "{protid}.make_pdb.txt"
     conda:
@@ -116,11 +119,6 @@ rule copy_pdb:
         """
         cp {input} {output}
         """
-
-
-# first try to copy any user-provided PDB files from the input directory;
-# if they don't exist, generate them using make_pdb
-ruleorder: copy_pdb > make_pdb
 
 
 rule run_blast:
