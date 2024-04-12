@@ -117,7 +117,7 @@ def plot_group_similarity(
     fig = px.imshow(sim_df, color_continuous_scale=arcadia_viridis, range_color=[0, 1])
 
     colorbar_dict = dict(
-        title="similarity",
+        title="Similarity",
         x=1,
         y=0.5,
         xanchor="left",
@@ -131,8 +131,8 @@ def plot_group_similarity(
     fig.update_layout(width=plot_width, height=plot_height, coloraxis_colorbar=colorbar_dict)
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="rgba(0,0,0,0)")
 
-    fig.update_xaxes(side="top", title="target")
-    fig.update_yaxes(title="query")
+    fig.update_xaxes(side="top", title="Target")
+    fig.update_yaxes(title="Query")
 
     try:
         fig.update_layout(font=dict(family="Arial"))

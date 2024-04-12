@@ -29,7 +29,7 @@ DEFAULT_PLOTTING_RULES = {
         "edgecolor": apc.All["arcadia:aegean"],
     },
     "Annotation": {
-        "textlabel": "Annotation Score",
+        "textlabel": "Annotation score",
         "facecolor": apc.All["arcadia:wish"],
         "edgecolor": apc.All["arcadia:aster"],
     },

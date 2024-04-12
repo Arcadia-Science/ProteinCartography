@@ -264,7 +264,7 @@ def generate_plotting_rules(
                 x
             ),  # Leiden cluster is often read as int; this forces it to be string
             "color_order": apc.Palettes["arcadia:AccentAllOrdered"].colors,
-            "textlabel": "Leiden Cluster",
+            "textlabel": "Leiden cluster",
         },
         "Annotation": {
             "type": "categorical",
@@ -273,7 +273,7 @@ def generate_plotting_rules(
                 int(x)
             ),  # Annotation score is parsed as float but we want it to be string
             "color_dict": ANNOTATION_SCORE_COLOR_DICT,
-            "textlabel": "Annotation Score",
+            "textlabel": "Annotation score",
         },
         "Lineage": {
             "type": "taxonomic",
@@ -283,7 +283,7 @@ def generate_plotting_rules(
             ),  # This converts the taxonomic groupings from a string-ified list to a real list
             "taxon_order": taxon_color_dict.keys(),
             "color_order": taxon_color_dict.values(),
-            "textlabel": "Broad Taxon",
+            "textlabel": "Broad taxon",
             "skip_hover": True,
         },
         "Length": {
@@ -302,7 +302,7 @@ def generate_plotting_rules(
             "type": "categorical",
             "fillna": "None",
             "color_dict": PDB_ORIGIN_COLOR_DICT,
-            "textlabel": "PDB Origin",
+            "textlabel": "PDB origin",
         },
         "pdb_confidence": {
             "type": "continuous",
@@ -943,7 +943,7 @@ def plot_interactive(
                     # [parameter to modify, value to modify it at]
                     args=[{"visible": True}, [len(fig.data) - 1]],
                     args2=[{"visible": False}, [len(fig.data) - 1]],
-                    label="Input Proteins",
+                    label="Input proteins",
                 )
             ],
             type="buttons",

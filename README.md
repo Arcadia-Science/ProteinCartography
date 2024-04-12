@@ -15,6 +15,8 @@ Comparing protein structures across organisms can help us generate interesting b
 
 Our pipeline starts with user-provided protein(s) of interest and searches the available sequence and structure databases for matches. Using the full list of matches, we can build a "map" of all the similar proteins and look for clusters of proteins with similar features. Overlaying a variety of different parameters such as taxonomy, sequence divergence, and other features onto these spaces allows us to explore the features that drive differences between clusters.
 
+Because this tool is based on global structural comparisons, note that the results are not always useful for long proteins (>1200 amino acids), multi-domain proteins, or proteins with large unstructured regions. Additionally, while we find that the results for average length, well-structured proteins appear generally as expected, we have not yet comprehensively validated the clustering parameters, so users may find that different parameters work better for their specific analyses.
+
 ---
 ## Quickstart
 1. Clone the GitHub repository.

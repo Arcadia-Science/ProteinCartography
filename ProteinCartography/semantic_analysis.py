@@ -191,8 +191,8 @@ def plot_semantic_analysis(
         plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.gca().tick_params(axis="y", length=0)
         plt.ylabel(f"{agg_col} {clu}", fontsize=14)
-        plt.xlabel("number of annotations")
-        plt.title(f"top {top_n} full annotations")
+        plt.xlabel("Number of annotations")
+        plt.title(f"Top {top_n} full annotations")
 
         # plot the word cloud
         plt.subplot(n_rows, n_cols * 2, i * 2 + 2)
@@ -201,7 +201,7 @@ def plot_semantic_analysis(
         # hide xticks and yticks for word cloud
         plt.gca().set_xticks([])
         plt.gca().set_yticks([])
-        plt.title("proportional word cloud")
+        plt.title("Proportional word cloud")
 
     # tighten up the layout after plotting
     plt.tight_layout()
@@ -409,7 +409,7 @@ def semantic_multiplot_plotly(
         "showline": True,
         "linewidth": 1,
         "linecolor": apc.All["arcadia:crow"],
-        "title": "number of annotations",
+        "title": "Number of annotations",
         "title_standoff": 2,
     }
 

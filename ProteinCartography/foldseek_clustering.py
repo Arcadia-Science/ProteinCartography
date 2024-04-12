@@ -257,7 +257,7 @@ def pivot_foldseek_results(input_file: str, output_file: str, column_prefix=""):
     with open(output_file, "w", newline="") as fh:
         csv_writer = csv.writer(fh, delimiter="\t")
 
-        header = ["protid"] + [f"{column_prefix}{target}" for target in sorted(targets)]
+        header = ["protid"] + [f"{column_prefix}{target}" for target in targets]
         csv_writer.writerow(header)
 
         for entry in sorted(entries.items()):
