@@ -12,15 +12,13 @@ __all__ = ["session_with_retry", "DefaultExpBackoffRetry", "UniProtWithExpBackof
 USER_AGENT_HEADER = {"User-Agent": "ProteinCartography/0.4 (Arcadia Science) python-requests/2.0.1"}
 
 # If necessary, mock the web API responses returned by the `request` method of `requests.Session`
-# Note: the env variable below is intended to indicate that the current python process
-# was started by pytest or by a snakemake run that was started by pytest
-# it is set by the `set_env_variables` pytest fixture during test setup;
-# it should be used only during testing and *not* in production
-if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
+# Note: the env variable below is set by the `set_env_variables` pytest fixture during test setup;
+# it should be used only during testing and *not* in production.
+if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
     mocks.mock_requests_session_request()
 
 # If necessary, use the custom (and crude) `HTTPAdapterWithLogging` class in place of `HTTPAdapter`
-# to log the API requests made by the pipeline
+# to log the API requests made by the pipeline.
 # Note: `HTTPAdapterWithLogging` is intended for use only during development
 # to help create the mocked API responses used in the pytest tests.
 # The env var below should only ever be set manually by the developer in a dev environment;

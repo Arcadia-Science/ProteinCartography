@@ -28,7 +28,7 @@ FOLDSEEK_COLUMN_NAMES = [
 FOLDSEEK_OUT_COLUMN_NAMES = ["protid", "fident", "prob", "evalue"]
 
 
-class UniProtServices(enum.Enum):
+class UniProtService(enum.Enum):
     """
     The services that can be used to query UniProt
     """
@@ -38,3 +38,27 @@ class UniProtServices(enum.Enum):
 
     # the APIs provided by the `bioservices` package
     BIOSERVICES = "bioservices"
+
+
+BLAST_OUTPUT_FIELDS = [
+    "qseqid",
+    "sseqid",
+    "pident",
+    "length",
+    "mismatch",
+    "gapopen",
+    "qstart",
+    "qend",
+    "sstart",
+    "send",
+    "evalue",
+    "bitscore",
+    "sacc",
+    "saccver",
+    "sgi",
+    "staxids",
+    "scomnames",
+]
+
+# the prepended '6' is how we specify that the output format is tabular
+BLAST_OUTFMT = " ".join(["6"] + BLAST_OUTPUT_FIELDS)

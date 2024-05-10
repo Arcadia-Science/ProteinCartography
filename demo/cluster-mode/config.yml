@@ -1,0 +1,12 @@
+mode: "cluster"
+analysis_name: "cluster-mode-demo"
+input_dir: "demo/cluster-mode/input"
+output_dir: "demo/cluster-mode/output"
+
+plotting_modes:
+- "pca_umap"
+
+features_file: "uniprot_features.tsv"
+
+key_protids:
+- "P60709"

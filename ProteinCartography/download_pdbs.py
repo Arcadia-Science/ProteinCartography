@@ -25,7 +25,7 @@ def parse_args():
     )
     parser.add_argument(
         "-M",
-        "--maximum",
+        "--max-structures",
         type=int,
         required=False,
         help="Maximum number of PDB files to download.",
@@ -79,7 +79,7 @@ def download_pdbs(input_file: str, output_dir: str, maximum=None):
 
 def main():
     args = parse_args()
-    download_pdbs(input_file=args.input, output_dir=args.output, maximum=args.maximum)
+    download_pdbs(input_file=args.input, output_dir=args.output, maximum=args.max_structures)
 
 
 if __name__ == "__main__":

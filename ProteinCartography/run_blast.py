@@ -4,11 +4,12 @@ import os
 import sys
 
 import blast_utils
+import constants
 from tests import mocks
 
 # if necessary, mock the `run_blast` method
 # see comments in `tests.mocks` for more details
-if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
+if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
     mocks.mock_run_blast()
 
 
@@ -26,7 +27,7 @@ def parse_args():
     )
     parser.add_argument(
         "--outfmt",
-        required=True,
+        default=constants.BLAST_OUTFMT,
         help="query format string.",
     )
     parser.add_argument(

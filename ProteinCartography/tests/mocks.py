@@ -13,6 +13,7 @@ ARTIFACTS_DIRPATH = (
     / "ProteinCartography"
     / "tests"
     / "integration-test-artifacts"
+    / "search-mode"
     / "actin"
 )
 

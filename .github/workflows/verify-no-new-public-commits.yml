@@ -1,0 +1,44 @@
+name: verify-no-new-public-commits
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+env:
+  PUBLIC_REPO_URL: https://github.com/Arcadia-Science/ProteinCartography
+
+jobs:
+  verify-no-new-public-commits:
+    runs-on: ubuntu-latest
+    # only run this job in the private repo
+    # (but do not check the repo owner, because forks will have a different owner)
+    if: github.event.repository.name == 'ProteinCartography-private'
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+        with:
+          # fetch the full history so that we can check for new commits
+          fetch-depth: 0
+
+      - name: Add and fetch the public repo
+        run: |
+          git remote add public ${{ env.PUBLIC_REPO_URL }}
+          git fetch --all
+
+      - name: Check for new commits in the public repo
+        run: |
+          NEW_COMMITS=$(git log --oneline --no-merges ..public/main)
+          if [ -z "$NEW_COMMITS" ]; then
+            echo "There are no new commits in the public repo."
+            exit 0
+          else
+            echo -e "This action failed because there are new commits in the public repo:\n\
+          $NEW_COMMITS\n\n\
+          Please use the \"open-public-sync-pr\" GitHub Action to merge them \
+          into the private repo before merging new PRs."
+            exit 1
+          fi

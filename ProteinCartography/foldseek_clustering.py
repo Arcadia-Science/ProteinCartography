@@ -66,29 +66,27 @@ def run_foldseek_clustering(
     """
 
     # Generate Path objects for each folder
-    query_Path = Path(query_folder)
-    results_Path = Path(results_folder)
+    query_path = Path(query_folder)
+    results_path = Path(results_folder)
 
     # Generate Path object for temp folder
     if temp_folder is None:
-        temp_Path = results_Path / "temp"
+        temp_path = results_path / "temp"
     else:
-        temp_Path = Path(temp_folder)
+        temp_path = Path(temp_folder)
 
-    # Make Paths if they don't already exist
-    for path in [temp_Path, results_Path]:
+    for path in [temp_path, results_path]:
         if not os.path.exists(path):
             os.mkdir(path)
 
-    # Run steps of Foldseek
-    db_prefix = temp_Path / "temp_db"
-    subprocess.run(["foldseek", "createdb", query_Path, db_prefix])
+    db_prefix = temp_path / "temp_db"
+    subprocess.run(["foldseek", "createdb", query_path, db_prefix])
 
-    foldseek_out = temp_Path / "all_by_all"
-    foldseek_tmp = temp_Path / "tmp"
+    foldseek_out = temp_path / "all_by_all"
+    foldseek_tmp = temp_path / "tmp"
     subprocess.run(["foldseek", "search", db_prefix, db_prefix, foldseek_out, foldseek_tmp, "-a"])
 
-    foldseek_tmscore = temp_Path / "all_by_all_tmscore"
+    foldseek_tmscore = temp_path / "all_by_all_tmscore"
     subprocess.run(
         [
             "foldseek",
@@ -100,7 +98,7 @@ def run_foldseek_clustering(
         ]
     )
 
-    foldseek_distancestsv = results_Path / distances_filename
+    foldseek_distances_tsv = results_path / distances_filename
     subprocess.run(
         [
             "foldseek",
@@ -108,11 +106,11 @@ def run_foldseek_clustering(
             db_prefix,
             db_prefix,
             foldseek_tmscore,
-            foldseek_distancestsv,
+            foldseek_distances_tsv,
         ]
     )
 
-    foldseek_cluster = temp_Path / "clu"
+    foldseek_cluster = temp_path / "clu"
     subprocess.run(
         [
             "foldseek",
@@ -127,7 +125,7 @@ def run_foldseek_clustering(
         ]
     )
 
-    foldseek_clustertsv = results_Path / cluster_filename
+    foldseek_cluster_tsv = results_path / cluster_filename
     subprocess.run(
         [
             "foldseek",
@@ -135,24 +133,24 @@ def run_foldseek_clustering(
             db_prefix,
             db_prefix,
             foldseek_cluster,
-            foldseek_clustertsv,
+            foldseek_cluster_tsv,
         ]
     )
 
     # Return the output filepaths as a tuple
-    return str(foldseek_distancestsv), str(foldseek_clustertsv)
+    return str(foldseek_distances_tsv), str(foldseek_cluster_tsv)
 
 
-def make_struclusters_file(foldseek_clustertsv: str, output_file: str):
+def make_struclusters_file(foldseek_cluster_tsv: str, output_file: str):
     """
     Parses a Foldseek clusters file into a _features.tsv file.
 
     Args:
-        foldseek_clustertsv (str): path of input clusters.tsv file.
+        foldseek_cluster_tsv (str): path of input clusters.tsv file.
         output_file (str): path of destination file.
     """
     # Read the input file
-    df = pd.read_csv(foldseek_clustertsv, sep="\t", names=["ClusterRep", "protid"])
+    df = pd.read_csv(foldseek_cluster_tsv, sep="\t", names=["ClusterRep", "protid"])
 
     # Strip the '.pdb' suffix so indices are protid
     df["ClusterRep"] = df["ClusterRep"].str.rstrip(".pdb")
@@ -243,7 +241,7 @@ def get_line_for_protid(protid_and_targets: tuple, targets: set):
     return [protid] + scores
 
 
-def pivot_foldseek_results(input_file: str, output_file: str):
+def pivot_foldseek_results(input_file: str, output_file: str, column_prefix=""):
     """
     Takes a file with the first three columns being protid, target, and the tmscore.
     It then saves a similarity matrix to a csv. There is no return value.
@@ -259,7 +257,7 @@ def pivot_foldseek_results(input_file: str, output_file: str):
     with open(output_file, "w", newline="") as fh:
         csv_writer = csv.writer(fh, delimiter="\t")
 
-        header = ["protid"] + list(targets)
+        header = ["protid"] + [f"{column_prefix}{target}" for target in targets]
         csv_writer.writerow(header)
 
         for entry in sorted(entries.items()):
@@ -272,13 +270,13 @@ def main():
     query_folder = args.query_folder
     results_folder = args.results_folder
 
-    distancestsv, clusterstsv = run_foldseek_clustering(query_folder, results_folder)
+    distances_tsv, clusters_tsv = run_foldseek_clustering(query_folder, results_folder)
 
-    pivotedtsv = distancestsv.replace(".tsv", "_pivoted.tsv")
-    pivot_foldseek_results(distancestsv, pivotedtsv)
+    pivoted_tsv = distances_tsv.replace(".tsv", "_pivoted.tsv")
+    pivot_foldseek_results(input_file=distances_tsv, output_file=pivoted_tsv)
 
-    featurestsv = clusterstsv.replace(".tsv", "_features.tsv")
-    make_struclusters_file(clusterstsv, featurestsv)
+    features_tsv = clusters_tsv.replace(".tsv", "_features.tsv")
+    make_struclusters_file(foldseek_cluster_tsv=clusters_tsv, output_file=features_tsv)
 
 
 # check if called from interpreter
