@@ -34,4 +34,4 @@ dependencies:
   - wordcloud=1.9.2
 
   - pip:
-      - "git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"
+      - "git+https://github.com/Arcadia-Science/arcadia-pycolor.git@245ad0c#egg=arcadia_pycolor"
