@@ -19,6 +19,8 @@ Because this tool is based on global structural comparisons, note that the resul
 
 ---
 ## Quickstart
+The ProteinCartography pipeline supports Linux and macOS operating systems; it does not work on Windows. It also requires that you have `conda` or `mamba` installed. If you have an M series Mac, you will need to install an x86-64 version of `conda`. See [below](#running-the-pipeline-on-an-m-series-mac) for some tips on how to do this.
+
 1. Clone the GitHub repository.
     ```
     git clone https://github.com/Arcadia-Science/ProteinCartography.git
@@ -45,8 +47,19 @@ Because this tool is based on global structural comparisons, note that the resul
 
 ---
 ## Compute Specifications
-We have been able to successfully run the pipeline on macOS and Amazon Linux 2 machines with at least 8GB RAM and 8 cores.\
+We have been able to successfully run the pipeline on macOS and Amazon Linux 2 machines with at least 8GB RAM and 8 cores.
+
 For the data generated for our pub, we ran the pipeline on an AWS EC2 instance of type `t2.2xlarge` (32 GiB RAM + 8 vCPU).
+
+## Running the pipeline on an M-series Mac
+To run the pipeline on an M-series Mac (with arm64 architecture), you will need to install an x86-64 version of `conda`. One way to do this is to install Miniconda using the x86-64 `.pkg` installer from the [miniconda website](https://docs.anaconda.com/free/miniconda/). Your Mac should recognize that the installer is for x86-64 and automatically use Rosetta 2 to run it. Alternatively, you can run the `conda` installer script from the command line with the `arch -x86_64` command. For example:
+
+```bash
+curl -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+arch -x86_64 /usr/bin/env bash Miniconda3-latest-MacOSX-x86_64.sh
+```
+
+The x86 version of `conda` will automatically install x86-64 versions of all packages. If you have already installed `conda` on your M-series Mac, be careful to install the x86 version in a different location. To check that you are using the correct version of `conda`, you can run `conda info` and look for the `platform` field in the output. It should say `osx-64`. 
 
 ---
 ## Modes
