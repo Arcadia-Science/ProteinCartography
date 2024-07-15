@@ -14,4 +14,4 @@ dependencies:
   - scipy=1.11.4
   - pip=23.2.1
   - pip:
-      - "git+https://github.com/Arcadia-Science/arcadia-pycolor.git#egg=arcadia_pycolor"
+      - "git+https://github.com/Arcadia-Science/arcadia-pycolor.git@245ad0c#egg=arcadia_pycolor"
