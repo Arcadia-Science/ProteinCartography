@@ -6,18 +6,22 @@ from unittest import mock
 import file_utils
 import requests
 
-# TODO (KC): eliminate the hard-coded dataset name ("actin"),
-# which needs to match the dataset name used in the `stage_inputs` pytest fixture
-ARTIFACTS_DIRPATH = (
-    file_utils.find_repo_dirpath()
-    / "ProteinCartography"
-    / "tests"
-    / "integration-test-artifacts"
-    / "search-mode"
-    / "actin"
-)
 
-API_RESPONSE_ARTIFACTS_DIRPATH = ARTIFACTS_DIRPATH / "api_response_content"
+def get_artifacts_dirpath():
+    # TODO (KC): eliminate the hard-coded dataset name ("actin"),
+    # which needs to match the dataset name used in the `stage_inputs` pytest fixture
+    return (
+        file_utils.find_repo_dirpath()
+        / "ProteinCartography"
+        / "tests"
+        / "integration-test-artifacts"
+        / "search-mode"
+        / "actin"
+    )
+
+
+def get_api_response_artifacts_dirpath():
+    return get_artifacts_dirpath() / "api_response_content"
 
 
 def mock_run_blast():
@@ -30,7 +34,7 @@ def mock_run_blast():
     result.returncode = 0
 
     def side_effect(out=None, **_):
-        shutil.copy(ARTIFACTS_DIRPATH / "output" / "P60709.blastresults.tsv", out)
+        shutil.copy(get_artifacts_dirpath() / "output" / "P60709.blastresults.tsv", out)
         return result
 
     patch = mock.patch("blast_utils.run_blast", side_effect=side_effect)
@@ -179,7 +183,7 @@ def mock_foldseek_api_responses(method, url):
     # the request to get the results
     elif url.endswith(f"api/result/download/{job_id}"):
         with open(
-            API_RESPONSE_ARTIFACTS_DIRPATH / "search.foldseek.com_api_result_download", "rb"
+            get_api_response_artifacts_dirpath() / "search.foldseek.com_api_result_download", "rb"
         ) as file:
             content = file.read()
 
@@ -209,7 +213,7 @@ def mock_uniprotkb_rest_api_responses():
     mock_response.headers = {}
 
     with open(
-        API_RESPONSE_ARTIFACTS_DIRPATH / "rest.uniprot.org_uniprotkb_search", encoding="utf-8"
+        get_api_response_artifacts_dirpath() / "rest.uniprot.org_uniprotkb_search", encoding="utf-8"
     ) as file:
         mock_response.text = file.read()
 
@@ -231,7 +235,8 @@ def mock_alphafold_files_api_responses(url):
     mock_response.status_code = 200
 
     artifact_filepath = (
-        API_RESPONSE_ARTIFACTS_DIRPATH / f"alphafold.ebi.ac.uk_files_AF-{accession}-F1-model_v4.pdb"
+        get_api_response_artifacts_dirpath()
+        / f"alphafold.ebi.ac.uk_files_AF-{accession}-F1-model_v4.pdb"
     )
     if not artifact_filepath.exists():
         raise ValueError(
