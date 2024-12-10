@@ -1,0 +1,11 @@
+mode: "search"
+analysis_name: "actin-demo-small"
+input_dir: "latch://36681.account/2024-proteincartography-on-latch-demo-1733788167.0832448/demo/search-mode/input/"
+output_dir: "latch://36681.account/2024-proteincartography-on-latch-demo-1733788167.0832448/demo/search-mode/output/"
+
+max_blast_hits: 10
+max_foldseek_hits: 10
+max_structures: 10
+
+plotting_modes:
+- "pca_umap"

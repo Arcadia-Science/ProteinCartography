@@ -3,6 +3,7 @@ from pathlib import Path
 
 from ProteinCartography import config_utils
 
+from latch.ldata.path import LPath
 
 # Default pipeline configuration parameters are in this file
 # If you create a new yml file and use the --configfile flag,
@@ -13,9 +14,20 @@ configfile: "./config.yml"
 # the mode in which to run the pipeline (either 'search' or 'cluster')
 MODE = config_utils.Mode(config["mode"])
 
+# The location of the input files on the remote storage system.
+REMOTE_INPUT_DIR = LPath(config["input_dir"])
+
+# Stage the input files from remote storage to the local filesystem.
+LOCAL_INPUT_DIR = Path(REMOTE_INPUT_DIR.download(Path("/snakemake-workdir/input")))
+
+# Directory for output files that don't need to be stored on the remote storage system.
+LOCAL_OUTPUT_DIR = Path("/snakemake-workdir/output")
+
+# Directory for output files that do need to be stored on the remote storage system.
+# Note: paths that include this directory cannot use pathlib, as it does not handle the `latch://` prefix.
+REMOTE_OUTPUT_DIR = config["remote_output_dir"]
+
 # basic configuration parameters common to both search and cluster modes
-INPUT_DIR = Path(config["input_dir"])
-OUTPUT_DIR = Path(config["output_dir"])
 ANALYSIS_NAME = config["analysis_name"]
 TAXON_FOCUS = config["taxon_focus"]
 PLOTTING_MODES = config["plotting_modes"]
@@ -60,7 +72,7 @@ FOLDSEEK_CLUSTERING_DIR = OUTPUT_DIR / "foldseek_clustering_results"
 FOLDSEEK_TMSCORES_DIR = OUTPUT_DIR / "key_protid_tmscores_results"
 
 # final output results (plots and aggregated TSV files)
-FINAL_RESULTS_DIR = OUTPUT_DIR / "final_results"
+FINAL_RESULTS_DIR = os.path.join(REMOTE_OUTPUT_DIR, "final_results")
 
 # search-mode-specific parameters
 # note: although these parameters are only used in search mode, we can assume they exist here
@@ -610,7 +622,7 @@ rule aggregate_features:
     input:
         get_aggregate_features_input,
     output:
-        aggregated_features=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_aggregated_features.tsv",
+        aggregated_features=LOCAL_OUTPUT_DIR / f"{ANALYSIS_NAME}_aggregated_features.tsv",
     benchmark:
         BENCHMARKS_DIR / "aggregate_features.txt"
     conda:
@@ -636,7 +648,7 @@ rule plot_interactive:
         tm_scores=rules.dim_reduction.output.all_by_all_tmscores,
         features=rules.aggregate_features.output.aggregated_features,
     output:
-        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_aggregated_features_{{plotting_mode}}.html",
+        html=os.path.join(FINAL_RESULTS_DIR, f"{ANALYSIS_NAME}_aggregated_features_{{plotting_mode}}.html"),
     conda:
         "envs/plotting.yml"
     benchmark:
@@ -665,8 +677,8 @@ rule plot_similarity_leiden:
         tm_scores=rules.foldseek_clustering.output.all_by_all_tmscores,
         features=rules.leiden_clustering.output.leiden_features,
     output:
-        tsv=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_leiden_similarity.tsv",
-        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_leiden_similarity.html",
+        tsv=LOCAL_OUTPUT_DIR / f"{ANALYSIS_NAME}_leiden_similarity.tsv",
+        html=LOCAL_OUTPUT_DIR / f"{ANALYSIS_NAME}_leiden_similarity.html",
     params:
         column="LeidenCluster",
     conda:
@@ -698,8 +710,8 @@ rule plot_similarity_strucluster:
         tm_scores=rules.foldseek_clustering.output.all_by_all_tmscores,
         features=rules.foldseek_clustering.output.struclusters_features,
     output:
-        tsv=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_strucluster_similarity.tsv",
-        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_strucluster_similarity.html",
+        tsv=LOCAL_OUTPUT_DIR / f"{ANALYSIS_NAME}_strucluster_similarity.tsv",
+        html=LOCAL_OUTPUT_DIR / f"{ANALYSIS_NAME}_strucluster_similarity.html",
     params:
         column="StruCluster",
     conda:
@@ -724,8 +736,8 @@ rule plot_semantic_analysis:
     input:
         features=rules.aggregate_features.output.aggregated_features,
     output:
-        pdf=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis.pdf",
-        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis.html",
+        pdf=LOCAL_OUTPUT_DIR / f"{ANALYSIS_NAME}_semantic_analysis.pdf",
+        html=LOCAL_OUTPUT_DIR / f"{ANALYSIS_NAME}_semantic_analysis.html",
     params:
         agg_column="LeidenCluster",
         annot_column="'Protein names'",
@@ -752,7 +764,7 @@ rule plot_cluster_distributions:
     input:
         features=rules.aggregate_features.output.aggregated_features,
     output:
-        svg=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_{{protid}}_distribution_analysis.svg",
+        svg=os.path.join(FINAL_RESULTS_DIR, f"{ANALYSIS_NAME}_{{protid}}_distribution_analysis.svg"),
     conda:
         "envs/plotting.yml"
     benchmark:
@@ -782,5 +794,19 @@ rule all:
         rules.plot_similarity_strucluster.output.html,
         rules.plot_semantic_analysis.output.html,
         rules.plot_semantic_analysis.output.pdf,
-        expand(rules.plot_interactive.output.html, plotting_mode=PLOTTING_MODES),
-        expand(rules.plot_cluster_distributions.output.svg, protid=KEY_PROTIDS),
+        # Explicitly reference the final output filepaths and wrap them with `storage.latch`.
+        # Prior lines commented out for reference.
+        # expand(rules.plot_interactive.output.html, plotting_mode=PLOTTING_MODES),
+        # expand(rules.plot_cluster_distributions.output.svg, protid=KEY_PROTIDS),
+        storage.latch(
+            expand(
+                os.path.join(FINAL_RESULTS_DIR, f"{ANALYSIS_NAME}_aggregated_features_{{plotting_mode}}.html"),
+                plotting_mode=PLOTTING_MODES
+            ),
+        ),
+        storage.latch(
+            expand(
+                os.path.join(FINAL_RESULTS_DIR, f"{ANALYSIS_NAME}_{{protid}}_distribution_analysis.svg"),
+                protid=KEY_PROTIDS
+            ),
+        )
