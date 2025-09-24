@@ -163,7 +163,7 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
             # there is instead a "results" key.
             job_is_complete = (
                 status_response.get("results") is not None
-                or status_response.get("jobStatus").lower() == "finished"
+                or status_response.get("jobStatus", "").lower() == "finished"
             )
 
             if job_is_complete:
