@@ -150,7 +150,7 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
 
         job_id = submission_response["jobId"]
 
-        # Poll until the job status is  successful or failed.
+        # Poll until the job is successful or we time out.
         num_tries = 0
         while num_tries < MAX_NUM_JOB_STATUS_CHECKS:
             status_response = (
