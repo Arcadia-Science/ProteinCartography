@@ -72,11 +72,47 @@ def parse_args():
     return args
 
 
+def load_existing_data(temp_filepath: str) -> tuple[set, bool]:
+    """
+    Load any existing results from previous incomplete runs, to remove them from the query list.
+
+    Args:
+        temp_filepath (str): Path to the temporary file containing previously downloaded entries.
+
+    Returns:
+        tuple:
+        - set: Set of existing entries (accessions) found in the file.
+        - bool: True if header was written (file exists and has data), False otherwise.
+    """
+
+    existing_data = set()
+    header_written = False
+
+    if not os.path.exists(temp_filepath):
+        print(f"{temp_filepath} does not exist. Skipping existing data loading.")
+        return existing_data, header_written
+
+    try:
+        existing_df = pd.read_csv(temp_filepath, sep="\t", usecols=["Entry"])
+        if "Entry" not in existing_df.columns:
+            print(f"No 'Entry' column found in {temp_filepath}. Skipping existing data loading.")
+            return existing_data, header_written
+
+        existing_data = set(existing_df["Entry"].values)
+        print(f"Loaded {len(existing_data)} entries from {temp_filepath}")
+        header_written = True
+
+    except pd.errors.EmptyDataError:
+        print(f"{temp_filepath} is empty. Skipping existing data loading.")
+
+    return existing_data, header_written
+
+
 def query_uniprot(
     input_file: str,
     output_file: str,
-    batch_size=300,
-    sub_batch_size=300,
+    batch_size=100,
+    sub_batch_size=100,
     fmt="tsv",
     fields=DEFAULT_FIELDS,
     service=UniProtService.BIOSERVICES,
@@ -104,15 +140,7 @@ def query_uniprot(
         print("Output file already exists at this location. Aborting.")
         return
 
-    header_written = False  # Flag to check if header has been written
-
-    # Load any existing results from previous incomplete runs, to remove them from the query list.
-    existing_data = set()
-    if os.path.exists(temp_filepath):
-        existing_df = pd.read_csv(temp_filepath, sep="\t", usecols=["Entry"])
-        existing_data = set(existing_df["Entry"].values)
-        print(f"Loaded {len(existing_data)} entries from {temp_filepath}")
-        header_written = True
+    existing_data, header_written = load_existing_data(temp_filepath)
 
     # Define regular expression pattern to extract the next URL from the response headers
     re_next_link = re.compile(r'<(.+)>; rel="next"')
@@ -157,7 +185,6 @@ def query_uniprot(
         query_accessions[i : i + batch_size] for i in range(0, len(query_accessions), batch_size)
     ]
 
-    total = len(query_accessions)
     # Process each batch separately
     for i, accession_batch in enumerate(accession_batches):
         print(f">> Starting batch {i + 1} of {len(accession_batches)}")
@@ -168,6 +195,7 @@ def query_uniprot(
 
         # Construct the URL with the constructed query string
         progress = 0
+        accessions_in_batch = len(accession_batch)
 
         with open(temp_filepath, "a") as temp_file:
             for batch in get_batch(query_string):
@@ -183,7 +211,7 @@ def query_uniprot(
                     print(line, file=temp_file)
 
                 progress += len(lines) - 1
-                print(f"downloaded {progress} / {total} hits for batch {i + 1}")
+                print(f"downloaded {progress} / {accessions_in_batch} hits for batch {i + 1}")
 
     df = pd.read_csv(temp_filepath, sep="\t")
     df.insert(0, "protid", df["Entry"].values)
