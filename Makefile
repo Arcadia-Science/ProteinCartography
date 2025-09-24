@@ -1,12 +1,12 @@
 .PHONY: lint
 lint:
-	ruff --exit-zero check .
+	ruff check --exit-zero .
 	snakefmt --check .
 
 .PHONY: format
 format:
-	ruff --fix .
 	ruff format .
+	ruff check --fix .
 	snakefmt .
 
 .PHONY: pre-commit
