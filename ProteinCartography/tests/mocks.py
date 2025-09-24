@@ -123,7 +123,7 @@ def mock_uniprot_id_mapping_api_responses(method, url):
     # the polling request
     # ('success' is defined by the presence of a 'results' key in the response)
     elif url.endswith(f"status/{job_id}"):
-        payload = {"results": None}
+        payload = {"results": "some-results"}
 
     # the request to get the results
     # note: this payload is manually aggregated from the results of real API calls

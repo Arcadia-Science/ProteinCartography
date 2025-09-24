@@ -37,7 +37,7 @@ jobs:
           use-only-tar-bz2: false
 
       - name: Cache the conda env
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-conda-env
         with:
           path: ${{ env.CONDA }}/envs
@@ -50,7 +50,7 @@ jobs:
         if: steps.cache-conda-env.outputs.cache-hit != 'true'
 
       - name: Cache the conda envs created by snakemake
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-snakemake-conda-envs
         with:
           path: .snakemake/conda
