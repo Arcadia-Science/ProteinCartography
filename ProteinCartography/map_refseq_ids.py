@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 import argparse
-import json
 import os
 import sys
 from time import sleep
-
-import requests
 
 import pandas as pd
 from api_utils import (
@@ -25,10 +22,13 @@ __all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
 # The default databases to query.
 DEFAULT_DBS = ["EMBL-GenBank-DDBJ_CDS", "RefSeq_Protein"]
 
-UNIPROT_IDMAPPING_API = "https://rest.uniprot.org/idmapping"
+UNIPROT_IDMAPPING_API_URL = "https://rest.uniprot.org/idmapping"
 
-REQUESTS_LIMIT = 100
-REQUESTS_SLEEP_TIME = 10
+# Time in seconds to wait between job status checks.
+SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS = 30
+
+# Allow a generous number of status checks because sometimes the UniProt ID Mapping API is slow.
+MAX_NUM_JOB_STATUS_CHECKS = 100
 
 
 def parse_args():
@@ -139,7 +139,7 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
         submission_response = (
             session_with_retry()
             .post(
-                f"{UNIPROT_IDMAPPING_API}/run",
+                f"{UNIPROT_IDMAPPING_API_URL}/run",
                 {"ids": input_string, "from": query_db, "to": "UniProtKB"},
             )
             .json()
@@ -152,34 +152,34 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
 
         # Poll until the job status is  successful or failed.
         num_tries = 0
-        while num_tries < REQUESTS_LIMIT:
-            status_response = requests.get(f"{UNIPROT_IDMAPPING_API}/status/{job_id}").json()
+        while num_tries < MAX_NUM_JOB_STATUS_CHECKS:
+            status_response = (
+                session_with_retry().get(f"{UNIPROT_IDMAPPING_API_URL}/status/{job_id}").json()
+            )
             num_tries += 1
 
-            print(
-                f"Job status on attempt {num_tries}/{REQUESTS_LIMIT}: "
-                f"{json.dumps(status_response, indent=2)}"
+            # The status response is supposed to include a "jobStatus" key, but anecdotally,
+            # this is only true while the job is running. Once the job is complete,
+            # there is instead a "results" key.
+            job_is_complete = (
+                status_response.get("results") is not None
+                or status_response.get("jobStatus").lower() == "finished"
             )
 
-            job_status = status_response.get("jobStatus")
-
-            # Sometimes, the status endpoint returns a response that does not contain a job status.
-            # In this case, we simply skip to the next attempt.
-            if not job_status:
-                continue
-
-            if job_status.lower() == "finished":
+            if job_is_complete:
+                print(f"Job is complete after {num_tries * SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS}s")
                 break
 
-            sleep(REQUESTS_SLEEP_TIME)
+            sleep(SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS)
 
-        if num_tries == REQUESTS_LIMIT:
+        if num_tries == MAX_NUM_JOB_STATUS_CHECKS:
             sys.exit(
-                f"The mapping request failed to complete after {num_tries * REQUESTS_SLEEP_TIME}s."
+                f"The mapping request failed to complete after "
+                f"{num_tries * SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS}s."
             )
 
         results_response = (
-            session_with_retry().get(f"{UNIPROT_IDMAPPING_API}/stream/{job_id}").json()
+            session_with_retry().get(f"{UNIPROT_IDMAPPING_API_URL}/stream/{job_id}").json()
         )
 
         results_df = pd.DataFrame(results_response["results"])
