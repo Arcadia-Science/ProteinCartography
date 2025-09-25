@@ -51,6 +51,7 @@ jobs:
         if: steps.cache-conda-env.outputs.cache-hit != 'true'
 
       - name: Cache the conda envs created by snakemake
+        if: false # Temporarily disable caching.
         uses: actions/cache@v4
         id: cache-snakemake-conda-envs
         with:
@@ -62,7 +63,7 @@ jobs:
         run: |
           rm -rf .snakemake/conda
           snakemake --configfile demo/search-mode/config_actin.yml --use-conda --conda-create-envs-only --cores 1
-        if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
+        # if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
 
       - name: Run the tests
         run: |
