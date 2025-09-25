@@ -31,23 +31,18 @@ jobs:
           generate-run-shell: true
           init-shell: bash
 
-      - name: Cache snakemake conda envs
-        uses: actions/cache@v4
-        id: cache-snakemake-conda-envs
-        with:
-          path: .snakemake/conda
-          key: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/*.yml') }}
-          restore-keys: snakemake-conda-${{ runner.os }}--${{ runner.arch }}--
+      # - name: Cache snakemake conda envs
+      #   uses: actions/cache@v4
+      #   id: cache-snakemake-conda-envs
+      #   with:
+      #     path: .snakemake/conda
+      #     key: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/*.yml') }}
+      #     restore-keys: snakemake-conda-${{ runner.os }}--${{ runner.arch }}--
 
       - name: Create the snakemake conda envs
+        # if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
         run: |
-          if [ "${{ steps.cache-snakemake-conda-envs.outputs.cache-hit }}" = "true" ]; then
-            # Clean up any incomplete environments from cache
-            find .snakemake/conda -type d -name "*_" -exec rm -rf {} + 2>/dev/null || true
-          else
-            # No cache hit, start fresh
-            rm -rf .snakemake/conda
-          fi
+          rm -rf .snakemake/conda
           snakemake \
             --configfile demo/search-mode/config_actin.yml \
             --use-conda \
