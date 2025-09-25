@@ -44,10 +44,12 @@ jobs:
         run: |
           # Make sure the conda env directory is empty.
           rm -rf .snakemake/conda
+          # We use the `conda` frontend here because the `mamba` frontend results in errors
+          # during env creation.
           snakemake \
             --configfile demo/search-mode/config_actin.yml \
             --use-conda \
-            --conda-frontend conda \ # Using the `mamba` frontend results in errors during env creation.
+            --conda-frontend conda \
             --conda-create-envs-only \
             --cores 1
         shell: micromamba-shell {0}
