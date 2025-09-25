@@ -60,6 +60,7 @@ jobs:
 
       - name: Create the snakemake conda envs
         run: |
+          rm -rf .snakemake/conda
           snakemake --configfile demo/search-mode/config_actin.yml --use-conda --conda-create-envs-only --cores 1
         if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
 
