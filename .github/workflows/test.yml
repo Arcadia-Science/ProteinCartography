@@ -1,7 +1,5 @@
 name: test
 
-# run unit and integration tests for the ProteinCartography package
-
 on:
   push:
     branches:
@@ -9,64 +7,58 @@ on:
   pull_request:
     branches:
       - main
-    # 'synchronize' means the PR was updated with new commits
+    # The 'synchronize' event means the PR was updated with new commits.
     types: [opened, reopened, labeled, synchronize]
+  
+  # Allow manual triggering.
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash -el {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
+      - uses: mamba-org/setup-micromamba@v2
         with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
-          python-version: "3.9"
-          use-mamba: true
-          activate-environment: test-env
-          auto-activate-base: false
-          # note: the docs claim `use-only-tar-bz2` must be set to true
-          # in order for package caching to work properly,
-          # but this results in many package-not-found errors,
-          # so we set it to false and do not use package caching
-          use-only-tar-bz2: false
+          environment-file: envs/cartography_test.yml
+          environment-name: test-env
+          cache-environment: true
+          cache-downloads: true
+          generate-run-shell: true
+          init-shell: bash
 
-      - name: Cache the conda env
-        uses: actions/cache@v4
-        id: cache-conda-env
-        with:
-          path: ${{ env.CONDA }}/envs
-          key:
-            conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/cartography_test.yml') }}
-
-      - name: Create the conda env from which to run snakemake
-        run: |
-          mamba env update -n test-env -f envs/cartography_test.yml
-        if: steps.cache-conda-env.outputs.cache-hit != 'true'
-
-      - name: Cache the conda envs created by snakemake
+      - name: Cache snakemake conda envs
         uses: actions/cache@v4
         id: cache-snakemake-conda-envs
         with:
           path: .snakemake/conda
-          key:
-            conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/*.yml') }}
+          key: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/*.yml') }}
+          restore-keys: snakemake-conda-${{ runner.os }}--${{ runner.arch }}--
 
       - name: Create the snakemake conda envs
-        run: |
-          snakemake --configfile demo/search-mode/config_actin.yml --use-conda --conda-create-envs-only --cores 1
         if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
+        run: |
+          # Make sure the conda env directory is empty.
+          rm -rf .snakemake/conda
+          # We use the `conda` frontend here because the `mamba` frontend results in errors
+          # during env creation.
+          snakemake \
+            --configfile demo/search-mode/config_actin.yml \
+            --use-conda \
+            --conda-frontend conda \
+            --conda-create-envs-only \
+            --cores 1
+        shell: micromamba-shell {0}
 
       - name: Run the tests
-        run: |
-          make test
+        run: make test
+        shell: micromamba-shell {0}
 
       - name: Run the tests without mocks
         if: contains(github.event.pull_request.labels.*.name, 'run-slow-tests')
-        run: |
-          make test-without-mocks
+        run: make test-without-mocks
+        shell: micromamba-shell {0}
