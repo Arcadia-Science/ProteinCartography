@@ -18,16 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash -el {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: mamba-org/setup-micromamba@v1
+      - uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: envs/cartography_test.yml
           environment-name: test-env
           cache-environment: true
           cache-downloads: true
+          generate-run-shell: true
           init-shell: bash
 
       - name: Cache snakemake conda envs
@@ -48,10 +49,13 @@ jobs:
             --conda-frontend mamba \
             --conda-create-envs-only \
             --cores 1
+        shell: micromamba-shell {0}
 
       - name: Run the tests
         run: make test
+        shell: micromamba-shell {0}
 
       - name: Run the tests without mocks
         if: contains(github.event.pull_request.labels.*.name, 'run-slow-tests')
         run: make test-without-mocks
+        shell: micromamba-shell {0}
