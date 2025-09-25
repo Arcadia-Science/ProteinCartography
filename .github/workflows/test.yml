@@ -40,9 +40,14 @@ jobs:
           restore-keys: snakemake-conda-${{ runner.os }}--${{ runner.arch }}--
 
       - name: Create the snakemake conda envs
-        if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
         run: |
-          rm -rf .snakemake/conda
+          if [ "${{ steps.cache-snakemake-conda-envs.outputs.cache-hit }}" = "true" ]; then
+            # Clean up any incomplete environments from cache
+            find .snakemake/conda -type d -name "*_" -exec rm -rf {} + 2>/dev/null || true
+          else
+            # No cache hit, start fresh
+            rm -rf .snakemake/conda
+          fi
           snakemake \
             --configfile demo/search-mode/config_actin.yml \
             --use-conda \
