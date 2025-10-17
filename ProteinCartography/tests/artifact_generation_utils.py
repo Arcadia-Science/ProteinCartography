@@ -34,12 +34,12 @@ class HTTPAdapterWithLogging(HTTPAdapter):
         output_filepath = self._log_dirpath / f"{request.method}__{sanitized_url[:100]}"
 
         if stream:
-            # consume the streamed content and write it to a file
+            # Consume the streamed content and write it to a file.
             content = b"".join(response.iter_content(chunk_size=128))
             with open(output_filepath, "wb") as file:
                 file.write(content)
 
-            # this allows the response content to be streamed again
+            # This allows the response content to be streamed again.
             response._content = content
 
         else:

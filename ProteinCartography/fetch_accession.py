@@ -66,7 +66,7 @@ def fetch_pdb(accession: str, output_dir: str, session=None):
         session (requests.Session, optional): the requests session to use for the request.
     """
     output_path = Path(output_dir) / f"{accession}.pdb"
-    source = f"https://alphafold.ebi.ac.uk/files/AF-{accession}-F1-model_v4.pdb"
+    source = f"https://alphafold.ebi.ac.uk/files/AF-{accession}-F1-model_v6.pdb"
 
     if session is None:
         session = session_with_retry()

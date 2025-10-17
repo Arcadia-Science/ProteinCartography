@@ -10,7 +10,7 @@ import yaml
 @pytest.fixture
 def config_filepath(tmp_path):
     """
-    Generate a config file for testing the pipeline in "cluster" mode
+    Generate a config file for testing the pipeline in "cluster" mode.
     """
     config = {
         "mode": "cluster",
@@ -32,12 +32,12 @@ def config_filepath(tmp_path):
 @pytest.fixture
 def stage_inputs(integration_test_artifacts_dirpath, config_filepath):
     """
-    Create the input directory and the PDB files for the pipeline in "cluster" mode
+    Create the input directory and the PDB files for the pipeline in "cluster" mode.
     """
     with open(config_filepath) as file:
         config = yaml.safe_load(file)
 
-    # for now, hard-code the dataset name
+    # For now, hard-code the dataset name.
     dataset_name = "actin"
     shutil.copytree(
         integration_test_artifacts_dirpath / "cluster-mode" / dataset_name / "input",
@@ -48,7 +48,7 @@ def stage_inputs(integration_test_artifacts_dirpath, config_filepath):
 @pytest.mark.usefixtures("stage_inputs")
 def test_pipeline_in_cluster_mode(repo_dirpath, config_filepath):
     """
-    Run the pipeline in "cluster" mode with the test config file
+    Run the pipeline in "cluster" mode with the test config file.
     """
 
     snakemake.snakemake(
@@ -65,7 +65,7 @@ def test_pipeline_in_cluster_mode(repo_dirpath, config_filepath):
     input_dirpath = pathlib.Path(config["input_dir"])
     output_dirpath = pathlib.Path(config["output_dir"])
 
-    # check (some of) the expected output files
+    # Check (some of) the expected output files.
     expected_output_filepaths = [
         output_dirpath / "final_results" / f"{config['analysis_name']}_{appendix}"
         for appendix in [
@@ -78,12 +78,12 @@ def test_pipeline_in_cluster_mode(repo_dirpath, config_filepath):
     for filepath in expected_output_filepaths:
         assert filepath.exists()
 
-    # check that the shape of the all-by-all similarity matrix is correct
+    # Check that the shape of the all-by-all similarity matrix is correct.
     num_structures = len(list(input_dirpath.glob("*.pdb")))
     similarity_matrix_filepath = (
         output_dirpath / "foldseek_clustering_results" / "all_by_all_tmscore_pivoted.tsv"
     )
     similarity_matrix = pd.read_csv(similarity_matrix_filepath, sep="\t")
 
-    # matrix should have one row and one column per structure (plus one column for the index)
+    # The matrix should have one row and one column per structure (plus one column for the index).
     assert similarity_matrix.shape == (num_structures, num_structures + 1)
