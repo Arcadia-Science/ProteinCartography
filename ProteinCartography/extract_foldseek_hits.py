@@ -69,14 +69,14 @@ def extract_foldseekhits(
 
         # extract only models that contain AF model string
         # this will need to be changed in the future
-        file_df = file_df[file_df["modelid"].str.contains("-F1-model_v4")]
+        file_df = file_df[file_df["modelid"].str.contains("-F1-model")]
 
         # filter by evalue
         file_df = file_df[file_df["evalue"] < evalue]
 
         # get the uniprot ID out from that target
         file_df["uniprotid"] = file_df["modelid"].apply(
-            lambda x: re.findall("AF-(.*)-F1-model_v4", x)[0]
+            lambda x: re.findall("AF-(.*)-F1-model", x)[0]
         )
 
         # if it's the first results file, fill the dummy_df

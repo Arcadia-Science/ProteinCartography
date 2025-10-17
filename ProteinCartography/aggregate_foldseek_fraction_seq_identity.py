@@ -64,12 +64,10 @@ def aggregate_foldseek_fident(input_files: list, output_file: str, protid: str) 
 
     # extract the model ID from the results file
     dummy_df["modelid"] = dummy_df["target"].str.split(" ", expand=True)[0]
-    dummy_df = dummy_df[dummy_df["modelid"].str.contains("-F1-model_v4")]
+    dummy_df = dummy_df[dummy_df["modelid"].str.contains("-F1-model")]
 
     # get the uniprot ID out from that target
-    dummy_df["protid"] = dummy_df["modelid"].apply(
-        lambda x: re.findall("AF-(.*)-F1-model_v4", x)[0]
-    )
+    dummy_df["protid"] = dummy_df["modelid"].apply(lambda x: re.findall("AF-(.*)-F1-model", x)[0])
 
     # collect only the relevant columns
     results_df = dummy_df[constants.FOLDSEEK_OUT_COLUMN_NAMES]

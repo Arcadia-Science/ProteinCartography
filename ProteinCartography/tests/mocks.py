@@ -7,7 +7,7 @@ import file_utils
 import requests
 
 # TODO (KC): eliminate the hard-coded dataset name ("actin"),
-# which needs to match the dataset name used in the `stage_inputs` pytest fixture
+# which needs to match the dataset name used in the `stage_inputs` pytest fixture.
 ARTIFACTS_DIRPATH = (
     file_utils.find_repo_dirpath()
     / "ProteinCartography"
@@ -23,7 +23,7 @@ API_RESPONSE_ARTIFACTS_DIRPATH = ARTIFACTS_DIRPATH / "api_response_content"
 def mock_run_blast():
     """
     Mock the `run_blast.run_blast` method to prevent it from calling `blastp`
-    by copying a mock blastresults.tsv file to the output directory
+    by copying a mock blastresults.tsv file to the output directory.
     """
 
     result = mock.Mock(spec=subprocess.CompletedProcess)
@@ -40,7 +40,7 @@ def mock_run_blast():
 def mock_requests_session_request():
     """
     Mock the `request` method of `requests.Session` to return mock responses
-    (constructed in `mock_response` below) instead of making real API calls
+    (constructed in `mock_response` below) instead of making real API calls.
     """
     patch = mock.patch("requests.Session.request", side_effect=mock_response)
     # we start the patch but never stop it, because we want to mock all requests
@@ -50,9 +50,9 @@ def mock_requests_session_request():
 
 def mock_bioservices_uniprot_search():
     """
-    Mock the `search` method of `bioservices.UniProt` to prevent it from making real API calls
+    Mock the `search` method of `bioservices.UniProt` to prevent it from making real API calls.
     Note: because `UniProt.search` queries the UniProtKB REST API, this patch can reuse the response
-    constructed in `mock_uniprotkb_rest_api_responses`
+    constructed in `mock_uniprotkb_rest_api_responses`.
     """
     patch = mock.patch(
         "api_utils.UniProtWithExpBackoff.search",
@@ -63,9 +63,9 @@ def mock_bioservices_uniprot_search():
 
 def mock_bioservices_uniprot_mapping():
     """
-    Mock the `mapping` method of `bioservices.UniProt` to prevent it from making real API calls
+    Mock the `mapping` method of `bioservices.UniProt` to prevent it from making real API calls.
     Note: because `UniProt.mapping` queries the UniProt ID-Mapping API,
-    this patch can reuse the response constructed in `mock_uniprot_id_mapping_api_responses`
+    this patch can reuse the response constructed in `mock_uniprot_id_mapping_api_responses`.
     """
     response = mock_uniprot_id_mapping_api_responses("GET", "stream/0")
 
@@ -80,24 +80,24 @@ def mock_bioservices_uniprot_mapping():
 
 def mock_response(method, url, **_):
     """
-    return a mock response for a given method and url
+    Return a mock response for a given method and url.
     """
 
     print(f"Mocking the response to: {method} {url}")
 
-    # requests to the UniProt ID Mapping REST API
+    # Requests to the UniProt ID Mapping REST API.
     if url.startswith("https://rest.uniprot.org/idmapping"):
         return mock_uniprot_id_mapping_api_responses(method, url)
 
-    # requests to the Foldseek API
+    # Requests to the Foldseek API.
     elif url.startswith("https://search.foldseek.com/api"):
         return mock_foldseek_api_responses(method, url)
 
-    # requests to the UniProtKB REST API
+    # Requests to the UniProtKB REST API.
     elif url.startswith("https://rest.uniprot.org/uniprotkb/search"):
         return mock_uniprotkb_rest_api_responses()
 
-    # requests to the alphafold API
+    # Requests to the alphafold API.
     elif url.startswith("https://alphafold.ebi.ac.uk/files"):
         return mock_alphafold_files_api_responses(url)
 
@@ -107,8 +107,8 @@ def mock_response(method, url, **_):
 
 def mock_uniprot_id_mapping_api_responses(method, url):
     """
-    mock the responses to calls made to the UniProt ID Mapping REST API
-    (these are made by `map_refseqids.map_refseqids_rest`)
+    Mock the responses to calls made to the UniProt ID Mapping REST API
+    (these are made by `map_refseqids.map_refseqids_rest`).
     """
     mock_response = mock.Mock(spec=requests.Response)
     mock_response.status_code = 200
@@ -116,18 +116,18 @@ def mock_uniprot_id_mapping_api_responses(method, url):
     job_id = "0"
     payload = {}
 
-    # the initial POST request
+    # The initial POST request.
     if method == "POST" and url.endswith("run"):
         payload = {"jobId": job_id}
 
-    # the polling request
-    # ('success' is defined by the presence of a 'results' key in the response)
+    # The subsequent polling requests.
+    # ('success' is defined by the presence of a 'results' key in the response.)
     elif url.endswith(f"status/{job_id}"):
         payload = {"results": "some-results"}
 
-    # the request to get the results
-    # note: this payload is manually aggregated from the results of real API calls
-    # to both of the default databases ["EMBL-GenBank-DDBJ_CDS", "RefSeq_Protein"]
+    # The request to get the results.
+    # Note: this payload is manually aggregated from the results of real API calls
+    # to both of the default databases ("EMBL-GenBank-DDBJ_CDS" and "RefSeq_Protein").
     elif url.endswith(f"stream/{job_id}"):
         payload = {
             "results": [
@@ -157,7 +157,7 @@ def mock_uniprot_id_mapping_api_responses(method, url):
 
 def mock_foldseek_api_responses(method, url):
     """
-    mock the responses to calls made to the Foldseek API (by `foldseek_apiquery`)
+    Mock the responses to calls made to the Foldseek API (by `foldseek_apiquery`).
 
     Note: this makes no attempt to parse the POST request body;
     it just returns the response from a real API call.
@@ -166,24 +166,24 @@ def mock_foldseek_api_responses(method, url):
     mock_response = mock.Mock(spec=requests.Response)
     mock_response.status_code = 200
 
-    # the initial POST request
+    # The initial POST request.
     job_id = "0"
     if method == "POST" and url.endswith("api/ticket"):
         mock_response.json.return_value = {"id": job_id, "status": "COMPLETE"}
 
-    # the polling request
-    # (this request is made even if the response to the initial POST request is "COMPLETE")
+    # The polling request.
+    # (This request is made even if the response to the initial POST request is "COMPLETE".)
     elif url.endswith(f"api/ticket/{job_id}"):
         mock_response.json.return_value = {"id": job_id, "status": "COMPLETE"}
 
-    # the request to get the results
+    # The request to get the results.
     elif url.endswith(f"api/result/download/{job_id}"):
         with open(
             API_RESPONSE_ARTIFACTS_DIRPATH / "search.foldseek.com_api_result_download", "rb"
         ) as file:
             content = file.read()
 
-        # this allows the response content to be streamed
+        # This allows the response content to be streamed.
         mock_response.iter_content.return_value = [content]
 
     else:
@@ -194,8 +194,8 @@ def mock_foldseek_api_responses(method, url):
 
 def mock_uniprotkb_rest_api_responses():
     """
-    mock the response to calls made to the UniProtKB REST API
-    (these are made by `fetch_uniprot_metadata.query_uniprot`)
+    Mock the response to calls made to the UniProtKB REST API
+    (these are made by `fetch_uniprot_metadata.query_uniprot`).
 
     Note: this makes no attempt to parse the query string; it just returns a manually curated
     response from a real API call.
@@ -204,8 +204,8 @@ def mock_uniprotkb_rest_api_responses():
     mock_response = mock.Mock(spec=requests.Response)
     mock_response.status_code = 200
 
-    # define an empty header, specifically one without a 'Link' key
-    # to prevent `fetch_uniprot_metadata.query_uniprot` from requesting a second batch of results
+    # Define an empty header, specifically one without a 'Link' key
+    # to prevent `fetch_uniprot_metadata.query_uniprot` from requesting a second batch of results.
     mock_response.headers = {}
 
     with open(
@@ -218,11 +218,11 @@ def mock_uniprotkb_rest_api_responses():
 
 def mock_alphafold_files_api_responses(url):
     """
-    mock the response to calls made to the AlphaFold API to download PDB files
+    Mock the response to calls made to the AlphaFold API to download PDB files.
     """
 
-    # parse the accession from the url
-    result = re.findall(r"AF-([A-Z0-9]+)-F1-model_v4\.pdb", url)
+    # Parse the accession from the url.
+    result = re.findall(r"AF-([A-Z0-9]+)-F1-model_v6\.pdb", url)
     if result is None:
         raise ValueError("Unexpected url: {url}")
     accession = result[0]
@@ -230,6 +230,9 @@ def mock_alphafold_files_api_responses(url):
     mock_response = mock.Mock(spec=requests.Response)
     mock_response.status_code = 200
 
+    # The AlphaFold URL requests v6 files, but the test artifacts contain v4 files.
+    # Because we can safely use the "old" v4 files for testing purposes,
+    # we point to the v4 files here.
     artifact_filepath = (
         API_RESPONSE_ARTIFACTS_DIRPATH / f"alphafold.ebi.ac.uk_files_AF-{accession}-F1-model_v4.pdb"
     )
