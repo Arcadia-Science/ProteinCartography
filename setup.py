@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="ProteinCartography",
-    url="https://github.com/Arcadia-Science/ProteinCartography-private",
+    url="https://github.com/Arcadia-Science/ProteinCartography",
     author="Dennis Sun",
     author_email="dennis.sun@arcadiascience.com",
     packages=["ProteinCartography"],
@@ -16,7 +16,6 @@ setup(
         "ProteinCartography/esmfold_apiquery.py",
         "ProteinCartography/extract_blast_hits.py",
         "ProteinCartography/extract_foldseek_hits.py",
-        "ProteinCartography/extract_input_protein_distances.py",
         "ProteinCartography/fetch_accession.py",
         "ProteinCartography/foldseek_apiquery.py",
         "ProteinCartography/foldseek_clustering.py",
