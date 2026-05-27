@@ -3,6 +3,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  - python=3.9
   - leidenalg=0.9.1
   - scanpy=1.9.3
   - scikit-learn=1.2.2
