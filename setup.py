@@ -16,7 +16,6 @@ setup(
         "ProteinCartography/esmfold_apiquery.py",
         "ProteinCartography/extract_blast_hits.py",
         "ProteinCartography/extract_foldseek_hits.py",
-        "ProteinCartography/extract_input_protein_distances.py",
         "ProteinCartography/fetch_accession.py",
         "ProteinCartography/foldseek_apiquery.py",
         "ProteinCartography/foldseek_clustering.py",
