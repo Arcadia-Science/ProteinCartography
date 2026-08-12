@@ -10,11 +10,12 @@ from api_utils import (
     session_with_retry,
 )
 from constants import UniProtService
-from tests import mocks
 
 # If necessary, mock the `uniprot.mapping` method (used by `map_refseqids_bioservices`).
 # See comments in `tests.mocks` for more details.
 if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
+    from tests import mocks
+
     mocks.mock_bioservices_uniprot_mapping()
 
 __all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
