@@ -10,3 +10,9 @@ dependencies:
   - pandas=2.0.1
   - numpy=1.23.5
   - nltk=3.8.1
+  # matplotlib is an indirect dependency (via scanpy) and must be pinned, because recent
+  # versions of it require numpy>=1.25 and so are incompatible with the numpy pin above.
+  # This pin matches the one in `plotting.yml`.
+  - matplotlib=3.7.1
+  # `umap-learn` imports `pkg_resources`, which setuptools removed in version 81.
+  - setuptools<81
