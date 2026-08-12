@@ -36,8 +36,10 @@ jobs:
         id: cache-snakemake-conda-envs
         with:
           path: .snakemake/conda
+          # note: `restore-keys` are matched as a prefix of `key`, so they must share its prefix
+          # (this previously began with "snakemake-conda-", which never matched anything)
           key: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/*.yml') }}
-          restore-keys: snakemake-conda-${{ runner.os }}--${{ runner.arch }}--
+          restore-keys: conda-${{ runner.os }}--${{ runner.arch }}--
 
       - name: Create the snakemake conda envs
         if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'
