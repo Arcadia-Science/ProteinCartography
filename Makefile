@@ -21,6 +21,14 @@ test:
 test-without-mocks:
 	pytest -vv -s --no-mocks
 
+# Run the whole pipeline end to end with every external call mocked or stubbed out,
+# and check that it produces its final output files. This is the fastest way to verify
+# that the pipeline still runs all the way through.
+# Note: the first run is slow, because snakemake has to build the per-rule conda envs.
+.PHONY: smoke-test
+smoke-test:
+	pytest -vv -s -m smoke .
+
 .PHONY: run-demo-workflow
 run-demo-workflow:
 	snakemake \

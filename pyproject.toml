@@ -7,6 +7,12 @@ requires-python = ">=3.9"
 license = { file = "LICENSE" }
 
 
+[tool.pytest.ini_options]
+markers = [
+    "smoke: an end-to-end run of the whole pipeline with all external calls mocked or stubbed",
+]
+
+
 [tool.ruff]
 # The directories to consider when resolving first- vs. third-party imports
 src = ["."]

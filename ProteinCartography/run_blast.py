@@ -1,17 +1,9 @@
 #!/usr/bin/env python
 import argparse
-import os
 import sys
 
 import blast_utils
 import constants
-
-# if necessary, mock the `run_blast` method
-# see comments in `tests.mocks` for more details
-if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
-    from tests import mocks
-
-    mocks.mock_run_blast()
 
 
 def parse_args():

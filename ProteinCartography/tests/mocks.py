@@ -1,6 +1,4 @@
 import re
-import shutil
-import subprocess
 from unittest import mock
 
 import file_utils
@@ -18,23 +16,6 @@ ARTIFACTS_DIRPATH = (
 )
 
 API_RESPONSE_ARTIFACTS_DIRPATH = ARTIFACTS_DIRPATH / "api_response_content"
-
-
-def mock_run_blast():
-    """
-    Mock the `run_blast.run_blast` method to prevent it from calling `blastp`
-    by copying a mock blastresults.tsv file to the output directory.
-    """
-
-    result = mock.Mock(spec=subprocess.CompletedProcess)
-    result.returncode = 0
-
-    def side_effect(out=None, **_):
-        shutil.copy(ARTIFACTS_DIRPATH / "output" / "P60709.blastresults.tsv", out)
-        return result
-
-    patch = mock.patch("blast_utils.run_blast", side_effect=side_effect)
-    patch.start()
 
 
 def mock_requests_session_request():

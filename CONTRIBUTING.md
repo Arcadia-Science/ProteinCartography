@@ -72,6 +72,11 @@ We use `ruff` to lint and format our Python code. We also use snakemake’s code
 ### Testing
 Tests are found in the `ProteinCartography/tests/` directory. We use `pytest` for testing; you can run the tests locally using the command `make test`. Currently, we only have integration-like tests that run the pipeline in both 'search' and 'cluster' modes using a test dataset and test config designed to allow the pipeline run very quickly (2-3min). The tests then check that the output files are created and have the correct shape. We plan to add unit tests in the future.
 
+#### Running the smoke test
+To quickly check that the pipeline still runs all the way through, use `make smoke-test`. This runs only the 'search' mode test, which exercises every rule in the pipeline with all external calls mocked or stubbed out, and checks that the final output files are created. Note that the first run is slow, because snakemake has to build the per-rule conda envs.
+
+The one external call that is not mocked with `requests` is the call to `blastp`, because it is made in a subprocess rather than over HTTP. Instead, setting the `PROTEINCARTOGRAPHY_BLAST_STUB_RESULTS_FILEPATH` env variable to the path of a canned blast results file makes `blast_utils.run_blast` copy that file to its output path instead of calling `blastp -remote` (which takes 10-40 minutes, because it queues on NCBI's public servers). The tests set this env variable in the `set_env_variables` fixture; it should never be set in production.
+
 #### Running the tests without mocked API responses
 When the pipeline is run in 'search' mode, it makes many calls to external APIs (including Foldseek, Blast, and Alphafold). By default, these calls are mocked during testing so that the tests do not depend on external APIs; this is important to ensure test reproducibility and also helps to make the tests run quickly. However, it is important to periodically test that the pipeline also runs correctly when real API calls are made. To do this, you can run the tests without mocks using `make test-without-mocks`.
 
