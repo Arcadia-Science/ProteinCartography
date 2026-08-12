@@ -71,6 +71,8 @@ BLAST_EVALUE = float(config["blast_evalue"])
 BLAST_WORD_SIZE = int(config["blast_word_size"])
 BLAST_WORD_SIZE_BACKOFF = int(config["blast_word_size_backoff"])
 BLAST_NUM_ATTEMPTS = int(config["blast_num_attempts"])
+BLAST_TIMEOUT_SECONDS = float(config["blast_timeout_seconds"])
+BLAST_EMAIL = str(config["blast_email"])
 FOLDSEEK_SERVER_URL = config["foldseek_server_url"]
 FOLDSEEK_DATABASES = config["foldseek_databases"]
 MAX_FOLDSEEK_HITS = int(config["max_foldseek_hits"])
@@ -123,15 +125,22 @@ rule copy_pdb:
 
 rule run_blast:
     """
-    Using files located in the input directory, run `blastp` using the remote BLAST API.
+    Using files located in the input directory, run a blastp search using NCBI's BLAST URL API.
 
     Large proteins will cause remote BLAST to fail;
     you can still perform a manual BLAST search to get around this.
+
+    Note: the `ncbi_remote` resource exists so that runs with many input proteins can be stopped
+    from submitting concurrent searches to NCBI's shared public queue. It has no effect unless
+    snakemake is given a budget for it (`--resources ncbi_remote=1`), which serializes this rule
+    at the cost of making the pipeline's slowest stage take N times as long for N input proteins.
     """
     input:
         fasta_file=INPUT_DIR / "{protid}.fasta",
     output:
         blast_results=BLAST_RESULTS_DIR / "{protid}.blast_results.tsv",
+    resources:
+        ncbi_remote=1,
     benchmark:
         BENCHMARKS_DIR / "{protid}.run_blast.txt"
     conda:
@@ -145,7 +154,9 @@ rule run_blast:
           --word_size {BLAST_WORD_SIZE} \
           --word_size_backoff {BLAST_WORD_SIZE_BACKOFF} \
           --num_attempts {BLAST_NUM_ATTEMPTS} \
-          --evalue {BLAST_EVALUE}
+          --evalue {BLAST_EVALUE} \
+          --timeout_seconds {BLAST_TIMEOUT_SECONDS} \
+          --email {BLAST_EMAIL}
         """
 
 

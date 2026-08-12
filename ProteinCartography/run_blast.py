@@ -10,6 +10,9 @@ def parse_args():
     """
     Define CLI arguments for the subset of `blastp` arguments that are used by the `run_blast` rule
     following the nomenclature of the `blastp` CLI
+
+    Note: `--timeout_seconds` and `--email` have no `blastp` equivalent; they exist because the
+    search is submitted to NCBI's URL API rather than being run by the `blastp` CLI.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--query", required=True, help="path to the input peptide FASTA file.")
@@ -51,6 +54,23 @@ def parse_args():
         type=float,
         required=True,
     )
+    parser.add_argument(
+        "--timeout_seconds",
+        type=float,
+        required=True,
+        help=(
+            "how long to wait for NCBI to complete each blast search before giving up. "
+            "Note that the total time spent is bounded by --num_attempts times this value."
+        ),
+    )
+    parser.add_argument(
+        "--email",
+        default=None,
+        help=(
+            "the contact email address to send to NCBI, which NCBI asks automated clients to "
+            f"provide. Overridden by the '{blast_utils.EMAIL_ENV_VAR}' env variable."
+        ),
+    )
     args = parser.parse_args()
 
     return args
@@ -75,6 +95,8 @@ def main():
             outfmt=args.outfmt,
             word_size=word_size,
             evalue=args.evalue,
+            timeout_seconds=args.timeout_seconds,
+            email=args.email,
         )
         if not blast_utils.blast_call_failed(result):
             sys.exit(0)

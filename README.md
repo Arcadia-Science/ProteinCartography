@@ -194,6 +194,10 @@ The **Cluster** mode starts at the "Clustering" step.
     - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein, per database.
 
 2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.
+    - The search is submitted to [NCBI's BLAST URL API](https://ncbi.github.io/blast-cloud/dev/api.html) using `requests`, rather than to the `blastp -remote` CLI, because the CLI polls NCBI's queue indefinitely with no way to bound how long it waits. NCBI's public queue is shared, and when it is busy a search can sit in it for hours.
+    - Use the `blast_timeout_seconds` config parameter to control how long the pipeline waits for a single search before giving up. Note that the total time spent on one protein is bounded by `blast_num_attempts` times this value.
+    - NCBI asks automated clients to identify themselves with a contact email address. Set yours with the `blast_email` config parameter, or with the `PROTEINCARTOGRAPHY_BLAST_EMAIL` env variable, which takes precedence over the config parameter.
+    - To avoid submitting concurrent searches to NCBI when there are many input proteins, run snakemake with `--resources ncbi_remote=1`, which serializes the `run_blast` rule.
     - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob).
     - TODO: This can fail for large proteins (>700aa) due to remote BLAST CPU limits. To overcome this error, you can manually run BLAST locally or via the webserver and create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blast_hits.refseq.txt` in the `output/blast_results/` directory.
 
