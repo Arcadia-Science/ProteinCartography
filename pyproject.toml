@@ -12,6 +12,11 @@ markers = [
     "smoke: an end-to-end run of the whole pipeline with all external calls mocked or stubbed",
 ]
 
+# The modules in the `ProteinCartography` package import each other by their top-level names,
+# because the snakemake rules call them as scripts from within that directory. Adding it here
+# lets the tests import them the same way.
+pythonpath = ["ProteinCartography"]
+
 
 [tool.ruff]
 # The directories to consider when resolving first- vs. third-party imports

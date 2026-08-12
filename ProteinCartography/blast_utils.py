@@ -15,6 +15,39 @@ import subprocess
 STUB_RESULTS_FILEPATH_ENV_VAR = "PROTEINCARTOGRAPHY_BLAST_STUB_RESULTS_FILEPATH"
 
 
+def blast_call_failed(result: subprocess.CompletedProcess) -> bool:
+    """
+    Determine whether a call to `blastp` failed.
+
+    The exit code alone is not sufficient: when the remote server refuses to queue a request,
+    `blastp -remote` writes an error to stderr, writes an empty results file, and nevertheless
+    exits with a status of zero. For example:
+
+        Error: [blastp] bad_request: Could not queue request: DB operation failed.
+
+    Checking only the exit code therefore treats these failures as successes, which prevents
+    the word-size backoff in `run_blast.py` from ever being attempted and defers the failure
+    to `extract_blast_hits.py`, where it appears as a misleading "no hits were returned" error.
+
+    Note: an empty results file is deliberately *not* treated as a failure here, because a query
+    that legitimately has no hits also produces one.
+
+    Args:
+        result (subprocess.CompletedProcess): the result of the call to `blastp`.
+
+    Returns:
+        True if the call failed.
+    """
+    if result.returncode != 0:
+        return True
+
+    stderr = result.stderr
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode(errors="replace")
+
+    return "Error:" in (stderr or "")
+
+
 def run_blast_stub(stub_results_filepath: str, out: str):
     """
     Stand in for a call to `blastp` by copying a canned blastp results file to `out`.

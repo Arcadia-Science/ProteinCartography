@@ -76,7 +76,7 @@ def main():
             word_size=word_size,
             evalue=args.evalue,
         )
-        if result.returncode == 0:
+        if not blast_utils.blast_call_failed(result):
             sys.exit(0)
         else:
             num_tries += 1
