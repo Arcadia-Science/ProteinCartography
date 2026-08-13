@@ -1,12 +1,17 @@
+# These checks are the same ones that `.github/workflows/lint.yml` runs, in the same order,
+# so that a passing `make lint` means a passing lint workflow.
 .PHONY: lint
 lint:
-	ruff check --exit-zero .
+	ruff check .
+	ruff format --check .
 	snakefmt --check .
 
+# Note that `ruff check --fix` runs before `ruff format`, because the fixer's edits are not
+# themselves formatted; in the other order, a fix can leave the tree failing `make lint`.
 .PHONY: format
 format:
-	ruff format .
 	ruff check --fix .
+	ruff format .
 	snakefmt .
 
 .PHONY: pre-commit
