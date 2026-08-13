@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import sys
+import time
 
 import blast_utils
 import constants
@@ -59,8 +60,8 @@ def parse_args():
         type=float,
         required=True,
         help=(
-            "how long to wait for NCBI to complete each blast search before giving up. "
-            "Note that the total time spent is bounded by --num_attempts times this value."
+            "the total time to spend waiting for NCBI, across all attempts, before giving up. "
+            "Retrying does not reset this budget."
         ),
     )
     parser.add_argument(
@@ -79,14 +80,25 @@ def parse_args():
 def main():
     args = parse_args()
 
-    num_tries = 0
-    max_num_tries = args.num_attempts
-    while num_tries < max_num_tries:
-        word_size = args.word_size if num_tries == 0 else args.word_size_backoff
+    # The timeout is a budget for the whole rule rather than for one attempt: it is established
+    # once, here, and every attempt draws down the same deadline. Giving each attempt its own
+    # timeout would mean that the worst case is `num_attempts` times as long as the configured
+    # value, which is what the user actually waits for.
+    started_at = time.monotonic()
+    deadline = started_at + args.timeout_seconds
 
+    result = None
+    num_tries = 0
+    while num_tries < args.num_attempts:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+
+        word_size = args.word_size if num_tries == 0 else args.word_size_backoff
         print(
-            f"Attempt {num_tries + 1}/{max_num_tries} to call blastp "
-            f"(using word size of {word_size})"
+            f"Attempt {num_tries + 1}/{args.num_attempts} to run a blast search "
+            f"(using a word size of {word_size}, with {round(remaining)}s of the "
+            f"{round(args.timeout_seconds)}s budget remaining)"
         )
         result = blast_utils.run_blast(
             query=args.query,
@@ -95,18 +107,25 @@ def main():
             outfmt=args.outfmt,
             word_size=word_size,
             evalue=args.evalue,
-            timeout_seconds=args.timeout_seconds,
+            timeout_seconds=remaining,
             email=args.email,
         )
         if not blast_utils.blast_call_failed(result):
             sys.exit(0)
-        else:
-            num_tries += 1
 
-    if num_tries >= max_num_tries:
-        sys.exit(
-            f"BLAST failed after {max_num_tries} tries. The last error message was: {result.stderr}"
-        )
+        num_tries += 1
+
+    elapsed = round(time.monotonic() - started_at)
+    last_error = (
+        result.stderr
+        if result is not None
+        else "the timeout was already exhausted before any attempt could be made"
+    )
+    sys.exit(
+        f"BLAST failed after {num_tries} attempt(s) and {elapsed}s of the "
+        f"{round(args.timeout_seconds)}s total budget (set by the 'blast_timeout_seconds' "
+        f"config parameter). The last error message was: {last_error}"
+    )
 
 
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ other tests in this directory they do not need network access, conda environment
 API responses, and they run without ever sleeping.
 """
 
+import json
+import pathlib
 import subprocess
 
 import blast_utils
@@ -99,30 +101,95 @@ TEMPORARILY_UNAVAILABLE_RESPONSE = """<html><body>
 </body></html>
 """
 
-# The tabular results used by the tests below. These are copied from a real `blastp -remote`
-# results file, truncated to the twelve fields that NCBI's URL API returns.
-TABULAR_RESPONSE = (
-    "# blastp\n"
-    "# Iteration: 0\n"
-    "# Query: sp|P60709|ACTB_HUMAN Actin, cytoplasmic 1\n"
-    f"# RID: {REQUEST_ID}\n"
-    "# Database: nr\n"
-    "# Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, "
-    "q. start, q. end, s. start, s. end, evalue, bit score\n"
-    "# 2 hits found\n"
-    "sp|P60709|ACTB_HUMAN\tref|XP_052610122.1|\t100.000\t375\t0\t0\t1\t375\t46\t420\t0.0\t787\n"
-    "sp|P60709|ACTB_HUMAN\tgb|TEA41296.1|\t99.733\t375\t1\t0\t1\t375\t36\t410\t0.0\t785\n"
-)
+# The results fixture: a real JSON2_S response from NCBI, trimmed to four hits.
+# See `real_results` below for what it contains and where it came from.
+REAL_RESULTS_FILENAME = "blast.ncbi.nlm.nih.gov_Blast.cgi_JSON2_S"
 
-# A tabular response for a query that legitimately has no hits.
-TABULAR_RESPONSE_WITH_NO_HITS = (
-    "# blastp\n"
-    "# Iteration: 0\n"
-    "# Query: sp|P60709|ACTB_HUMAN Actin, cytoplasmic 1\n"
-    f"# RID: {REQUEST_ID}\n"
-    "# Database: nr\n"
-    "# 0 hits found\n"
-)
+# The results file written by a real `blastp -remote` run, used to check that the rows converted
+# from NCBI's JSON are identical to the ones the `blastp` CLI writes.
+CLI_RESULTS_FILENAME = "P60709.blastresults.tsv"
+
+
+def build_hsp(**overrides):
+    """
+    Build one HSP, with the shape and the field names that NCBI's JSON uses.
+    """
+    hsp = {
+        "num": 1,
+        "bit_score": 787.719,
+        "score": 2033,
+        "evalue": 0,
+        "identity": 375,
+        "positive": 375,
+        "query_from": 1,
+        "query_to": 375,
+        "hit_from": 46,
+        "hit_to": 420,
+        "align_len": 375,
+        "gaps": 0,
+        "qseq": "M" * 375,
+        "hseq": "M" * 375,
+        "midline": "|" * 375,
+    }
+    hsp.update(overrides)
+    return hsp
+
+
+def _hits_with(hsp):
+    """
+    Wrap one HSP in the single hit that `build_results` uses by default.
+    """
+    return [
+        {
+            "num": 1,
+            "description": [
+                {
+                    "id": "ref|XP_052610122.1|",
+                    "accession": "XP_052610122",
+                    "taxid": 564181,
+                }
+            ],
+            "len": 420,
+            "hsps": [hsp],
+        }
+    ]
+
+
+def build_results(hits=None, query_title="sp|P60709|ACTB_HUMAN Actin, cytoplasmic 1", **overrides):
+    """
+    Build a JSON2_S response body, with the shape that NCBI's real responses have.
+    """
+    if hits is None:
+        hits = [
+            {
+                "num": 1,
+                "description": [
+                    {
+                        "id": "ref|XP_052610122.1|",
+                        "accession": "XP_052610122",
+                        "title": "actin, cytoplasmic 1 [Peromyscus californicus insignis]",
+                        "taxid": 564181,
+                        "sciname": "Peromyscus californicus insignis",
+                    }
+                ],
+                "len": 420,
+                "hsps": [build_hsp()],
+            }
+        ]
+
+    search = {
+        "query_id": "Query_5706473",
+        "query_title": query_title,
+        "query_len": 375,
+        "hits": hits,
+        "stat": {},
+    }
+    search.update(overrides)
+    return {"BlastOutput2": [{"report": {"program": "blastp", "results": {"search": search}}}]}
+
+
+# A response for a query that legitimately has no hits.
+RESULTS_WITH_NO_HITS = build_results(hits=[])
 
 
 def search_info_response(status):
@@ -159,19 +226,24 @@ class FakeNcbi:
         put_response: the response to the `CMD=Put` request that submits the search.
         statuses: the statuses to report, in order, to successive polling requests.
         results_response: the response to the `CMD=Get` request that retrieves the results.
+            A dict is serialized to JSON, as NCBI's JSON2_S responses are.
     """
 
     def __init__(self, put_response=PUT_RESPONSE, statuses=("READY",), results_response=None):
         self.put_response = self._as_response(put_response)
         self.statuses = list(statuses)
         self.results_response = self._as_response(
-            TABULAR_RESPONSE if results_response is None else results_response
+            build_results() if results_response is None else results_response
         )
         self.requests = []
 
     @staticmethod
     def _as_response(response):
-        return response if isinstance(response, FakeResponse) else FakeResponse(response)
+        if isinstance(response, FakeResponse):
+            return response
+        if isinstance(response, dict):
+            return FakeResponse(json.dumps(response))
+        return FakeResponse(response)
 
     def post(self, url, data=None, timeout=None):
         self.requests.append(data)
@@ -278,11 +350,9 @@ def test_a_successful_search_writes_the_expected_columns(clock, ncbi, query_file
     assert not blast_utils.blast_call_failed(result)
 
     rows = [line.split("\t") for line in out_filepath.read_text().splitlines()]
-    assert len(rows) == 2
-    for row in rows:
-        assert len(row) == len(constants.BLAST_OUTPUT_FIELDS)
-
+    assert len(rows) == 1
     assert rows[0] == [
+        # 'qseqid' comes from the query title, because NCBI replaces the query id with its own.
         "sp|P60709|ACTB_HUMAN",
         "ref|XP_052610122.1|",
         "100.000",
@@ -294,20 +364,16 @@ def test_a_successful_search_writes_the_expected_columns(clock, ncbi, query_file
         "46",
         "420",
         "0.0",
-        "787",
-        # 'sacc' and 'saccver' are derived from the subject sequence id ...
+        # 787.719 is written as '788', the way `blastp` formats bit scores above 99.9.
+        "788",
         "XP_052610122",
         "XP_052610122.1",
-        # ... and the remaining fields are not available from NCBI's URL API.
+        # 'sgi' is a literal 0 because NCBI has retired GI numbers.
+        "0",
+        # 'staxids' comes from the taxid that NCBI's JSON carries for each hit.
+        "564181",
+        # 'scomnames' is a *common* name, which NCBI's JSON does not provide.
         "N/A",
-        "N/A",
-        "N/A",
-    ]
-
-    # `extract_blast_hits.py` reads only this column, so it is the one that has to be right.
-    assert [row[constants.BLAST_OUTPUT_FIELDS.index("sacc")] for row in rows] == [
-        "XP_052610122",
-        "TEA41296",
     ]
 
 
@@ -344,7 +410,7 @@ def test_a_search_with_no_hits_is_not_a_failure(clock, ncbi, query_filepath, tmp
     Tests that a query which legitimately has no hits produces an empty results file rather than
     an error, which is the behavior `blast_call_failed` documents.
     """
-    ncbi(results_response=TABULAR_RESPONSE_WITH_NO_HITS)
+    ncbi(results_response=RESULTS_WITH_NO_HITS)
     out_filepath = tmp_path / "results.tsv"
 
     result = run_blast(query_filepath, out_filepath)
@@ -473,7 +539,7 @@ def test_an_http_error_status_is_reported_as_a_failure(clock, ncbi, query_filepa
     assert "503" in result.stderr
 
 
-def test_a_non_tabular_results_response_is_a_failure(clock, ncbi, query_filepath, tmp_path):
+def test_a_non_json_results_response_is_a_failure(clock, ncbi, query_filepath, tmp_path):
     """
     Tests the case where the search becomes ready but NCBI returns an error page instead of the
     results. Without this check the pipeline would write the error page to the results file.
@@ -484,9 +550,37 @@ def test_a_non_tabular_results_response_is_a_failure(clock, ncbi, query_filepath
     result = run_blast(query_filepath, out_filepath)
 
     assert blast_utils.blast_call_failed(result)
-    assert "did not return tabular results" in result.stderr
+    assert "did not return JSON2_S results" in result.stderr
     # The results file must not be written at all when the search failed.
     assert not out_filepath.exists()
+
+
+def test_a_status_only_results_response_is_a_failure(clock, ncbi, query_filepath, tmp_path):
+    """
+    Tests the exact body NCBI returns when a format type does not deliver results: a 62-byte
+    page carrying only the status block. This is what `FORMAT_TYPE=Tabular` returns for a
+    completed search, and it must be reported as a failure rather than as a search with no hits.
+    """
+    ncbi(results_response=("<p><!--\nQBlastInfoBegin\n\tStatus=READY\nQBlastInfoEnd\n--></p>\n"))
+    out_filepath = tmp_path / "results.tsv"
+
+    result = run_blast(query_filepath, out_filepath)
+
+    assert blast_utils.blast_call_failed(result)
+    assert not out_filepath.exists()
+
+
+def test_json_that_is_not_a_blast_report_is_a_failure(clock, ncbi, query_filepath, tmp_path):
+    """
+    Tests that valid JSON which is not a blast report is rejected, rather than silently
+    producing an empty results file.
+    """
+    ncbi(results_response={"some": "other json"})
+
+    result = run_blast(query_filepath, tmp_path / "results.tsv")
+
+    assert blast_utils.blast_call_failed(result)
+    assert "BlastOutput2" in result.stderr
 
 
 def test_a_network_error_is_reported_as_a_failure(monkeypatch, clock, query_filepath, tmp_path):
@@ -616,32 +710,135 @@ def test_the_accession_is_parsed_from_the_subject_sequence_id(
     assert blast_utils.strip_accession_version(saccver) == expected_sacc
 
 
-def test_comment_lines_are_dropped_from_the_results():
-    """
-    Tests that NCBI's comment lines are stripped, since `blastp -outfmt 6` does not emit them
-    and `extract_blast_hits.py` reads the file with no comment handling.
-    """
-    results = blast_utils.format_results(TABULAR_RESPONSE, constants.BLAST_OUTFMT)
-    assert "#" not in results
-    assert len(results.splitlines()) == 2
-
-
-def test_a_truncated_tabular_row_is_an_error():
-    """
-    Tests that a row with fewer fields than expected is rejected rather than silently producing
-    misaligned columns in the results file.
-    """
-    with pytest.raises(blast_utils.BlastApiError, match="tabular row"):
-        blast_utils.format_results("# blastp\nqueryid\tsubjectid\t100.0\n", constants.BLAST_OUTFMT)
-
-
 def test_a_custom_output_format_is_respected():
     """
     Tests that the fields written are the ones named by `outfmt`, so that the results stay
     consistent with whatever `extract_blast_hits.py` is told to read them back with.
     """
-    results = blast_utils.format_results(TABULAR_RESPONSE, "6 sacc evalue")
+    results = blast_utils.format_results(build_results(), "6 sacc evalue")
     assert results.splitlines()[0] == "XP_052610122\t0.0"
+
+
+def test_the_query_id_comes_from_the_query_title():
+    """
+    Tests that 'qseqid' is the id from the submitted FASTA defline rather than the internal id
+    that NCBI assigns ('Query_5706473'), which is what `blastp -outfmt 6` reports.
+    """
+    results = blast_utils.format_results(build_results(), "6 qseqid")
+    assert results.splitlines()[0] == "sp|P60709|ACTB_HUMAN"
+
+
+def test_the_query_id_falls_back_to_ncbis_id_when_there_is_no_title():
+    """
+    Tests the case of a query submitted without a defline, where NCBI has no title to report.
+    """
+    results = blast_utils.format_results(build_results(query_title=""), "6 qseqid")
+    assert results.splitlines()[0] == "Query_5706473"
+
+
+def test_only_the_first_description_of_a_merged_hit_is_emitted():
+    """
+    Tests that a hit whose sequence is shared by several accessions produces one row, not one per
+    accession. `nr` merges identical sequences, and `blastp -outfmt 6` reports only the
+    representative accession in 'sacc' (reporting all of them is what 'sallacc' is for).
+    """
+    hit = {
+        "num": 1,
+        "description": [
+            {"id": "ref|NP_001009784.1|", "accession": "NP_001009784", "taxid": 9940},
+            {"id": "ref|XP_004004431.1|", "accession": "XP_004004431", "taxid": 9925},
+            {"id": "gb|ELR48303.1|", "accession": "ELR48303", "taxid": 9541},
+        ],
+        "len": 375,
+        "hsps": [build_hsp()],
+    }
+    results = blast_utils.format_results(build_results(hits=[hit]), "6 sacc")
+    assert results.splitlines() == ["NP_001009784"]
+
+
+def test_every_hsp_of_a_hit_is_emitted():
+    """
+    Tests that a hit with several HSPs produces one row per HSP, as `blastp -outfmt 6` does.
+    """
+    hit = {
+        "num": 1,
+        "description": [{"id": "ref|XP_1.1|", "accession": "XP_1", "taxid": 1}],
+        "len": 800,
+        "hsps": [build_hsp(hit_from=46), build_hsp(num=2, hit_from=500, hit_to=800)],
+    }
+    results = blast_utils.format_results(build_results(hits=[hit]), "6 sacc sstart")
+    assert results.splitlines() == ["XP_1\t46", "XP_1\t500"]
+
+
+def test_several_queries_produce_rows_for_each():
+    """
+    Tests that a multi-sequence FASTA file, which NCBI reports as several reports in one
+    response, produces rows for every query.
+    """
+    first = build_results(query_title="sp|P60709|ACTB_HUMAN actin")
+    second = build_results(query_title="sp|P68133|ACTS_HUMAN actin alpha")
+    combined = {"BlastOutput2": first["BlastOutput2"] + second["BlastOutput2"]}
+
+    results = blast_utils.format_results(combined, "6 qseqid sacc")
+    assert results.splitlines() == [
+        "sp|P60709|ACTB_HUMAN\tXP_052610122",
+        "sp|P68133|ACTS_HUMAN\tXP_052610122",
+    ]
+
+
+def test_gap_openings_are_counted_from_the_aligned_sequences():
+    """
+    Tests that 'gapopen' counts gap *openings* rather than gapped positions. NCBI's JSON reports
+    only the latter, and the two differ whenever a gap is longer than one residue.
+    """
+    hsp = build_hsp(qseq="MK---LV--A", hseq="MKQRTLVWSA", align_len=10, identity=5, gaps=5)
+    assert blast_utils.count_gap_openings(hsp) == 2
+
+    # Gaps in either sequence count, and a gap in each is two openings.
+    assert blast_utils.count_gap_openings(build_hsp(qseq="MK--A", hseq="MKQ-A")) == 2
+    assert blast_utils.count_gap_openings(build_hsp(qseq="MKA", hseq="MKA")) == 0
+
+
+def test_mismatches_exclude_identities_and_gaps():
+    """
+    Tests the definition `blastp` uses for the 'mismatch' field.
+    """
+    hsp = build_hsp(align_len=10, identity=5, gaps=3, qseq="MK---LVWSA", hseq="MKQRTLVWSA")
+    results = blast_utils.format_results(build_results(hits=_hits_with(hsp)), "6 mismatch")
+    assert results.splitlines() == ["2"]
+
+
+@pytest.mark.parametrize(
+    "evalue, expected",
+    [
+        # `blastp` writes a vanishing e-value as '0.0' rather than as '0'.
+        (0, "0.0"),
+        (1e-200, "0.0"),
+        (1e-120, "1e-120"),
+        (0.0001, "1e-04"),
+        (0.05, "0.050"),
+        (0.5, "0.50"),
+        (5.0, "5.0"),
+        (50.0, "50"),
+    ],
+)
+def test_evalues_are_formatted_the_way_blastp_formats_them(evalue, expected):
+    assert blast_utils.format_evalue(evalue) == expected
+
+
+@pytest.mark.parametrize(
+    "bitscore, expected",
+    [
+        # Bit scores above 99.9 are written as integers, which is why the results file from a real
+        # `blastp -remote` run contains '787' rather than '787.334'.
+        (787.719, "788"),
+        (784.637, "785"),
+        (99.9, "99.9"),
+        (45.44, "45.4"),
+    ],
+)
+def test_bitscores_are_formatted_the_way_blastp_formats_them(bitscore, expected):
+    assert blast_utils.format_bitscore(bitscore) == expected
 
 
 def test_the_status_is_parsed_from_the_qblastinfo_block():
@@ -649,6 +846,153 @@ def test_the_status_is_parsed_from_the_qblastinfo_block():
     assert blast_utils.parse_qblast_info(PUT_RESPONSE, "RID") == REQUEST_ID
     assert blast_utils.parse_qblast_info(PUT_RESPONSE, "RTOE") == "27"
     assert blast_utils.parse_qblast_info(PUT_RESPONSE, "Status") is None
+
+
+# ------------------------------------------------------------------------------------------------
+# A real response from NCBI.
+#
+# The tests above build their responses by hand, which keeps them readable but also means they
+# only ever prove that the parser agrees with this file's idea of what NCBI returns. The tests
+# below run the same parser over a response that NCBI actually sent, and compare the rows it
+# produces against the results file that a real `blastp -remote` run actually wrote.
+# ------------------------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def api_response_content_dirpath(integration_test_artifacts_dirpath):
+    return integration_test_artifacts_dirpath / "search-mode" / "actin" / "api_response_content"
+
+
+@pytest.fixture
+def real_results(api_response_content_dirpath):
+    """
+    The real JSON2_S response that NCBI returned for a blastp search of the actin test protein
+    (P60709) against `nr`, trimmed from 50 hits to 4 and from 1053 descriptions to 3 on the
+    merged hits. Nothing in it has been edited; hits and descriptions were only dropped.
+    """
+    with open(api_response_content_dirpath / REAL_RESULTS_FILENAME) as file:
+        return json.load(file)
+
+
+@pytest.fixture
+def real_cli_rows(integration_test_artifacts_dirpath):
+    """
+    The rows of the results file written by a real `blastp -remote` run of the same query,
+    keyed by their subject accession.
+    """
+    filepath = (
+        integration_test_artifacts_dirpath
+        / "search-mode"
+        / "actin"
+        / "output"
+        / CLI_RESULTS_FILENAME
+    )
+    rows = {}
+    with open(filepath) as file:
+        for line in file:
+            values = line.rstrip("\n").split("\t")
+            rows[values[constants.BLAST_OUTPUT_FIELDS.index("sacc")]] = values
+    return rows
+
+
+def test_a_real_ncbi_response_converts_to_the_expected_shape(real_results):
+    """
+    Tests that the parser handles a genuine NCBI response, and that it emits one row per hit
+    even though two of the four hits carry several descriptions.
+    """
+    results = blast_utils.format_results(real_results, constants.BLAST_OUTFMT)
+    rows = [line.split("\t") for line in results.splitlines()]
+
+    assert len(rows) == 4
+    for row in rows:
+        assert len(row) == len(constants.BLAST_OUTPUT_FIELDS)
+
+    assert [row[constants.BLAST_OUTPUT_FIELDS.index("sacc")] for row in rows] == [
+        "XP_080558227",
+        "XP_052610122",
+        "NP_001009784",
+        "NWI03924",
+    ]
+
+
+def test_a_real_ncbi_response_converts_to_the_same_row_as_the_blastp_cli(
+    real_results, real_cli_rows
+):
+    """
+    Tests the conversion against real `blastp -remote` output.
+
+    XP_052610122 is a hit of both the real JSON response and the committed results file, so its
+    row can be compared field by field. Every field matches except the bit score, which differs
+    because the two searches ran against different snapshots of `nr` and the bit score depends
+    on the size of the database that was searched.
+    """
+    results = blast_utils.format_results(real_results, constants.BLAST_OUTFMT)
+    rows = {
+        line.split("\t")[constants.BLAST_OUTPUT_FIELDS.index("sacc")]: line.split("\t")
+        for line in results.splitlines()
+    }
+
+    converted = rows["XP_052610122"]
+    from_the_cli = real_cli_rows["XP_052610122"]
+
+    differing = {
+        name
+        for name, ours, theirs in zip(constants.BLAST_OUTPUT_FIELDS, converted, from_the_cli)
+        if ours != theirs
+    }
+    assert differing == {"bitscore"}
+
+    # The bit scores agree to within the difference expected from the two database snapshots.
+    bitscore_index = constants.BLAST_OUTPUT_FIELDS.index("bitscore")
+    assert abs(float(converted[bitscore_index]) - float(from_the_cli[bitscore_index])) <= 1
+
+
+def test_the_real_response_carries_the_taxonomy_ids(real_results):
+    """
+    Tests that 'staxids' is populated from the real response, since this is the field that
+    NCBI's tabular format could not have supplied.
+    """
+    results = blast_utils.format_results(real_results, "6 sacc staxids")
+    assert results.splitlines() == [
+        "XP_080558227\t39082",
+        "XP_052610122\t564181",
+        "NP_001009784\t9940",
+        "NWI03924\t237442",
+    ]
+
+
+def test_the_real_response_is_read_back_by_extract_blast_hits(real_results, tmp_path):
+    """
+    Tests the actual downstream consumer: the converted results are written to a file and read
+    back by `extract_blast_hits.py`, which is the only module that reads this file.
+    """
+    import extract_blast_hits
+
+    results_filepath = tmp_path / "blast_results.tsv"
+    results_filepath.write_text(blast_utils.format_results(real_results, constants.BLAST_OUTFMT))
+
+    hits_filepath = tmp_path / "blast_hits.refseq.txt"
+    extract_blast_hits.extract_blast_hits(
+        input_file=str(results_filepath),
+        output_file=str(hits_filepath),
+        column_names=constants.BLAST_OUTPUT_FIELDS,
+    )
+
+    assert hits_filepath.read_text().split() == [
+        "XP_080558227",
+        "XP_052610122",
+        "NP_001009784",
+        "NWI03924",
+    ]
+
+
+def test_the_committed_fixture_is_small_enough_to_review(api_response_content_dirpath):
+    """
+    Tests that the fixture stayed trimmed. The response NCBI actually returned was 422KB, which
+    is too large to commit or to read in a diff.
+    """
+    filepath = pathlib.Path(api_response_content_dirpath) / REAL_RESULTS_FILENAME
+    assert filepath.stat().st_size < 32 * 1024
 
 
 # ------------------------------------------------------------------------------------------------

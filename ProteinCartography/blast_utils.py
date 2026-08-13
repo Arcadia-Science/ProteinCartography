@@ -1,3 +1,4 @@
+import json
 import os
 import pathlib
 import re
@@ -43,26 +44,28 @@ MIN_POLLING_INTERVAL_SECONDS = 60
 # hang; the overall search is bounded separately by the caller-supplied `timeout_seconds`.
 HTTP_TIMEOUT_SECONDS = 60
 
-# The fields returned by NCBI's `Tabular` format, in the order in which they are returned.
-# These are the same twelve fields that the `blastp` CLI emits for a bare `-outfmt 6`.
-NCBI_TABULAR_FIELDS = [
-    "qseqid",
-    "sseqid",
-    "pident",
-    "length",
-    "mismatch",
-    "gapopen",
-    "qstart",
-    "qend",
-    "sstart",
-    "send",
-    "evalue",
-    "bitscore",
-]
+# The format in which the results are retrieved from NCBI.
+#
+# `Tabular` would need no conversion, but NCBI does not actually deliver it: fetching a completed
+# search with `FORMAT_TYPE=Tabular` returns a 62-byte body containing the status block and no hits,
+# with or without `FORMAT_OBJECT=Alignment`. Probing one completed search (RID 7TJ2P2DR014) gave:
+#
+#     Tabular  : 62 bytes (nothing but the status block)
+#     Text     : 157,935 bytes
+#     XML2_S   : 511,934 bytes
+#     JSON2_S  : 422,458 bytes
+#
+# JSON2_S is used because it is the machine-readable format that carries the most of what the
+# pipeline's output fields need, including the subject accession and taxonomy id.
+NCBI_RESULTS_FORMAT = "JSON2_S"
 
-# The value written for the requested output fields that NCBI's URL API does not return
-# (see `tabular_row_to_output_fields`). `blastp` itself writes 'N/A' for fields it cannot populate.
+# The value written for the output fields that cannot be populated from NCBI's response
+# (see `hsp_to_output_fields`). `blastp` itself writes 'N/A' for fields it cannot populate.
 UNAVAILABLE_FIELD_VALUE = "N/A"
+
+# The value written for the 'sgi' field. NCBI has retired GI numbers, and `blastp -outfmt 6`
+# writes a literal 0 for them rather than 'N/A' (as the committed blastresults.tsv artifact shows).
+RETIRED_GI_VALUE = "0"
 
 
 class BlastApiError(Exception):
@@ -190,61 +193,206 @@ def strip_accession_version(saccver: str) -> str:
     return re.sub(r"\.\d+$", "", saccver)
 
 
-def tabular_row_to_output_fields(row: list[str], field_names: list[str]) -> list[str]:
+def format_evalue(evalue: float) -> str:
     """
-    Convert one row of NCBI's tabular output into the fields requested by the pipeline.
+    Format an e-value the way `blastp` formats it in its tabular output.
 
-    NCBI's URL API does not accept a custom `-outfmt` field list; it only returns the twelve
-    standard tabular fields. Of the five additional fields the pipeline requests, 'sacc' and
-    'saccver' are derived from the subject sequence id, and the remaining three ('sgi', 'staxids'
-    and 'scomnames') are not available from this API and are written as 'N/A'.
+    The thresholds and precisions reproduce NCBI's own `ScoreAndEvalueToBuffers`, so that the
+    results file looks like one written by `blastp -outfmt 6` rather than like Python's repr
+    of a float (which would render, for example, 0.0 as '0' and 1e-05 as '1e-05').
+    """
+    evalue = float(evalue)
+    if evalue < 1.0e-180:
+        return "0.0"
+    if evalue < 1.0e-99:
+        return f"{evalue:2.0e}".strip()
+    if evalue < 0.0009:
+        return f"{evalue:3.0e}".strip()
+    if evalue < 0.1:
+        return f"{evalue:4.3f}".strip()
+    if evalue < 1.0:
+        return f"{evalue:3.2f}".strip()
+    if evalue < 10.0:
+        return f"{evalue:2.1f}".strip()
+    return f"{evalue:5.0f}".strip()
 
-    Note: only 'sacc' is read downstream (by `extract_blast_hits.py`), so the unavailable fields
-    do not affect the pipeline's results; they are emitted only to keep the column layout
-    identical to the one produced by `blastp -outfmt 6`.
+
+def format_bitscore(bitscore: float) -> str:
+    """
+    Format a bit score the way `blastp` formats it in its tabular output.
+
+    As with `format_evalue`, the thresholds reproduce NCBI's own formatting: bit scores above
+    99.9 are written as integers, which is why the committed blastresults.tsv artifact contains
+    '787' rather than '787.334'.
+    """
+    bitscore = float(bitscore)
+    if bitscore > 9999:
+        return f"{bitscore:4.3e}".strip()
+    if bitscore > 99.9:
+        return f"{bitscore:.0f}"
+    return f"{bitscore:.1f}"
+
+
+def count_gap_openings(hsp: dict) -> int:
+    """
+    Count the gap openings in an alignment, which is what the 'gapopen' output field reports.
+
+    NCBI's JSON reports `gaps`, the total number of gapped *positions*, which is not the same
+    number: a single five-residue gap is five gapped positions but one gap opening. The openings
+    are therefore counted directly, as the number of runs of '-' in the two aligned sequences.
 
     Args:
-        row (list): the tab-separated values of one row of NCBI's tabular output.
-        field_names (list): the names of the fields to return, in order.
+        hsp (dict): one HSP from NCBI's JSON response.
 
     Returns:
-        The values of the requested fields, in order.
+        The number of gap openings.
     """
-    if len(row) < len(NCBI_TABULAR_FIELDS):
-        raise BlastApiError(
-            f"NCBI returned a tabular row with {len(row)} fields, "
-            f"but at least {len(NCBI_TABULAR_FIELDS)} were expected: {row!r}"
-        )
-
-    values = dict(zip(NCBI_TABULAR_FIELDS, row))
-    values["saccver"] = parse_accession(values["sseqid"])
-    values["sacc"] = strip_accession_version(values["saccver"])
-
-    return [values.get(field_name, UNAVAILABLE_FIELD_VALUE) for field_name in field_names]
+    return sum(len(re.findall(r"-+", hsp.get(key) or "")) for key in ("qseq", "hseq"))
 
 
-def format_results(tabular_results: str, outfmt: str) -> str:
+def query_seqid(search: dict) -> str:
     """
-    Convert NCBI's tabular output into the exact column layout that the pipeline expects.
+    Determine the query sequence id that `blastp` would report in its 'qseqid' output field.
 
-    NCBI's tabular output interleaves comment lines (which start with '#') with the rows of hits;
-    the comment lines are dropped, because `blastp -outfmt 6` does not emit them.
+    NCBI assigns its own internal id (for example 'Query_5706473') to a sequence submitted
+    through the URL API and keeps the original FASTA defline in `query_title`, so the id the
+    pipeline expects is the first whitespace-delimited token of the title rather than `query_id`.
 
     Args:
-        tabular_results (str): the body of NCBI's `FORMAT_TYPE=Tabular` response.
+        search (dict): the `search` object from NCBI's JSON response.
+
+    Returns:
+        The query sequence id.
+    """
+    query_title = search.get("query_title")
+    if query_title and query_title.split():
+        return query_title.split()[0]
+    return search.get("query_id") or UNAVAILABLE_FIELD_VALUE
+
+
+def hsp_to_output_fields(qseqid: str, description: dict, hsp: dict) -> dict:
+    """
+    Convert one HSP of one hit into the output fields that `blastp -outfmt 6` would write.
+
+    Most fields are read straight out of NCBI's JSON. The ones that are not:
+
+      - 'pident' is computed as the fraction of identities over the alignment length, and
+        'mismatch' as the alignment length less the identities and the gapped positions,
+        which are the definitions `blastp` uses.
+      - 'gapopen' is counted from the aligned sequences (see `count_gap_openings`), because
+        NCBI's JSON reports total gapped positions rather than gap openings.
+      - 'sgi' is written as 0, matching `blastp`, because NCBI has retired GI numbers.
+      - 'scomnames' is written as 'N/A'. NCBI's JSON carries `sciname`, but that is a scientific
+        name and this field is defined as the subject's *common* name, so filling it with the
+        scientific name would mislabel the data. (The committed artifact from a real
+        `blastp -remote` run also has 'N/A' throughout this column.)
+
+    Note: only 'sacc' is read downstream, by `extract_blast_hits.py`. Every other field is
+    written solely to keep the column layout identical to `blastp -outfmt 6`, so the
+    approximations above cannot affect the pipeline's results.
+
+    Args:
+        qseqid (str): the query sequence id (see `query_seqid`).
+        description (dict): the first description of the hit (see `format_results`).
+        hsp (dict): the HSP to convert.
+
+    Returns:
+        The output fields, keyed by the names used in `constants.BLAST_OUTPUT_FIELDS`.
+    """
+    align_len = hsp.get("align_len") or 0
+    identity = hsp.get("identity") or 0
+    gaps = hsp.get("gaps") or 0
+
+    sseqid = description.get("id") or UNAVAILABLE_FIELD_VALUE
+    saccver = parse_accession(sseqid)
+    sacc = description.get("accession") or strip_accession_version(saccver)
+    taxid = description.get("taxid")
+
+    return {
+        "qseqid": qseqid,
+        "sseqid": sseqid,
+        "pident": f"{(100.0 * identity / align_len) if align_len else 0.0:.3f}",
+        "length": str(align_len),
+        "mismatch": str(align_len - identity - gaps),
+        "gapopen": str(count_gap_openings(hsp)),
+        "qstart": str(hsp.get("query_from", "")),
+        "qend": str(hsp.get("query_to", "")),
+        "sstart": str(hsp.get("hit_from", "")),
+        "send": str(hsp.get("hit_to", "")),
+        "evalue": format_evalue(hsp.get("evalue") or 0),
+        "bitscore": format_bitscore(hsp.get("bit_score") or 0),
+        "sacc": sacc,
+        "saccver": saccver,
+        "sgi": RETIRED_GI_VALUE,
+        "staxids": str(taxid) if taxid is not None else UNAVAILABLE_FIELD_VALUE,
+        "scomnames": UNAVAILABLE_FIELD_VALUE,
+    }
+
+
+def iter_searches(results: dict):
+    """
+    Iterate over the per-query search results in NCBI's JSON response.
+
+    The response holds one report per query, so a multi-sequence FASTA file produces several.
+
+    Args:
+        results (dict): the parsed body of NCBI's `FORMAT_TYPE=JSON2_S` response.
+
+    Yields:
+        The `search` object of each report.
+
+    Raises:
+        BlastApiError: if the response is not a BLAST JSON report at all.
+    """
+    reports = results.get("BlastOutput2")
+    if reports is None:
+        raise BlastApiError(
+            "NCBI returned JSON that is not a blast report (it has no 'BlastOutput2' key)."
+        )
+
+    if isinstance(reports, dict):
+        reports = [reports]
+
+    for report in reports:
+        search = report.get("report", {}).get("results", {}).get("search")
+        if search is not None:
+            yield search
+
+
+def format_results(results: dict, outfmt: str) -> str:
+    """
+    Convert NCBI's JSON response into the exact column layout that the pipeline expects.
+
+    One row is written per HSP, and only the *first* description of each hit is used. This
+    matches `blastp -outfmt 6`: when `nr` merges identical sequences, the hit carries one
+    description per redundant accession, and the tabular 'sacc' field reports only the
+    representative one (reporting all of them is what the separate 'sallacc' field is for).
+    This was checked against the committed results file from a real `blastp -remote` run: each
+    of its rows corresponds to one hit, including a hit whose sequence is shared by 1053
+    accessions, and in every case the accession it reports is the first description's.
+
+    Args:
+        results (dict): the parsed body of NCBI's `FORMAT_TYPE=JSON2_S` response.
         outfmt (str): the blastp `-outfmt` format string naming the fields to write.
 
     Returns:
-        The results as a tab-separated string with one hit per line.
+        The results as a tab-separated string with one HSP per line.
     """
     field_names = output_field_names(outfmt)
 
     lines = []
-    for line in tabular_results.splitlines():
-        if not line.strip() or line.startswith("#"):
-            continue
-        row = line.rstrip("\n").split("\t")
-        lines.append("\t".join(tabular_row_to_output_fields(row, field_names)))
+    for search in iter_searches(results):
+        qseqid = query_seqid(search)
+        for hit in search.get("hits") or []:
+            descriptions = hit.get("description") or [{}]
+            for hsp in hit.get("hsps") or []:
+                values = hsp_to_output_fields(qseqid, descriptions[0], hsp)
+                lines.append(
+                    "\t".join(
+                        values.get(field_name, UNAVAILABLE_FIELD_VALUE)
+                        for field_name in field_names
+                    )
+                )
 
     return "".join(f"{line}\n" for line in lines)
 
@@ -471,9 +619,9 @@ def wait_for_search(request_id: str, time_estimate: int, timeout_seconds: float,
     )
 
 
-def fetch_results(request_id: str, max_target_seqs: int, email: str) -> str:
+def fetch_results(request_id: str, max_target_seqs: int, email: str) -> dict:
     """
-    Retrieve the results of a completed search in NCBI's tabular format.
+    Retrieve the results of a completed search (see `NCBI_RESULTS_FORMAT` for the format used).
 
     Args:
         request_id (str): the id (RID) of the search.
@@ -481,16 +629,16 @@ def fetch_results(request_id: str, max_target_seqs: int, email: str) -> str:
         email (str): the contact email address to send to NCBI.
 
     Returns:
-        The body of NCBI's tabular response.
+        The parsed body of NCBI's response.
 
     Raises:
-        BlastApiError: if NCBI returned something other than tabular results.
+        BlastApiError: if NCBI returned something other than the expected results.
     """
     response_text = request(
         {
             "CMD": "Get",
             "RID": request_id,
-            "FORMAT_TYPE": "Tabular",
+            "FORMAT_TYPE": NCBI_RESULTS_FORMAT,
             "ALIGNMENTS": max_target_seqs,
             "DESCRIPTIONS": max_target_seqs,
             "HITLIST_SIZE": max_target_seqs,
@@ -498,15 +646,16 @@ def fetch_results(request_id: str, max_target_seqs: int, email: str) -> str:
         }
     )
 
-    # A tabular response always carries a comment block; anything else is an error page.
-    # (A search with no hits still returns the comment block, and must not be treated as an error.)
-    if not any(line.startswith("#") for line in response_text.splitlines()):
+    # An error page, or the status-block-only body that NCBI returns for some format types,
+    # is not JSON and must not be mistaken for a search that simply had no hits.
+    try:
+        return json.loads(response_text)
+    except ValueError as exception:
         raise BlastApiError(
-            f"NCBI did not return tabular results for the blast search '{request_id}'. "
+            f"NCBI did not return {NCBI_RESULTS_FORMAT} results for the blast search "
+            f"'{request_id}' ({exception}). "
             f"NCBI responded with: {summarize_response(response_text)}"
-        )
-
-    return response_text
+        ) from exception
 
 
 def run_blast(
@@ -578,15 +727,14 @@ def run_blast(
             timeout_seconds=timeout_seconds,
             email=email,
         )
-        tabular_results = fetch_results(
-            request_id=request_id, max_target_seqs=max_target_seqs, email=email
-        )
+        results = fetch_results(request_id=request_id, max_target_seqs=max_target_seqs, email=email)
+        formatted_results = format_results(results, outfmt)
     except (BlastApiError, OSError) as exception:
         return subprocess.CompletedProcess(
             args=[], returncode=1, stdout=b"", stderr=f"Error: [blastp] {exception}"
         )
 
     with open(out, "w") as file:
-        file.write(format_results(tabular_results, outfmt))
+        file.write(formatted_results)
 
     return subprocess.CompletedProcess(args=[], returncode=0, stdout=b"", stderr="")
