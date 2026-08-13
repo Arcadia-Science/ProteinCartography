@@ -1,15 +1,20 @@
 #!/usr/bin/env python
+"""Leiden clustering over a ProteinCartography TM-score matrix.
+
+For N < 3, assign every protein to a single cluster and skip Scanpy. Otherwise
+clamp ``n_neighbors`` / ``n_pcs`` to valid ranges for the matrix size.
+"""
+
+from __future__ import annotations
 import argparse
 
 import numpy as np
 import pandas as pd
 import scanpy as sc
 
-# only import these functions when using import *
 __all__ = ["scanpy_leiden_cluster"]
 
 
-# parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -49,6 +54,17 @@ def parse_args():
     return args
 
 
+def _singleton_membership(
+    protids: list[str], cluster_name: str, cluster_abbrev: str
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "protid": protids,
+            cluster_name: [f"{cluster_abbrev}0"] * len(protids),
+        }
+    )
+
+
 def scanpy_leiden_cluster(
     input_file: str,
     savefile=None,
@@ -68,25 +84,33 @@ def scanpy_leiden_cluster(
         n_pcs (int): number of PCs to use for initial PCA.
         **kwargs are passed to `sc.pp.neighbors()`.
     """
-    # Load the data
     adata = sc.read_csv(input_file, delimiter="\t")
+    n = int(adata.n_obs)
+    if n < 3:
+        print(
+            f"[leiden_clustering] N={n} too small for Leiden; "
+            f"assigning all proteins to {cluster_abbrev}0"
+        )
+        membership = _singleton_membership(list(adata.obs_names), cluster_name, cluster_abbrev)
+        if savefile is not None:
+            membership.to_csv(savefile, sep="\t", index=None)
+        return membership
 
-    # Run intial PCA
     sc.tl.pca(adata, svd_solver="arpack")
 
-    n_neighbors_recommended = int(np.round(len(adata.var) / 10))
-    if n_neighbors_recommended > n_neighbors:
-        n_neighbors_used = n_neighbors_recommended
-    else:
-        n_neighbors_used = n_neighbors
+    n_neighbors = int(n_neighbors)
+    n_pcs = int(n_pcs)
+    n_neighbors_recommended = int(np.round(n / 10))
+    n_neighbors_used = max(n_neighbors, n_neighbors_recommended)
+    # Scanpy requires 1 < n_neighbors <= N - 1 for a connected graph.
+    n_neighbors_used = max(2, min(n_neighbors_used, n - 1))
+    max_pcs = max(1, min(n - 1, adata.n_vars - 1 if adata.n_vars > 1 else 1))
+    n_pcs_used = max(1, min(n_pcs, max_pcs))
 
-    # Run nearest neighbors, umap, then leiden
-    # We should probably determine a good empirical default for this
-    sc.pp.neighbors(adata, n_neighbors=n_neighbors_used, n_pcs=n_pcs, **kwargs)
+    sc.pp.neighbors(adata, n_neighbors=n_neighbors_used, n_pcs=n_pcs_used, **kwargs)
     sc.tl.umap(adata)
     sc.tl.leiden(adata)
 
-    # Extract leiden cluster assignment
     membership = pd.DataFrame(adata.obs["leiden"]).reset_index()
     membership.rename(columns={"index": "protid", "leiden": cluster_name}, inplace=True)
     max_chars = len(str(membership[cluster_name].astype(int).max()))
@@ -100,26 +124,20 @@ def scanpy_leiden_cluster(
     return membership
 
 
-# run this if called from the interpreter
 def main():
     args = parse_args()
-    input_file = args.input
-    output_file = args.output
-    neighbors = int(args.n_neighbors)
-    pcs = int(args.n_pcs)
-    cluster_name = args.cluster_name
-    cluster_abbrev = args.cluster_abbrev
+    n_neighbors = int(args.n_neighbors)
+    n_pcs = int(args.n_pcs)
 
     scanpy_leiden_cluster(
-        input_file=input_file,
-        savefile=output_file,
-        n_neighbors=neighbors,
-        n_pcs=pcs,
-        cluster_name=cluster_name,
-        cluster_abbrev=cluster_abbrev,
+        args.input,
+        args.output,
+        n_neighbors=n_neighbors,
+        n_pcs=n_pcs,
+        cluster_name=args.cluster_name,
+        cluster_abbrev=args.cluster_abbrev,
     )
 
 
-# check if called from interpreter
 if __name__ == "__main__":
     main()

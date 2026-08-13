@@ -1,7 +1,15 @@
 #!/usr/bin/env python
+"""Map RefSeq / EMBL CDS accessions to UniProtKB.
+
+Handles UniProt idmapping status correctly (303 redirect / FINISHED / ERROR),
+batches large ID lists, and retries transient ``jobStatus: ERROR`` responses.
+"""
+
+from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 from time import sleep
 
 import pandas as pd
@@ -11,8 +19,7 @@ from api_utils import (
 )
 from constants import UniProtService
 
-# If necessary, mock the `uniprot.mapping` method (used by `map_refseqids_bioservices`).
-# See comments in `tests.mocks` for more details.
+# If necessary, mock bioservices mapping (see ``tests.mocks``).
 if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
     from tests import mocks
 
@@ -20,191 +27,191 @@ if os.environ.get("PROTEINCARTOGRAPHY_WAS_CALLED_BY_PYTEST") == "true":
 
 __all__ = ["map_refseqids_bioservices", "map_refseqids_rest"]
 
-# The default databases to query.
 DEFAULT_DBS = ["EMBL-GenBank-DDBJ_CDS", "RefSeq_Protein"]
+UNIPROT_IDMAPPING_API = "https://rest.uniprot.org/idmapping"
 
-UNIPROT_IDMAPPING_API_URL = "https://rest.uniprot.org/idmapping"
-
-# Time in seconds to wait between job status checks.
-SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS = 30
-
-# Allow a generous number of status checks because sometimes the UniProt ID Mapping API is slow.
-MAX_NUM_JOB_STATUS_CHECKS = 100
+# Per-batch polling. Override via env.
+BATCH_SIZE = int(os.environ.get("PC_UNIPROT_MAP_BATCH", "500"))
+MAX_WAIT_SECONDS = int(os.environ.get("PC_UNIPROT_MAP_TIMEOUT", "1800"))
+POLL_SECONDS = float(os.environ.get("PC_UNIPROT_MAP_POLL", "10"))
+SUBMIT_RETRIES = int(os.environ.get("PC_UNIPROT_MAP_RETRIES", "5"))
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i",
-        "--input",
-        required=True,
-        help="File path to the input text file containing one accession per line.",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        required=True,
-        help="File path to the output text file of uniquely-mapped Uniprot accessions.",
-    )
-    parser.add_argument(
-        "-d",
-        "--databases",
-        nargs="+",
-        default=DEFAULT_DBS,
-        help=f"The databases to use for mapping. Defaults to {DEFAULT_DBS}",
-    )
-    parser.add_argument(
-        "-s", "--service", default=UniProtService.REST.value, help="How to fetch the mapping."
-    )
-    args = parser.parse_args()
-    return args
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("-o", "--output", required=True)
+    parser.add_argument("-d", "--databases", nargs="+", default=DEFAULT_DBS)
+    parser.add_argument("-s", "--service", default=UniProtService.REST.value)
+    return parser.parse_args()
 
 
 def map_refseqids_bioservices(
     input_file: str, output_file: str, query_dbs: list, return_full=False
 ):
-    """
-    Takes an input .txt file of accessions and maps to UniProt accessions using `bioservices`.
-
-    Args:
-        input_file (str): path to input .txt file containing one accession per line.
-        output_file (str): path to destination .txt file.
-        query_dbs (list): list of valid databases to query using the Uniprot ID mapping API.
-            Each database will be queried individually.
-            The results are compiled and unique results are printed to output_file.
-    """
-
     uniprot = UniProtWithExpBackoff()
-
     with open(input_file) as f:
         ids = f.read().splitlines()
+    ids = ids[:100000]
 
-    # Limit the number of ids to prevent the uniprot mapping API from timing out.
-    max_num_ids = 100000
-    ids = ids[:max_num_ids]
-
-    all_results_df = pd.DataFrame()
-
-    for query_db in query_dbs:
-        results = uniprot.mapping(query_db, "UniProtKB", query=",".join(ids))
+    dummy_df = pd.DataFrame()
+    for i, db in enumerate(query_dbs):
+        results = uniprot.mapping(
+            db, "UniProtKB", query=",".join(ids), max_waiting_time=MAX_WAIT_SECONDS
+        )
+        if not results or "results" not in results:
+            continue
         results_df = pd.json_normalize(results["results"])
-
-        # If there are no results, skip to the next database.
         if len(results_df) == 0:
             continue
+        dummy_df = (
+            results_df if i == 0 or dummy_df.empty else pd.concat([dummy_df, results_df], axis=0)
+        )
 
-        all_results_df = pd.concat([all_results_df, results_df], axis=0)
-
-    # Extract just the unique Uniprot accessions.
-    hits = all_results_df["to.primaryAccession"].unique()
-
-    # Save those accessions to a .txt file.
+    hits = (
+        dummy_df["to.primaryAccession"].unique()
+        if not dummy_df.empty and "to.primaryAccession" in dummy_df.columns
+        else []
+    )
     with open(output_file, "w+") as f:
         f.writelines(hit + "\n" for hit in hits)
-
     if return_full:
-        return all_results_df
+        return dummy_df
+
+
+def _chunks(items: list[str], size: int):
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
+
+
+def _poll_job(session, job_id: str) -> dict:
+    """Wait until UniProt finishes (303 / FINISHED / results) or errors."""
+    deadline = time.time() + MAX_WAIT_SECONDS
+    last_status = None
+    while time.time() < deadline:
+        response = session.get(
+            f"{UNIPROT_IDMAPPING_API}/status/{job_id}",
+            allow_redirects=False,
+        )
+        # Finished jobs redirect to the results collection.
+        if response.status_code in (303, 302):
+            return {"jobStatus": "FINISHED"}
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = {}
+        last_status = payload
+        status = payload.get("jobStatus")
+        if status == "FINISHED" or "results" in payload:
+            return payload if "results" in payload else {"jobStatus": "FINISHED"}
+        if status == "ERROR":
+            return payload
+        sleep(POLL_SECONDS)
+    raise TimeoutError(
+        f"UniProt idmapping job {job_id} did not finish within {MAX_WAIT_SECONDS}s; "
+        f"last status={last_status}"
+    )
+
+
+def _fetch_results(session, job_id: str) -> list[dict]:
+    stream = session.get(f"{UNIPROT_IDMAPPING_API}/stream/{job_id}")
+    stream.raise_for_status()
+    payload = stream.json()
+    return list(payload.get("results") or [])
+
+
+def _map_batch(session, db: str, batch: list[str]) -> list[dict]:
+    """Submit one batch with retries on UniProt-side ERROR / transport flakes."""
+    last_error = None
+    for attempt in range(1, SUBMIT_RETRIES + 1):
+        try:
+            ticket = session.post(
+                f"{UNIPROT_IDMAPPING_API}/run",
+                {"ids": ",".join(batch), "from": db, "to": "UniProtKB"},
+            )
+            ticket.raise_for_status()
+            job_id = ticket.json()["jobId"]
+            status = _poll_job(session, job_id)
+            if status.get("jobStatus") == "ERROR":
+                last_error = status.get("errors") or status
+                print(
+                    f"[map_refseq_ids] UniProt ERROR on {db} batch "
+                    f"(n={len(batch)}, attempt {attempt}/{SUBMIT_RETRIES}): {last_error}",
+                    file=sys.stderr,
+                )
+                sleep(min(60, POLL_SECONDS * attempt * 2))
+                continue
+            if "results" in status:
+                return list(status.get("results") or [])
+            return _fetch_results(session, job_id)
+        except Exception as exc:  # noqa: BLE001 — retry transient API/transport failures
+            last_error = exc
+            print(
+                f"[map_refseq_ids] {type(exc).__name__} on {db} batch "
+                f"(n={len(batch)}, attempt {attempt}/{SUBMIT_RETRIES}): {exc}",
+                file=sys.stderr,
+            )
+            sleep(min(60, POLL_SECONDS * attempt * 2))
+    raise RuntimeError(
+        f"UniProt idmapping failed for {db} after {SUBMIT_RETRIES} attempts "
+        f"(batch size {len(batch)}): {last_error}"
+    )
 
 
 def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, return_full=False):
-    """
-    Takes an input .txt file of accessions and maps to UniProt accessions
-    using the Uniprot ID mapping REST API.
-
-    Args:
-        input_file (str): path to input .txt file containing one accession per line.
-        output_file (str): path to destination .txt file.
-        query_dbs (list): list of valid databases to query using the Uniprot ID mapping API.
-            Each database will be queried individually.
-            The results are compiled and unique results are printed to output_file.
-        return_full (bool): whether to return all of the results as a dataframe
-
-    For reference, here is an example curl POST request using the REST API:
-    ```
-    curl --request POST 'https://rest.uniprot.org/idmapping/run' \
-      --form 'ids="P21802,P12345"' \
-      --form 'from="UniProtKB_AC-ID"' \
-      --form 'to="UniRef90"'
-    ```
-    """
     with open(input_file) as f:
-        input_lines = f.read().splitlines()
-        input_ids = list(set(input_lines))
-        input_string = ",".join(input_ids)
+        input_ids = list(dict.fromkeys(line.strip() for line in f if line.strip()))
 
-    all_results_df = pd.DataFrame()
+    if not input_ids:
+        print("[map_refseq_ids] empty input — writing empty UniProt hit list", file=sys.stderr)
+        with open(output_file, "w+") as f:
+            pass
+        if return_full:
+            return pd.DataFrame()
+        return
 
-    for query_db in query_dbs:
-        print(f"Mapping database '{query_db}' to UniProtKB")
+    session = session_with_retry()
+    frames: list[pd.DataFrame] = []
 
-        submission_response = (
-            session_with_retry()
-            .post(
-                f"{UNIPROT_IDMAPPING_API_URL}/run",
-                {"ids": input_string, "from": query_db, "to": "UniProtKB"},
-            )
-            .json()
+    for db in query_dbs:
+        print(
+            f"[map_refseq_ids] mapping {len(input_ids)} ids via {db} "
+            f"(batch={BATCH_SIZE}, timeout={MAX_WAIT_SECONDS}s)",
+            file=sys.stderr,
         )
+        rows: list[dict] = []
+        for batch in _chunks(input_ids, max(1, BATCH_SIZE)):
+            rows.extend(_map_batch(session, db, batch))
+        if not rows:
+            continue
+        frames.append(pd.DataFrame(rows))
 
-        print(f"Submission response for mapping request from {query_db} to UniProtKB:")
-        print(submission_response)
+    dummy_df = pd.concat(frames, axis=0) if frames else pd.DataFrame()
+    if dummy_df.empty:
+        hits = []
+    elif "to" in dummy_df.columns:
+        hits = dummy_df["to"].dropna().unique()
+    elif "to.primaryAccession" in dummy_df.columns:
+        hits = dummy_df["to.primaryAccession"].dropna().unique()
+    else:
+        hits = []
 
-        job_id = submission_response["jobId"]
-
-        # Poll until the job is successful or we time out.
-        num_tries = 0
-        while num_tries < MAX_NUM_JOB_STATUS_CHECKS:
-            status_response = (
-                session_with_retry().get(f"{UNIPROT_IDMAPPING_API_URL}/status/{job_id}").json()
-            )
-            num_tries += 1
-
-            # The status response is supposed to include a "jobStatus" key, but anecdotally,
-            # this is only true while the job is running. Once the job is complete,
-            # there is instead a "results" key.
-            job_is_complete = (
-                status_response.get("results") is not None
-                or status_response.get("jobStatus", "").lower() == "finished"
-            )
-
-            if job_is_complete:
-                print(f"Job is complete after {num_tries * SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS}s")
-                break
-
-            sleep(SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS)
-
-        if num_tries == MAX_NUM_JOB_STATUS_CHECKS:
-            sys.exit(
-                f"The mapping request failed to complete after "
-                f"{num_tries * SLEEP_TIME_BETWEEN_JOB_STATUS_CHECKS}s."
-            )
-
-        results_response = (
-            session_with_retry().get(f"{UNIPROT_IDMAPPING_API_URL}/stream/{job_id}").json()
-        )
-
-        results_df = pd.DataFrame(results_response["results"])
-        all_results_df = pd.concat([all_results_df, results_df], axis=0)
-
-    # Extract just the unique Uniprot accessions and save them to a .txt file.
-    hits = all_results_df["to"].unique()
     with open(output_file, "w+") as f:
-        f.writelines(hit + "\n" for hit in hits)
+        f.writelines(f"{hit}\n" for hit in hits)
 
     if return_full:
-        return all_results_df
+        return dummy_df
 
 
 def main():
     args = parse_args()
-
     service = UniProtService(args.service)
     if service == UniProtService.BIOSERVICES:
-        map_refseqids_bioservices(
-            input_file=args.input, output_file=args.output, query_dbs=args.databases
-        )
+        map_refseqids_bioservices(args.input, args.output, args.databases)
     elif service == UniProtService.REST:
-        map_refseqids_rest(input_file=args.input, output_file=args.output, query_dbs=args.databases)
+        map_refseqids_rest(args.input, args.output, args.databases)
+    else:
+        sys.exit(f"unknown UniProt service: {args.service}")
 
 
 if __name__ == "__main__":
