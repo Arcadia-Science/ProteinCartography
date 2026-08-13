@@ -636,7 +636,7 @@ rule plot_interactive:
         tm_scores=rules.dim_reduction.output.all_by_all_tmscores,
         features=rules.aggregate_features.output.aggregated_features,
     output:
-        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_aggregated_features_{{plotting_mode}}.html",
+        html=FINAL_RESULTS_DIR / (ANALYSIS_NAME + "_aggregated_features_{plotting_mode}.html"),
     conda:
         "envs/plotting.yml"
     benchmark:
@@ -752,7 +752,7 @@ rule plot_cluster_distributions:
     input:
         features=rules.aggregate_features.output.aggregated_features,
     output:
-        svg=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_{{protid}}_distribution_analysis.svg",
+        svg=FINAL_RESULTS_DIR / (ANALYSIS_NAME + "_{protid}_distribution_analysis.svg"),
     conda:
         "envs/plotting.yml"
     benchmark:
