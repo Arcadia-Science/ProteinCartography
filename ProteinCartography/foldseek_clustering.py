@@ -218,7 +218,11 @@ def reading_data(input_file: str):
                 entries[protid][target] = score
             targets.add(target)
 
-    return entries, targets
+    # The targets are sorted because they become the columns of the similarity matrix, in the
+    # order they are iterated in. Iterating the set directly ordered the columns by Python's
+    # per-process hash randomization, so the same input produced a differently-ordered matrix on
+    # every run. Sorting also makes the column order match the row order, which is already sorted.
+    return entries, sorted(targets)
 
 
 def get_line_for_protid(protid_and_targets: tuple, targets: set):

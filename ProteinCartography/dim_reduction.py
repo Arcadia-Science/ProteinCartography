@@ -46,6 +46,7 @@ def _save_path(pivot_file: str, saveprefix: str | None, dimtype: str) -> str:
 
 def calculate_PCA(
     pivot_file: str,
+    random_state: int,
     n_components=2,
     save=False,
     saveprefix=None,
@@ -66,7 +67,13 @@ def calculate_PCA(
         )
         n_components = max_n_components
 
-    pca = PCA(n_components=n_components, **kwargs)
+    # `svd_solver` is set explicitly because the default ('auto') switches to the randomized
+    # solver once the matrix has more than 500 rows or columns, and the randomized solver draws
+    # its projection from the global numpy random state. Every run of a map with more than ~500
+    # proteins therefore produced different principal components, which are then the input to
+    # t-SNE and UMAP, so seeding those alone did not make the pipeline reproducible.
+    # 'full' is exact and deterministic, and is also invariant to the order of the columns.
+    pca = PCA(n_components=n_components, svd_solver="full", random_state=random_state, **kwargs)
     pca_results = pca.fit_transform(pivoted_df)
     pca_results_df = pd.DataFrame(
         pca_results,
@@ -221,7 +228,7 @@ def main():
         raise Exception(f"{mode} provided is not valid.\nValid modes include {MODES}.")
 
     if mode == "pca":
-        calculate_PCA(pivot_file, save=True, saveprefix=saveprefix)
+        calculate_PCA(pivot_file, random_state, save=True, saveprefix=saveprefix)
     elif mode == "tsne":
         calculate_TSNE(pivot_file, random_state, save=True, saveprefix=saveprefix)
     elif mode == "umap":
@@ -230,6 +237,7 @@ def main():
         saveprefix1 = pivot_file.replace(".tsv", "temp1")
         pca_results_file = calculate_PCA(
             pivot_file,
+            random_state,
             save=True,
             saveprefix=saveprefix1,
             n_components=30,
@@ -241,6 +249,7 @@ def main():
         saveprefix1 = pivot_file.replace(".tsv", "temp2")
         pca_results_file = calculate_PCA(
             pivot_file,
+            random_state,
             save=True,
             saveprefix=saveprefix1,
             n_components=30,
