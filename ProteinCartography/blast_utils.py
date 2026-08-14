@@ -40,6 +40,11 @@ DEFAULT_EMAIL = "proteincartography@arcadiascience.com"
 # NCBI asks that the status of a search is polled no more than once every 60 seconds.
 MIN_POLLING_INTERVAL_SECONDS = 60
 
+# How many consecutive polls may fail to reach NCBI before the search is abandoned.
+# A queued search is unaffected by a failure to ask about it, so a transient network error
+# should not discard the wait that has already been spent.
+MAX_CONSECUTIVE_POLL_FAILURES = 5
+
 # The timeout applied to each individual HTTP request. This bounds how long a single request can
 # hang; the overall search is bounded separately by the caller-supplied `timeout_seconds`.
 HTTP_TIMEOUT_SECONDS = 60
@@ -559,7 +564,15 @@ def wait_for_search(request_id: str, time_estimate: int, timeout_seconds: float,
 
     The first poll happens after NCBI's own time estimate (RTOE) has elapsed, and subsequent polls
     happen no more often than once every 60 seconds, as NCBI asks. Both waits are shortened when
-    less than that much of the timeout remains, so that the timeout is honored exactly.
+    less than that much of the timeout remains.
+
+    The timeout bounds the waiting, not the requests: a poll that is already in flight when the
+    timeout expires still runs to completion, so the call can overrun by up to one
+    `HTTP_TIMEOUT_SECONDS`.
+
+    A poll that fails to reach NCBI is retried rather than ending the search, because a search
+    that has been queued for many minutes should not be abandoned for one refused connection.
+    Consecutive failures are bounded by `MAX_CONSECUTIVE_POLL_FAILURES`, and by the timeout.
 
     Args:
         request_id (str): the id (RID) of the search.
@@ -573,6 +586,7 @@ def wait_for_search(request_id: str, time_estimate: int, timeout_seconds: float,
     started_at = time.monotonic()
     deadline = started_at + timeout_seconds
     delay = max(time_estimate, 0)
+    consecutive_failures = 0
 
     while True:
         remaining = deadline - time.monotonic()
@@ -585,7 +599,29 @@ def wait_for_search(request_id: str, time_estimate: int, timeout_seconds: float,
         # budget. NCBI's estimate is routinely larger than the whole timeout, and it is only an
         # estimate: a search whose estimate was hours may well be ready. Returning without ever
         # asking would report a timeout for a search that had already finished.
-        status = poll_search_status(request_id, email)
+        #
+        # A poll that does not reach NCBI is retried rather than ending the search. The search
+        # itself is queued on NCBI's side and is unaffected by a failure to ask about it, so
+        # giving up here would discard however long has already been spent waiting and send the
+        # retry in `run_blast.py` to the back of the queue with a new request id.
+        try:
+            status = poll_search_status(request_id, email)
+        except BlastApiError as exception:
+            consecutive_failures += 1
+            if consecutive_failures >= MAX_CONSECUTIVE_POLL_FAILURES:
+                raise BlastApiError(
+                    f"Could not reach NCBI for {consecutive_failures} consecutive attempts "
+                    f"while waiting for the blast search '{request_id}': {exception}"
+                ) from exception
+
+            print(
+                f"Could not reach NCBI for the blast search '{request_id}' "
+                f"(attempt {consecutive_failures} of {MAX_CONSECUTIVE_POLL_FAILURES}): {exception}"
+            )
+            delay = MIN_POLLING_INTERVAL_SECONDS
+            continue
+
+        consecutive_failures = 0
         elapsed = round(time.monotonic() - started_at)
         print(f"The blast search '{request_id}' is {status} after {elapsed}s")
 

@@ -255,6 +255,12 @@ class FakeNcbi:
             # Repeat the last status once the scripted ones are exhausted, so that a test can
             # describe a search that waits forever without listing a status for every poll.
             status = self.statuses.pop(0) if len(self.statuses) > 1 else self.statuses[0]
+
+            # A scripted status may be an exception, so that a test can describe a poll that
+            # does not reach NCBI at all rather than one that returns a status.
+            if isinstance(status, Exception):
+                raise status
+
             return self._as_response(search_info_response(status))
 
         return self.results_response
@@ -581,6 +587,42 @@ def test_json_that_is_not_a_blast_report_is_a_failure(clock, ncbi, query_filepat
 
     assert blast_utils.blast_call_failed(result)
     assert "BlastOutput2" in result.stderr
+
+
+def test_a_poll_that_does_not_reach_ncbi_is_retried(clock, ncbi, query_filepath, tmp_path):
+    """
+    Tests that a search survives a poll that fails to reach NCBI.
+
+    The search is queued on NCBI's side and is unaffected by a failure to ask about it, so giving
+    up would throw away however long has already been waited and send the retry in `run_blast.py`
+    to the back of NCBI's queue with a new request id.
+    """
+    fake_ncbi = ncbi(
+        statuses=[
+            blast_utils.requests.ConnectionError("connection reset by peer"),
+            blast_utils.requests.ConnectionError("connection reset by peer"),
+            "READY",
+        ]
+    )
+
+    result = run_blast(query_filepath, tmp_path / "results.tsv", timeout_seconds=1800)
+
+    assert not blast_utils.blast_call_failed(result)
+    assert (tmp_path / "results.tsv").read_text()
+    assert len(fake_ncbi.polling_requests) == 3
+
+
+def test_polls_that_never_reach_ncbi_end_the_search(clock, ncbi, query_filepath, tmp_path):
+    """
+    Tests that retrying a failed poll is bounded, so that a search whose polls never succeed is
+    reported as a failure rather than retried until the timeout expires.
+    """
+    ncbi(statuses=[blast_utils.requests.ConnectionError("connection reset by peer")])
+
+    result = run_blast(query_filepath, tmp_path / "results.tsv", timeout_seconds=1800)
+
+    assert blast_utils.blast_call_failed(result)
+    assert str(blast_utils.MAX_CONSECUTIVE_POLL_FAILURES) in result.stderr
 
 
 def test_a_network_error_is_reported_as_a_failure(monkeypatch, clock, query_filepath, tmp_path):
