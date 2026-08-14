@@ -669,6 +669,25 @@ def test_an_estimate_longer_than_the_timeout_does_not_overshoot_it(
     assert clock.sleeps == [600]
 
 
+def test_an_estimate_longer_than_the_timeout_still_checks_the_status(
+    clock, ncbi, query_filepath, tmp_path
+):
+    """
+    Tests that a search is polled at least once even when NCBI's estimate is larger than the
+    whole timeout, and so succeeds if it turns out to be ready.
+
+    NCBI's estimate tracks how busy its shared queue is rather than how long this search will
+    take, and is routinely several times the timeout. Waiting out the budget and then reporting
+    a timeout without ever asking NCBI would fail searches that had already finished.
+    """
+    ncbi(put_response=PUT_RESPONSE.replace("RTOE = 27", "RTOE = 9168"), statuses=["READY"])
+
+    result = run_blast(query_filepath, tmp_path / "results.tsv", timeout_seconds=600)
+
+    assert not blast_utils.blast_call_failed(result)
+    assert (tmp_path / "results.tsv").read_text()
+
+
 def test_a_missing_estimate_falls_back_to_the_polling_interval(
     clock, ncbi, query_filepath, tmp_path
 ):

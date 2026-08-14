@@ -580,9 +580,11 @@ def wait_for_search(request_id: str, time_estimate: int, timeout_seconds: float,
             break
 
         time.sleep(min(delay, remaining))
-        if time.monotonic() >= deadline:
-            break
 
+        # The status is always checked after waiting, even when the wait used up the rest of the
+        # budget. NCBI's estimate is routinely larger than the whole timeout, and it is only an
+        # estimate: a search whose estimate was hours may well be ready. Returning without ever
+        # asking would report a timeout for a search that had already finished.
         status = poll_search_status(request_id, email)
         elapsed = round(time.monotonic() - started_at)
         print(f"The blast search '{request_id}' is {status} after {elapsed}s")
