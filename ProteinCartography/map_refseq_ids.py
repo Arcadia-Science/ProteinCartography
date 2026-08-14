@@ -117,7 +117,8 @@ def _fetch_results(session, job_id: str) -> list[dict]:
     stream = session.get(f"{UNIPROT_IDMAPPING_API}/stream/{job_id}")
     stream.raise_for_status()
     payload = stream.json()
-    return list(payload.get("results") or [])
+    raw = payload.get("results") or []
+    return list(raw) if isinstance(raw, list) else []
 
 
 def _map_batch(session, db: str, batch: list[str]) -> list[dict]:
@@ -141,8 +142,11 @@ def _map_batch(session, db: str, batch: list[str]) -> list[dict]:
                 )
                 sleep(min(60, POLL_SECONDS * attempt * 2))
                 continue
-            if "results" in status:
-                return list(status.get("results") or [])
+            raw = status.get("results")
+            # Status payloads sometimes include a non-list "results" sentinel.
+            # Only treat a real list as the mapped rows; otherwise fetch /stream.
+            if isinstance(raw, list):
+                return raw
             return _fetch_results(session, job_id)
         except Exception as exc:  # noqa: BLE001 — retry transient API/transport failures
             last_error = exc

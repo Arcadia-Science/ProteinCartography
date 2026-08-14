@@ -68,15 +68,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def _soft_fail_enabled() -> bool:
-    return os.environ.get("PC_BLAST_SOFT_FAIL", "0").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
-
-
 def _write_empty_results(path: str) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_text("")
@@ -117,16 +108,19 @@ def main():
         if result.returncode == 0 and Path(args.out).exists() and Path(args.out).stat().st_size > 0:
             sys.exit(0)
         if result.returncode == 0 and Path(args.out).exists():
-            # Successful call but zero hits — still a valid empty TSV for extract.
+            # Empty TSV is not a successful map unless soft-fail is on.
+            # Otherwise extract_blast_hits would raise after this rule already
+            # exited 0, which aborts Snakemake one step later.
             print("[blast] blastp returned no hits (empty results file)", flush=True)
-            sys.exit(0)
+            if constants.blast_soft_fail_enabled():
+                sys.exit(0)
         num_tries += 1
         err = ""
         if result is not None and result.stderr:
             err = result.stderr.decode("utf-8", errors="replace")[-300:]
         print(f"[blast] attempt failed rc={getattr(result, 'returncode', '?')}: {err}", flush=True)
 
-    if _soft_fail_enabled():
+    if constants.blast_soft_fail_enabled():
         _write_empty_results(args.out)
         print(
             f"[blast] SOFT FAIL after {max_num_tries} tries — writing empty {args.out} "

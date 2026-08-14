@@ -75,7 +75,45 @@ def _looks_like_pdb(text: str) -> bool:
     return "ATOM" in text or "HETATM" in text
 
 
+def _pdb_from_response(result) -> str | None:
+    """Return PDB text only for a successful HTTP body that looks like a PDB.
+
+    AlphaFold file URLs 404 with a ~127-byte ``<Error>`` body for accessions
+    whose real entry is an isoform (e.g. Q9Y6V0 → AF-Q9Y6V0-3-F1). Never treat
+    that as a structure.
+    """
+    if result is None:
+        return None
+    text = getattr(result, "text", "") or ""
+    if getattr(result, "ok", False) and _looks_like_pdb(text):
+        return text
+    return None
+
+
 def _download_pdb_text(accession: str, session) -> str | None:
+    # Prefer the prediction API: guessed AF-{acc}-F1 URLs 404 when the AFDB
+    # entry uses an isoform id (Q9Y6V0 → AF-Q9Y6V0-3-F1-model_v6.pdb).
+    try:
+        meta = session.get(AFDB_PREDICTION.format(acc=accession), timeout=60)
+        if getattr(meta, "ok", False):
+            entries = meta.json()
+            if isinstance(entries, list):
+                for entry in entries:
+                    pdb_url = (entry or {}).get("pdbUrl") or (entry or {}).get("pdbFile")
+                    if not pdb_url:
+                        continue
+                    result = session.get(pdb_url, timeout=120)
+                    text = _pdb_from_response(result)
+                    if text:
+                        return text
+                    print(
+                        f"AlphaFold pdbUrl miss for {accession}: "
+                        f"status={getattr(result, 'status_code', '?')} "
+                        f"bytes={len(getattr(result, 'text', '') or '')}"
+                    )
+    except Exception as exc:
+        print(f"AlphaFold API fetch failed for {accession}: {exc}")
+
     for ver in AFDB_VERSIONS:
         url = AFDB_FILES.format(acc=accession, ver=ver)
         try:
@@ -83,26 +121,14 @@ def _download_pdb_text(accession: str, session) -> str | None:
         except Exception as exc:
             print(f"AlphaFold {ver} fetch failed for {accession}: {exc}")
             continue
-        if result.ok and _looks_like_pdb(result.text):
-            return result.text
+        text = _pdb_from_response(result)
+        if text:
+            return text
         print(
             f"AlphaFold {ver} miss for {accession}: "
-            f"status={result.status_code} bytes={len(result.text or '')}"
+            f"status={getattr(result, 'status_code', '?')} "
+            f"bytes={len(getattr(result, 'text', '') or '')}"
         )
-
-    # Prediction API returns the current pdbUrl (version-agnostic).
-    try:
-        meta = session.get(AFDB_PREDICTION.format(acc=accession), timeout=60)
-        if meta.ok:
-            entries = meta.json()
-            if entries:
-                pdb_url = entries[0].get("pdbUrl") or entries[0].get("pdbFile")
-                if pdb_url:
-                    result = session.get(pdb_url, timeout=120)
-                    if result.ok and _looks_like_pdb(result.text):
-                        return result.text
-    except Exception as exc:
-        print(f"AlphaFold API fetch failed for {accession}: {exc}")
     return None
 
 

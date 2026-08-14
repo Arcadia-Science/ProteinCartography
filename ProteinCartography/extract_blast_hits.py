@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """Extract RefSeq accessions from a BLAST results TSV.
 
-An empty BLAST results file writes an empty hits file instead of raising, so
-Foldseek-only maps can proceed when BLAST soft-fails or returns no hits.
+An empty BLAST results file raises by default so a zero-hit map cannot look
+like success. Set ``PC_BLAST_SOFT_FAIL=1`` to write an empty hits file instead
+and continue Foldseek-only.
 """
 
 from __future__ import annotations
 import argparse
-import os
 from pathlib import Path
 
 import constants
@@ -45,14 +45,9 @@ def extract_blast_hits(input_file: str, output_file: str, column_names: list):
     and prints unique hits to a .txt file, one per line.
     """
     path = Path(input_file)
-    # Empty hits are allowed by default. Set PC_BLAST_SOFT_FAIL=0 to restore the
-    # historical hard failure on empty BLAST results.
-    soft = os.environ.get("PC_BLAST_SOFT_FAIL", "1").strip().lower() not in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }
+    # Same flag as run_blast (default hard-fail). An empty TSV is only
+    # allowed through when PC_BLAST_SOFT_FAIL is an explicit opt-in.
+    soft = constants.blast_soft_fail_enabled()
 
     if not path.exists() or path.stat().st_size == 0:
         print(f"[blast] no BLAST results in {input_file}; writing empty hits file", flush=True)

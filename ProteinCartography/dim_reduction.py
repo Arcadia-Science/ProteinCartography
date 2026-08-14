@@ -104,10 +104,10 @@ def calculate_TSNE(
             index=pivoted_df.index,
         )
     else:
-        # sklearn requires perplexity < n_samples.
+        # sklearn requires perplexity < n_samples. Clamp only for that;
+        # do not also scale perplexity for every N under 250 (that shifts
+        # ordinary maps, e.g. N=100 from 50 → 21).
         perplexity_check = min(perplexity, max(1, n - 1))
-        if perplexity_check > n / 5:
-            perplexity_check = max(1, int(1 + np.round(n / 5)))
         perplexity_check = min(perplexity_check, n - 1)
         tsne = TSNE(
             n_components=min(n_components, max(1, n - 1)),
