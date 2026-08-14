@@ -64,3 +64,8 @@ no-lines-before = ["future", "standard-library"]
 line_length = 100
 include = 'Snakefile|Snakefile_*'
 exclude = 'dev'
+
+[tool.pytest.ini_options]
+# Scripts live in ProteinCartography/ and import as top-level modules
+# (import blast_utils, not ProteinCartography.blast_utils).
+pythonpath = ["ProteinCartography"]

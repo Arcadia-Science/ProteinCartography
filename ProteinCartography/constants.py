@@ -1,5 +1,6 @@
 # default column names for a Foldseek run in this pipeline
 import enum
+import os
 
 FOLDSEEK_COLUMN_NAMES = [
     "query",
@@ -62,3 +63,17 @@ BLAST_OUTPUT_FIELDS = [
 
 # the prepended '6' is how we specify that the output format is tabular
 BLAST_OUTFMT = " ".join(["6"] + BLAST_OUTPUT_FIELDS)
+
+
+def blast_soft_fail_enabled() -> bool:
+    """True only for an explicit PC_BLAST_SOFT_FAIL opt-in. Default is hard-fail.
+
+    Shared by ``run_blast`` and ``extract_blast_hits`` so an empty BLAST TSV
+    cannot succeed one step and abort the next.
+    """
+    return os.environ.get("PC_BLAST_SOFT_FAIL", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }

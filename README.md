@@ -193,9 +193,10 @@ The **Cluster** mode starts at the "Clustering" step.
     - The pipeline searches `afdb50`, `afdb-proteome` and `afdb-swissprot` for each input protein and aggregate the results. You can customize to add or remove databases using the config file.
     - Currently, the pipeline is limited to retrieving a maximum of 1000 hits per protein, per database.
 
-2. Search the non-redundant GenBank/RefSeq database using blastp for each provided `.fasta` file.
-    - Takes the resulting output hits and maps each GenBank/RefSeq hit to a UniProt ID using `requests` and [the UniProt REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob).
-    - TODO: This can fail for large proteins (>700aa) due to remote BLAST CPU limits. To overcome this error, you can manually run BLAST locally or via the webserver and create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blast_hits.refseq.txt` in the `output/blast_results/` directory.
+2. Search sequence databases using blastp for each provided `.fasta` file.
+    - By default the pipeline uses NCBI's WWW/QBlast API (`PC_BLAST_BACKEND=www`) against `refseq_protein`, which returns RefSeq accessions for UniProt ID mapping and avoids hung `blastp -remote` calls from cloud IPs. Set `PC_BLAST_DB=nr` and/or `PC_BLAST_BACKEND=remote` to restore the historical broader / CLI-remote behavior.
+    - Hits are mapped to UniProt IDs using `requests` and [the UniProt REST API](https://rest.uniprot.org/docs/?urls.primaryName=idmapping#/job/submitJob).
+    - If NCBI is unavailable, set `PC_BLAST_SOFT_FAIL=1` to continue with Foldseek-only hits (writes an empty BLAST results file after retries). You can also manually create an [accession list file](#accession-list-files-acc) with the name format `{protid}.blast_hits.refseq.txt` in the `output/blast_results/` directory.
 
 ### Download Data
 

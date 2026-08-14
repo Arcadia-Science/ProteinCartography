@@ -1,13 +1,23 @@
 #!/usr/bin/env python
+"""Run BLAST for a ProteinCartography search-mode seed.
+
+``blast_utils`` defaults to NCBI's WWW/QBlast URL API (``PC_BLAST_BACKEND=www``)
+and writes the same tabular TSV ProteinCartography expects. Soft-fail
+(``PC_BLAST_SOFT_FAIL=1``) lets Foldseek-only maps complete if NCBI is down;
+set ``0`` for hard failure. Legacy ``blastp -remote`` remains available via
+``PC_BLAST_BACKEND=remote``.
+"""
+
+from __future__ import annotations
 import argparse
 import os
 import sys
+from pathlib import Path
 
 import blast_utils
 import constants
 
-# if necessary, mock the `run_blast` method
-# see comments in `tests.mocks` for more details
+# If necessary, mock ``run_blast`` (see ``tests.mocks``).
 if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
     from tests import mocks
 
@@ -15,10 +25,6 @@ if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
 
 
 def parse_args():
-    """
-    Define CLI arguments for the subset of `blastp` arguments that are used by the `run_blast` rule
-    following the nomenclature of the `blastp` CLI
-    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--query", required=True, help="path to the input peptide FASTA file.")
     parser.add_argument(
@@ -59,9 +65,12 @@ def parse_args():
         type=float,
         required=True,
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    return args
+
+def _write_empty_results(path: str) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text("")
 
 
 def main():
@@ -69,12 +78,18 @@ def main():
 
     num_tries = 0
     max_num_tries = args.num_attempts
+    # Optional hard cap so a hanging NCBI call does not burn num_attempts × timeout.
+    cap = os.environ.get("PC_BLAST_MAX_ATTEMPTS", "").strip()
+    if cap.isdigit() and int(cap) > 0:
+        max_num_tries = min(max_num_tries, int(cap))
+    result = None
     while num_tries < max_num_tries:
         word_size = args.word_size if num_tries == 0 else args.word_size_backoff
 
         print(
-            f"Attempt {num_tries + 1}/{max_num_tries} to call blastp "
-            f"(using word size of {word_size})"
+            f"[blast] Attempt {num_tries + 1}/{max_num_tries} to call blastp "
+            f"(using word size of {word_size})",
+            flush=True,
         )
         result = blast_utils.run_blast(
             query=args.query,
@@ -84,15 +99,41 @@ def main():
             word_size=word_size,
             evalue=args.evalue,
         )
-        if result.returncode == 0:
+        if result is None:
+            result = blast_utils.BlastResult(
+                returncode=1,
+                stdout=b"",
+                stderr=b"[blast] run_blast returned None\n",
+            )
+        if result.returncode == 0 and Path(args.out).exists() and Path(args.out).stat().st_size > 0:
             sys.exit(0)
-        else:
-            num_tries += 1
+        if result.returncode == 0 and Path(args.out).exists():
+            # Empty TSV is not a successful map unless soft-fail is on.
+            # Otherwise extract_blast_hits would raise after this rule already
+            # exited 0, which aborts Snakemake one step later.
+            print("[blast] blastp returned no hits (empty results file)", flush=True)
+            if constants.blast_soft_fail_enabled():
+                sys.exit(0)
+        num_tries += 1
+        err = ""
+        if result is not None and result.stderr:
+            err = result.stderr.decode("utf-8", errors="replace")[-300:]
+        print(f"[blast] attempt failed rc={getattr(result, 'returncode', '?')}: {err}", flush=True)
 
-    if num_tries >= max_num_tries:
-        sys.exit(
-            f"BLAST failed after {max_num_tries} tries. The last error message was: {result.stderr}"
+    if constants.blast_soft_fail_enabled():
+        _write_empty_results(args.out)
+        print(
+            f"[blast] SOFT FAIL after {max_num_tries} tries — writing empty {args.out} "
+            f"and continuing (Foldseek hits still drive the map). "
+            f"Last error: {getattr(result, 'stderr', b'')[-200:]!r}",
+            flush=True,
         )
+        sys.exit(0)
+
+    sys.exit(
+        f"BLAST failed after {max_num_tries} tries. "
+        f"The last error message was: {getattr(result, 'stderr', b'')}"
+    )
 
 
 if __name__ == "__main__":

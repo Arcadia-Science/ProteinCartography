@@ -93,11 +93,17 @@ def mock_response(method, url, **_):
     elif url.startswith("https://search.foldseek.com/api"):
         return mock_foldseek_api_responses(method, url)
 
-    # Requests to the UniProtKB REST API.
-    elif url.startswith("https://rest.uniprot.org/uniprotkb/search"):
+    # Requests to the UniProtKB REST API (search *or* /uniprotkb/accessions).
+    elif url.startswith("https://rest.uniprot.org/uniprotkb/search") or url.startswith(
+        "https://rest.uniprot.org/uniprotkb/accessions"
+    ):
         return mock_uniprotkb_rest_api_responses()
 
-    # Requests to the alphafold API.
+    # AlphaFold prediction API (isoform-correct pdbUrl, then files download).
+    elif url.startswith("https://alphafold.ebi.ac.uk/api/prediction"):
+        return mock_alphafold_prediction_api_responses(url)
+
+    # Requests to the alphafold files API.
     elif url.startswith("https://alphafold.ebi.ac.uk/files"):
         return mock_alphafold_files_api_responses(url)
 
@@ -203,6 +209,7 @@ def mock_uniprotkb_rest_api_responses():
 
     mock_response = mock.Mock(spec=requests.Response)
     mock_response.status_code = 200
+    mock_response.ok = True
 
     # Define an empty header, specifically one without a 'Link' key
     # to prevent `fetch_uniprot_metadata.query_uniprot` from requesting a second batch of results.
@@ -216,19 +223,32 @@ def mock_uniprotkb_rest_api_responses():
     return mock_response
 
 
+def mock_alphafold_prediction_api_responses(url):
+    """Return a pdbUrl that the files mock can serve (canonical F1 v6 path)."""
+    accession = url.rstrip("/").split("/")[-1].split("?")[0]
+    mock_response = mock.Mock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.ok = True
+    mock_response.json.return_value = [
+        {"pdbUrl": f"https://alphafold.ebi.ac.uk/files/AF-{accession}-F1-model_v6.pdb"}
+    ]
+    return mock_response
+
+
 def mock_alphafold_files_api_responses(url):
     """
     Mock the response to calls made to the AlphaFold API to download PDB files.
     """
 
-    # Parse the accession from the url.
-    result = re.findall(r"AF-([A-Z0-9]+)-F1-model_v6\.pdb", url)
-    if result is None:
-        raise ValueError("Unexpected url: {url}")
+    # Parse the accession from the url. Isoform ids look like AF-Q9Y6V0-3-F1-...
+    result = re.findall(r"AF-([A-Z0-9]+)(?:-\d+)?-F1-model_v[46]\.pdb", url)
+    if not result:
+        raise ValueError(f"Unexpected url: {url}")
     accession = result[0]
 
     mock_response = mock.Mock(spec=requests.Response)
     mock_response.status_code = 200
+    mock_response.ok = True
 
     # The AlphaFold URL requests v6 files, but the test artifacts contain v4 files.
     # Because we can safely use the "old" v4 files for testing purposes,
