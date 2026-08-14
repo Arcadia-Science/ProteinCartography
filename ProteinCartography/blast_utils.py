@@ -358,10 +358,23 @@ def iter_searches(results: dict):
     if isinstance(reports, dict):
         reports = [reports]
 
+    found_search = False
     for report in reports:
         search = report.get("report", {}).get("results", {}).get("search")
         if search is not None:
+            found_search = True
             yield search
+
+    # A response that parses as JSON and has the expected top-level key, but contains no search
+    # at all, is reported as a failure rather than as a search with no hits. Treating it as an
+    # empty result would write an empty results file and report success, and the pipeline would
+    # then fail further downstream with a misleading "no hits were returned" -- which is the
+    # failure mode this module exists to remove.
+    if not found_search:
+        raise BlastApiError(
+            "NCBI returned a blast report containing no search results "
+            "(its 'BlastOutput2' key holds no report with a 'search' object)."
+        )
 
 
 def format_results(results: dict, outfmt: str) -> str:
@@ -687,13 +700,25 @@ def fetch_results(request_id: str, max_target_seqs: int, email: str) -> dict:
     # An error page, or the status-block-only body that NCBI returns for some format types,
     # is not JSON and must not be mistaken for a search that simply had no hits.
     try:
-        return json.loads(response_text)
+        results = json.loads(response_text)
     except ValueError as exception:
         raise BlastApiError(
             f"NCBI did not return {NCBI_RESULTS_FORMAT} results for the blast search "
             f"'{request_id}' ({exception}). "
             f"NCBI responded with: {summarize_response(response_text)}"
         ) from exception
+
+    # `json.loads` yields whatever the body contained, which need not be an object. Checking here
+    # keeps a surprising response a reported failure, rather than an AttributeError raised from
+    # somewhere in the parsing below and escaping `run_blast` uncaught.
+    if not isinstance(results, dict):
+        raise BlastApiError(
+            f"NCBI returned {type(results).__name__} rather than a blast report for the blast "
+            f"search '{request_id}'. "
+            f"NCBI responded with: {summarize_response(response_text)}"
+        )
+
+    return results
 
 
 def run_blast(

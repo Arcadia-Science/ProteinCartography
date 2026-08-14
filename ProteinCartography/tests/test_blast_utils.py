@@ -589,6 +589,35 @@ def test_json_that_is_not_a_blast_report_is_a_failure(clock, ncbi, query_filepat
     assert "BlastOutput2" in result.stderr
 
 
+def test_a_report_containing_no_search_is_a_failure(clock, ncbi, query_filepath, tmp_path):
+    """
+    Tests that a report with the expected top-level key but no search in it is a failure.
+
+    Reporting this as a search with no hits would write an empty results file and exit zero, and
+    the pipeline would fail later in `extract_blast_hits.py` with a misleading "no hits were
+    returned" -- the failure mode that this module exists to remove.
+    """
+    ncbi(results_response={"BlastOutput2": []})
+
+    result = run_blast(query_filepath, tmp_path / "results.tsv")
+
+    assert blast_utils.blast_call_failed(result)
+    assert "no search results" in result.stderr
+
+
+def test_json_that_is_not_an_object_is_a_failure(clock, ncbi, query_filepath, tmp_path):
+    """
+    Tests that a response body which parses as JSON but is not an object is reported as a failed
+    search, rather than raising an `AttributeError` that escapes `run_blast` uncaught.
+    """
+    ncbi(results_response=FakeResponse("[1, 2, 3]"))
+
+    result = run_blast(query_filepath, tmp_path / "results.tsv")
+
+    assert blast_utils.blast_call_failed(result)
+    assert "list" in result.stderr
+
+
 def test_a_poll_that_does_not_reach_ncbi_is_retried(clock, ncbi, query_filepath, tmp_path):
     """
     Tests that a search survives a poll that fails to reach NCBI.
