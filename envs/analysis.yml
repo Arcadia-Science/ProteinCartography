@@ -3,6 +3,10 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  # python is pinned to match the other environments; left unpinned, this
+  # environment resolves to whatever the newest python conda-forge has builds for
+  # (it had drifted to python 3.11 while every pinned environment was on 3.9).
+  - python=3.9.16
   - leidenalg=0.9.1
   - scanpy=1.9.3
   - scikit-learn=1.2.2
@@ -10,8 +14,11 @@ dependencies:
   - pandas=2.0.1
   - numpy=1.23.5
   - nltk=3.8.1
-  # matplotlib is an indirect dependency (via scanpy) and must be pinned, because recent
-  # versions of it require numpy>=1.25 and so are incompatible with the numpy pin above.
+  # matplotlib is an indirect dependency (via scanpy) and must be pinned. Recent versions are
+  # built against numpy 2 and raise `ImportError: Matplotlib requires numpy>=1.25` when they
+  # are imported alongside the numpy pinned above. Note that the solver installs them together
+  # quite happily, so this is not caught when the environment is built, only when it is used.
+  # More generally, an environment that pins numpy has to pin what is compiled against it.
   # This pin matches the one in `plotting.yml`.
   - matplotlib=3.7.1
   # `umap-learn` imports `pkg_resources`, which setuptools removed in version 81.

@@ -3,6 +3,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  # pinned to match the other environments; see the note in `analysis.yml`.
+  - python=3.9.16
   - plotly=5.14.1
   - jupyter-dash=0.4.2
   - matplotlib=3.7.1
