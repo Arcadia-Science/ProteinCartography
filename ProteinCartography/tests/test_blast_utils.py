@@ -49,3 +49,48 @@ def test_xml_to_blast_tsv_empty_without_blast_output(tmp_path: pathlib.Path):
     n = blast_utils._xml_to_blast_tsv("<html>waiting</html>", str(out))
     assert n == 0
     assert out.read_text() == ""
+
+
+# ------------------------------------------------------------------------------------------------
+# Detecting a `blastp -remote` call that failed but exited zero.
+# ------------------------------------------------------------------------------------------------
+
+
+class _Completed:
+    def __init__(self, returncode=0, stderr=b""):
+        self.returncode = returncode
+        self.stderr = stderr
+        self.stdout = b""
+
+
+def test_a_successful_call_did_not_fail():
+    assert not blast_utils.blast_call_failed(_Completed())
+
+
+def test_a_nonzero_exit_code_is_a_failure():
+    assert blast_utils.blast_call_failed(_Completed(returncode=1))
+
+
+def test_an_error_on_stderr_is_a_failure_despite_a_zero_exit_code():
+    """
+    The case this exists for: when the remote server refuses to queue the request, `blastp
+    -remote` reports the error, writes an empty results file, and still exits zero. Branching on
+    the exit code alone treats that as a success, so the word-size backoff never runs and the
+    failure surfaces later as a misleading "no hits were returned".
+    """
+    stderr = (
+        b"Error: [blastp] bad_request: Could not queue request: DB operation failed."
+        b"(ERR:-99  )((Severe Error) DB Put Request error: sp_NewRequestEx failed)\n"
+    )
+    assert blast_utils.blast_call_failed(_Completed(returncode=0, stderr=stderr))
+
+
+def test_a_warning_on_stderr_is_not_a_failure():
+    stderr = b"Warning: [blastp] Examining 5 or more matches is recommended\n"
+    assert not blast_utils.blast_call_failed(_Completed(returncode=0, stderr=stderr))
+
+
+def test_stderr_may_be_bytes_a_string_or_none():
+    assert blast_utils.blast_call_failed(_Completed(stderr="Error: something went wrong"))
+    assert not blast_utils.blast_call_failed(_Completed(stderr="all good"))
+    assert not blast_utils.blast_call_failed(_Completed(stderr=None))
