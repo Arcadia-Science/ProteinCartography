@@ -598,7 +598,7 @@ def wait_for_search(request_id: str, time_estimate: int, timeout_seconds: float,
         if status == "UNKNOWN":
             raise BlastApiError(
                 f"NCBI no longer recognizes the blast search '{request_id}'. "
-                "Request ids expire after 24 hours, and are also reported as unknown "
+                "Request ids expire after 36 hours, and are also reported as unknown "
                 "when the search was never queued."
             )
         if status != "WAITING":
@@ -667,9 +667,10 @@ def run_blast(
     evalue: float,
     timeout_seconds: float,
     email: Optional[str] = None,
+    database: str = "nr",
 ):
     """
-    Run a blastp search against NCBI's `nr` database using NCBI's BLAST URL API.
+    Run a blastp search against an NCBI database using NCBI's BLAST URL API.
 
     This uses the URL API directly rather than `blastp -remote`, because `blastp -remote` polls
     NCBI's queue indefinitely with no way for the caller to bound how long it waits: when NCBI's
@@ -695,6 +696,8 @@ def run_blast(
         evalue (float): passed to NCBI as 'EXPECT'
         timeout_seconds (float): how long to wait for NCBI to complete the search before failing.
         email (str): the contact email address to send to NCBI (see `resolve_email`).
+        database (str): the name of the NCBI database to search. Changing this changes which
+            homologs are found, so it is a change to the results and not only to the runtime.
 
     Returns:
         A `CompletedProcess` whose return code is zero if the search succeeded.
@@ -715,9 +718,13 @@ def run_blast(
             word_size=word_size,
             evalue=evalue,
             email=email,
+            database=database,
         )
+        # The request id is printed as soon as it exists, because NCBI keeps the results of a
+        # search for 36 hours: if the pipeline gives up, or the process dies, the search can
+        # still be retrieved from this id rather than being resubmitted to the queue.
         print(
-            f"NCBI queued the blast search as '{request_id}' "
+            f"NCBI queued the blast search of '{database}' as '{request_id}' "
             f"and estimated that it will take {time_estimate}s"
         )
 

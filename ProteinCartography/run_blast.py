@@ -65,6 +65,11 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--database",
+        default="nr",
+        help="the name of the NCBI database to search.",
+    )
+    parser.add_argument(
         "--email",
         default=None,
         help=(
@@ -109,6 +114,7 @@ def main():
             evalue=args.evalue,
             timeout_seconds=remaining,
             email=args.email,
+            database=args.database,
         )
         if not blast_utils.blast_call_failed(result):
             sys.exit(0)

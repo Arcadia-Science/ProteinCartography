@@ -65,6 +65,15 @@ blast_timeout_seconds: 1800
 # It can also be set without editing this file, using the PROTEINCARTOGRAPHY_BLAST_EMAIL
 # env variable, which takes precedence over this parameter.
 blast_email: "proteincartography@arcadiascience.com"
+# The NCBI database to search.
+# This defaults to `nr` because every published ProteinCartography map used it: `nr` includes
+# GenBank CDS translations, PDB, SwissProt, PIR and PRF, so changing it changes which homologs
+# are found and is a change to the results, not just to how long a run takes.
+# `nr_cluster_seq` (ClusteredNR) is worth considering for runs where NCBI's queue is the
+# bottleneck: it is built from `nr` by clustering it, so unlike the RefSeq-only databases it does
+# not drop whole source databases, but it returns one representative per cluster rather than
+# every accession in it.
+blast_database: "nr"
 
 # Any additional metadata fields to download from UniProt
 uniprot_additional_fields: []
