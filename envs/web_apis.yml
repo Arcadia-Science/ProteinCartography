@@ -9,5 +9,8 @@ dependencies:
   - requests=2.29.0
   - biopython=1.81
   - ratelimiter=1.2.0
+  # `download_pdbs.py` imports tqdm directly. It is declared here rather than left to resolve as an
+  # indirect dependency of `bioservices`, which requires it without any version constraint.
+  - tqdm=4.65.0
   - pip:
       - bioservices==1.11.2

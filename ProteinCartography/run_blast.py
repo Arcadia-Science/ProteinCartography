@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 from pathlib import Path
 
 import blast_utils
@@ -65,6 +66,24 @@ def parse_args():
         type=float,
         required=True,
     )
+    parser.add_argument(
+        "--timeout_seconds",
+        type=float,
+        default=None,
+        help=(
+            "the total time to spend waiting for NCBI, across all attempts, before giving up. "
+            "Retrying does not reset this budget. Falls back to PC_BLAST_TIMEOUT when unset."
+        ),
+    )
+    parser.add_argument(
+        "--database",
+        default=None,
+        help=(
+            "the name of the NCBI database to search. This is a scientific choice: "
+            "'refseq_protein' is a materially narrower search space than 'nr'. "
+            "Falls back to PC_BLAST_DB when unset."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -82,13 +101,34 @@ def main():
     cap = os.environ.get("PC_BLAST_MAX_ATTEMPTS", "").strip()
     if cap.isdigit() and int(cap) > 0:
         max_num_tries = min(max_num_tries, int(cap))
+
+    # The timeout is a budget for the whole rule rather than for one attempt: it is established
+    # once, here, and every attempt draws down the same deadline. Giving each attempt its own
+    # timeout means the worst case is `num_attempts` times the configured value, which is what
+    # the user actually waits for.
+    timeout_seconds = args.timeout_seconds
+    if timeout_seconds is None:
+        timeout_seconds = float(os.environ.get("PC_BLAST_TIMEOUT", "1200"))
+    started_at = time.monotonic()
+    deadline = started_at + timeout_seconds
+
     result = None
     while num_tries < max_num_tries:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            print(
+                f"[blast] the {timeout_seconds:.0f}s budget is exhausted after "
+                f"{num_tries} attempt(s); not starting another",
+                flush=True,
+            )
+            break
+
         word_size = args.word_size if num_tries == 0 else args.word_size_backoff
 
         print(
             f"[blast] Attempt {num_tries + 1}/{max_num_tries} to call blastp "
-            f"(using word size of {word_size})",
+            f"(using word size of {word_size}, with {remaining:.0f}s of the "
+            f"{timeout_seconds:.0f}s budget remaining)",
             flush=True,
         )
         result = blast_utils.run_blast(
@@ -98,6 +138,8 @@ def main():
             outfmt=args.outfmt,
             word_size=word_size,
             evalue=args.evalue,
+            timeout_seconds=remaining,
+            database=args.database,
         )
         if result is None:
             result = blast_utils.BlastResult(

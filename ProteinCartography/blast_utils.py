@@ -33,6 +33,14 @@ from pathlib import Path
 
 NCBI_BLAST_URL = "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
 
+# How many consecutive polls may fail to reach NCBI before the search is abandoned. A queued
+# search is unaffected by a failure to ask about it, so a transient network error should not
+# discard the wait already spent -- but nor should an unreachable NCBI be retried indefinitely.
+MAX_CONSECUTIVE_POLL_FAILURES = 5
+
+# How often to report that a queued search is still being waited on.
+HEARTBEAT_INTERVAL_SECONDS = 30
+
 
 def blast_call_failed(result) -> bool:
     """
@@ -104,26 +112,41 @@ def run_blast(
     outfmt: str,
     word_size: int,
     evalue: float,
+    timeout_seconds: float | None = None,
+    database: str | None = None,
+    email: str | None = None,
 ):
     """
     Call BLAST against NCBI and write tabular results to ``out``.
 
     Argument names match (a subset of) the blastp CLI / PC ``run_blast.py``.
     Never returns ``None``.
+
+    ``timeout_seconds``, ``database`` and ``email`` are passed by ``run_blast.py`` from the
+    pipeline's config. They fall back to the ``PC_BLAST_*`` environment variables when not
+    given, so an existing env-var setup keeps working, but config is preferred: an env
+    variable is not recorded anywhere in the run, so a map cannot be traced back to the
+    database or the timeout that produced it.
     """
     backend = os.environ.get("PC_BLAST_BACKEND", "www").strip().lower() or "www"
     if backend not in {"www", "remote", "auto"}:
         print(f"[blast] unknown PC_BLAST_BACKEND={backend!r}; using www", flush=True)
         backend = "www"
 
+    www_kwargs = {
+        "timeout_seconds": timeout_seconds,
+        "database": database,
+        "email": email,
+    }
+
     result: BlastResult | None = None
     try:
         if backend == "www":
-            result = _run_blast_www(query, out, max_target_seqs, word_size, evalue)
+            result = _run_blast_www(query, out, max_target_seqs, word_size, evalue, **www_kwargs)
         elif backend == "remote":
             result = _run_blast_remote(query, out, max_target_seqs, outfmt, word_size, evalue)
         else:
-            result = _run_blast_www(query, out, max_target_seqs, word_size, evalue)
+            result = _run_blast_www(query, out, max_target_seqs, word_size, evalue, **www_kwargs)
             ok = result is not None and result.returncode == 0 and Path(out).exists()
             if not ok:
                 print(
@@ -154,18 +177,27 @@ def _run_blast_www(
     max_target_seqs: int,
     word_size: int,
     evalue: float,
+    timeout_seconds: float | None = None,
+    database: str | None = None,
+    email: str | None = None,
 ) -> BlastResult:
-    timeout = float(os.environ.get("PC_BLAST_TIMEOUT", "1200"))
+    if timeout_seconds is None:
+        timeout_seconds = float(os.environ.get("PC_BLAST_TIMEOUT", "1200"))
+    timeout = float(timeout_seconds)
     poll = float(os.environ.get("PC_BLAST_POLL_SECONDS", "60"))
     # NCBI: do not poll a RID more often than once a minute.
     poll = max(60.0, poll)
-    email = os.environ.get("PC_BLAST_EMAIL", "proteincartography@arcadia.science").strip()
+    if email is None:
+        email = os.environ.get("PC_BLAST_EMAIL", "proteincartography@arcadia.science")
+    email = email.strip()
     tool = os.environ.get("PC_BLAST_TOOL", "ProteinCartography").strip()
-    # Default to ``refseq_protein``: NCBI often queues ``nr`` for hours from cloud
-    # IPs, and map_refseq_ids already expects RefSeq accessions. Override with
-    # ``PC_BLAST_DB=nr`` for the historical broader search.
+    # The database is a scientific choice -- `refseq_protein` is a materially narrower search
+    # space than `nr` -- so it comes from config where it is recorded with the run, rather than
+    # from a default buried here. `PC_BLAST_DB` still overrides for ad-hoc runs.
     default_db = "refseq_protein"
-    database = os.environ.get("PC_BLAST_DB", default_db).strip() or default_db
+    if database is None:
+        database = os.environ.get("PC_BLAST_DB", default_db)
+    database = database.strip() or default_db
 
     try:
         fasta = Path(query).read_text()
@@ -181,110 +213,135 @@ def _run_blast_www(
         flush=True,
     )
 
-    stop = threading.Event()
     started = time.time()
 
-    def _heartbeat():
-        while not stop.wait(30.0):
-            elapsed = time.time() - started
+    def _sleep_reporting_progress(duration: float, rid: str | None = None):
+        """
+        Sleep for `duration`, reporting progress every `HEARTBEAT_INTERVAL_SECONDS`.
+
+        This replaces a background heartbeat thread. It reports the same thing at the same
+        interval, but because the reporting happens on the thread that is waiting, it can be
+        asserted on by tests that fake the clock -- a real thread never fires under a fake clock.
+        """
+        slept = 0.0
+        while slept < duration:
+            interval = min(float(HEARTBEAT_INTERVAL_SECONDS), duration - slept)
+            time.sleep(interval)
+            slept += interval
+            if slept < duration:
+                elapsed = time.time() - started
+                suffix = f" RID={rid}" if rid else ""
+                print(
+                    f"[blast] www still waiting on NCBI "
+                    f"({elapsed:.0f}s / {timeout:.0f}s{suffix})",
+                    flush=True,
+                )
+
+    rid = None
+    rtoe = 30
+    put_errors: list[str] = []
+    for put_try in range(1, 4):
+        try:
+            rid, rtoe = _www_put(
+                fasta,
+                database=database,
+                hitlist_size=max_target_seqs,
+                word_size=word_size,
+                evalue=evalue,
+                email=email,
+                tool=tool,
+            )
+            break
+        except Exception as exc:
+            put_errors.append(str(exc))
+            print(f"[blast] www PUT try {put_try}/3 failed: {exc}", flush=True)
+            time.sleep(10 * put_try)
+    if rid is None:
+        msg = f"[blast] www PUT failed after retries: {put_errors[-1:]}\n"
+        print(msg, flush=True)
+        return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
+
+    print(f"[blast] www RID={rid} RTOE≈{rtoe}s; polling every {poll:.0f}s", flush=True)
+
+    # The configured timeout is a ceiling, not a floor. It previously became
+    # `max(timeout, min(rtoe + 300, 7200))`, so NCBI's own estimate -- which is routinely
+    # hours, and tracks how busy the shared queue is rather than this search -- could extend
+    # a configured 1200s to 7200s. That made the setting unable to bound anything, which is
+    # the failure `blastp -remote` had in the first place.
+    deadline = started + timeout
+
+    # Wait out NCBI's estimate before the first poll, but never past the deadline.
+    initial_wait = max(float(rtoe or 0), 0.0)
+    _sleep_reporting_progress(min(initial_wait, max(deadline - time.time(), 0.0)), rid)
+
+    consecutive_failures = 0
+    while True:
+        elapsed = time.time() - started
+        try:
+            status, body = _www_get(rid, email=email, tool=tool)
+        except Exception as exc:
+            consecutive_failures += 1
+            if consecutive_failures >= MAX_CONSECUTIVE_POLL_FAILURES:
+                msg = (
+                    f"[blast] www could not reach NCBI for {consecutive_failures} "
+                    f"consecutive polls (RID={rid}): {exc}\n"
+                )
+                print(msg, flush=True)
+                return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
             print(
-                f"[blast] www still waiting on NCBI ({elapsed:.0f}s / {timeout:.0f}s)",
+                f"[blast] www poll error, attempt {consecutive_failures} of "
+                f"{MAX_CONSECUTIVE_POLL_FAILURES} (will retry): {exc}",
                 flush=True,
             )
-
-    hb = threading.Thread(target=_heartbeat, name="blast-www-hb", daemon=True)
-    hb.start()
-    try:
-        rid = None
-        rtoe = 30
-        put_errors: list[str] = []
-        for put_try in range(1, 4):
-            try:
-                rid, rtoe = _www_put(
-                    fasta,
-                    database=database,
-                    hitlist_size=max_target_seqs,
-                    word_size=word_size,
-                    evalue=evalue,
-                    email=email,
-                    tool=tool,
-                )
+            remaining = deadline - time.time()
+            if remaining <= 0:
                 break
-            except Exception as exc:
-                put_errors.append(str(exc))
-                print(f"[blast] www PUT try {put_try}/3 failed: {exc}", flush=True)
-                time.sleep(10 * put_try)
-        if rid is None:
-            msg = f"[blast] www PUT failed after retries: {put_errors[-1:]}\n"
+            _sleep_reporting_progress(min(poll, remaining), rid)
+            continue
+
+        consecutive_failures = 0
+
+        if status == "WAITING":
+            print(
+                f"[blast] www still waiting on NCBI "
+                f"({elapsed:.0f}s / {timeout:.0f}s RID={rid})",
+                flush=True,
+            )
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                break
+            _sleep_reporting_progress(min(poll, remaining), rid)
+            continue
+        if status == "FAILED":
+            msg = f"[blast] www search FAILED (RID={rid})\n{body[:500]}\n"
+            print(msg, flush=True)
+            return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
+        if status == "UNKNOWN":
+            msg = f"[blast] www unknown status (RID={rid})\n{body[:500]}\n"
             print(msg, flush=True)
             return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
 
-        print(f"[blast] www RID={rid} RTOE≈{rtoe}s; polling every {poll:.0f}s", flush=True)
-        # Honour NCBI's own estimate (capped) so we don't soft-fail while the
-        # job is still legitimately queued.
-        effective_timeout = max(timeout, min(float(rtoe or 0) + 300.0, 7200.0))
-        if effective_timeout > timeout:
-            print(
-                f"[blast] www extending timeout {timeout:.0f}s → {effective_timeout:.0f}s "
-                f"from RTOE",
-                flush=True,
-            )
-        initial_wait = min(max(float(rtoe or 0), 0.0), 120.0)
-        if initial_wait > 0:
-            time.sleep(initial_wait)
+        try:
+            n = _xml_to_blast_tsv(body, out)
+        except Exception as exc:
+            msg = f"[blast] www XML→TSV failed: {exc}\n"
+            print(msg, flush=True)
+            return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
+        print(
+            f"[blast] www finished RID={rid} hits_rows={n} out={out} "
+            f"elapsed={time.time() - started:.0f}s",
+            flush=True,
+        )
+        return BlastResult(returncode=0, stdout=b"", stderr=b"")
 
-        while True:
-            elapsed = time.time() - started
-            if elapsed > effective_timeout:
-                msg = (
-                    f"[blast] www TIMEOUT after {effective_timeout:.0f}s (RID={rid} RTOE≈{rtoe}s)\n"
-                )
-                print(msg, flush=True)
-                return BlastResult(returncode=124, stdout=b"", stderr=msg.encode())
-            try:
-                status, body = _www_get(rid, email=email, tool=tool)
-            except Exception as exc:
-                print(f"[blast] www poll error (will retry): {exc}", flush=True)
-                time.sleep(poll)
-                continue
-
-            if status == "WAITING":
-                print(
-                    f"[blast] www still waiting on NCBI "
-                    f"({elapsed:.0f}s / {effective_timeout:.0f}s RID={rid})",
-                    flush=True,
-                )
-                time.sleep(poll)
-                continue
-            if status == "FAILED":
-                msg = f"[blast] www search FAILED (RID={rid})\n{body[:500]}\n"
-                print(msg, flush=True)
-                return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
-            if status == "UNKNOWN":
-                msg = f"[blast] www unknown status (RID={rid})\n{body[:500]}\n"
-                print(msg, flush=True)
-                return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
-
-            try:
-                n = _xml_to_blast_tsv(body, out)
-            except Exception as exc:
-                msg = f"[blast] www XML→TSV failed: {exc}\n"
-                print(msg, flush=True)
-                return BlastResult(returncode=1, stdout=b"", stderr=msg.encode())
-            print(
-                f"[blast] www finished RID={rid} hits_rows={n} out={out} "
-                f"elapsed={time.time() - started:.0f}s",
-                flush=True,
-            )
-            return BlastResult(returncode=0, stdout=b"", stderr=b"")
-    finally:
-        stop.set()
-    # Defensive: try/finally without an explicit return yields None in some paths.
-    return BlastResult(
-        returncode=1,
-        stdout=b"",
-        stderr=b"[blast] www backend exited without a result\n",
+    msg = (
+        f"[blast] www TIMEOUT after {timeout:.0f}s (RID={rid} RTOE≈{rtoe}s). "
+        "NCBI's public queue is shared, so this usually means the queue is busy rather than "
+        "that anything is wrong with the query; either retry later or raise the "
+        "'blast_timeout_seconds' config parameter.\n"
     )
+    print(msg, flush=True)
+    return BlastResult(returncode=124, stdout=b"", stderr=msg.encode())
 
 
 def _www_put(
@@ -352,7 +409,15 @@ def _www_get(rid: str, *, email: str, tool: str) -> tuple[str, str]:
     # Sometimes NCBI still returns HTML chrome while waiting.
     if "RID =" in text and "QBlastInfoBegin" in text:
         return "WAITING", text
-    return "READY", text
+
+    # Anything else is not a response we understand. This used to fall through to `READY`, which
+    # meant a transient HTML error page -- NCBI's "Temporarily unavailable" notice, a rate-limit
+    # page, a proxy error -- ended the search on the spot: the caller asked `_xml_to_blast_tsv`
+    # to parse it, found no `<BlastOutput`, wrote an empty results file and reported success.
+    # Raising instead routes it through the caller's retry, which is what a transient error
+    # deserves, and a persistent one then fails with the response in the message rather than
+    # with an empty map.
+    raise RuntimeError(f"unrecognized response from NCBI for RID {rid}: {text[:400]}")
 
 
 def _xml_to_blast_tsv(xml_text: str, out_path: str) -> int:

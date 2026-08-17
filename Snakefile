@@ -71,6 +71,8 @@ BLAST_EVALUE = float(config["blast_evalue"])
 BLAST_WORD_SIZE = int(config["blast_word_size"])
 BLAST_WORD_SIZE_BACKOFF = int(config["blast_word_size_backoff"])
 BLAST_NUM_ATTEMPTS = int(config["blast_num_attempts"])
+BLAST_TIMEOUT_SECONDS = float(config["blast_timeout_seconds"])
+BLAST_DATABASE = config["blast_database"]
 FOLDSEEK_SERVER_URL = config["foldseek_server_url"]
 FOLDSEEK_DATABASES = config["foldseek_databases"]
 MAX_FOLDSEEK_HITS = int(config["max_foldseek_hits"])
@@ -145,7 +147,9 @@ rule run_blast:
           --word_size {BLAST_WORD_SIZE} \
           --word_size_backoff {BLAST_WORD_SIZE_BACKOFF} \
           --num_attempts {BLAST_NUM_ATTEMPTS} \
-          --evalue {BLAST_EVALUE}
+          --evalue {BLAST_EVALUE} \
+          --timeout_seconds {BLAST_TIMEOUT_SECONDS} \
+          --database {BLAST_DATABASE}
         """
 
 
