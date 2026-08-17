@@ -46,9 +46,14 @@ def aggregate_lists(input_files: list, output_file: str):
             # add ids to set, which is non-redundant
             id_set.update(ids)
 
-    # save unique entries to a new .txt file
+    # Save unique entries to a new .txt file.
+    #
+    # The ids are sorted because this file is truncated to `max_structures` by `download_pdbs`,
+    # so the order decides which proteins end up in the map whenever there are more hits than
+    # that. Writing a set in iteration order made that choice depend on Python's per-process
+    # hash randomization, so two runs of the same input produced different maps.
     with open(output_file, "w+") as f:
-        f.writelines(id + "\n" for id in id_set)
+        f.writelines(id + "\n" for id in sorted(id_set))
 
 
 # run this if called from the interpreter
