@@ -3,9 +3,8 @@
 from __future__ import annotations
 import pathlib
 
-import pytest
-
 import blast_utils
+import pytest
 
 
 def test_xml_to_blast_tsv_writes_sacc(tmp_path: pathlib.Path):
