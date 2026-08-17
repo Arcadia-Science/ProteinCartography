@@ -53,6 +53,21 @@ blast_word_size_backoff: 6
 blast_evalue: 1.0
 # The number of times to try calling blast before exiting with an error.
 blast_num_attempts: 3
+# The total time to spend waiting for NCBI, in seconds, across all attempts. Retrying does not
+# reset this budget, so this is the longest the blast step can take. NCBI's own estimate of how
+# long a search will take is routinely far larger than this and tracks how busy its shared queue
+# is rather than this particular search, so it does not extend this value.
+blast_timeout_seconds: 1800
+# The NCBI database to search. This is a scientific choice, not a performance one:
+#   nr              - all non-redundant protein sequences; the broadest search.
+#   nr_cluster_seq  - ClusteredNR. Same coverage as `nr` with far less redundancy, so it returns
+#                     a more diverse hit set for the same `max_blast_hits` and is usually the
+#                     better choice for building a map.
+#   refseq_protein  - RefSeq only. Materially narrower than `nr`, and biased toward
+#                     well-annotated model organisms, which shows up as gaps in the map.
+# `refseq_protein` is the default because NCBI queues `nr` for hours from cloud IPs and
+# `map_refseq_ids` already expects RefSeq accessions. Change it deliberately.
+blast_database: "refseq_protein"
 
 # Any additional metadata fields to download from UniProt
 uniprot_additional_fields: []
