@@ -37,7 +37,11 @@ jobs:
         with:
           path: .snakemake/conda
           key: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('envs/*.yml') }}
-          restore-keys: snakemake-conda-${{ runner.os }}--${{ runner.arch }}--
+          # note: there are deliberately no `restore-keys` here. A `restore-keys` match still
+          # leaves `cache-hit` false, so the step below runs anyway and begins by deleting
+          # `.snakemake/conda` -- meaning a partial match would download a stale multi-gigabyte
+          # cache only to discard it. (The `restore-keys` this replaces began with
+          # "snakemake-conda-" while the key begins with "conda-", so it never matched at all.)
 
       - name: Create the snakemake conda envs
         if: steps.cache-snakemake-conda-envs.outputs.cache-hit != 'true'

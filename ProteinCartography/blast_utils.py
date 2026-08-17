@@ -41,6 +41,40 @@ MAX_CONSECUTIVE_POLL_FAILURES = 5
 # How often to report that a queued search is still being waited on.
 HEARTBEAT_INTERVAL_SECONDS = 30
 
+
+def blast_call_failed(result) -> bool:
+    """
+    Determine whether a call to the `blastp` CLI failed.
+
+    The exit code alone is not sufficient: when the remote server refuses to queue a request,
+    `blastp -remote` writes an error to stderr, writes an empty results file, and nevertheless
+    exits with a status of zero. For example:
+
+        Error: [blastp] bad_request: Could not queue request: DB operation failed.
+
+    Checking only the exit code therefore treats these failures as successes, which prevents the
+    word-size backoff in `run_blast.py` from ever being attempted and defers the failure to
+    `extract_blast_hits.py`, where it surfaces as a misleading "no hits were returned".
+
+    Note: an empty results file is deliberately *not* treated as a failure here, because a query
+    that legitimately has no hits also produces one.
+
+    Args:
+        result: the result of the call, with `returncode` and `stderr` attributes.
+
+    Returns:
+        True if the call failed.
+    """
+    if result.returncode != 0:
+        return True
+
+    stderr = result.stderr
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode(errors="replace")
+
+    return "Error:" in (stderr or "")
+
+
 # Must match ``constants.BLAST_OUTPUT_FIELDS`` order after the leading ``6``
 # in ``BLAST_OUTFMT``.
 BLAST_TSV_FIELDS = [
@@ -569,4 +603,12 @@ def _run_blast_remote(
         if err_tail.strip():
             print(f"[blast] blastp stderr (tail):\n{err_tail}", flush=True)
     print(f"[blast] blastp finished rc={result.returncode}", flush=True)
+
+    # A refused request exits zero with the error only on stderr, so the exit code is reported
+    # back as a non-failure and the caller's word-size backoff never runs. Surface it as the
+    # failure it is, keeping the original stderr for the caller's error message.
+    if blast_call_failed(result) and result.returncode == 0:
+        print("[blast] blastp reported an error despite exiting zero; treating as a failure")
+        return BlastResult(returncode=1, stdout=result.stdout, stderr=result.stderr)
+
     return result
