@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="ProteinCartography",
-    url="https://github.com/Arcadia-Science/ProteinCartography-private",
+    url="https://github.com/Arcadia-Science/ProteinCartography",
     author="Dennis Sun",
     author_email="dennis.sun@arcadiascience.com",
     packages=["ProteinCartography"],

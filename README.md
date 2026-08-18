@@ -74,6 +74,8 @@ The pipeline supports two modes: **Search** and **Cluster**. Both modes are impl
 
 In this mode, the pipeline starts with a set of input proteins of interest in PDB and FASTA format and performs broad BLAST and Foldseek searches to identify hits. The pipeline aggregates all hits, downloads PDBs, and builds a map.
 
+Note: Search mode depends on live external APIs (Foldseek, BLAST, UniProt, and AlphaFold database). These services may change, experience downtime, or enforce rate limits, so results may not be fully reproducible across runs separated by significant time.
+
 ![search-mode-rulegraph](rulegraph-search-mode.png)
 
 #### Inputs
@@ -135,7 +137,7 @@ In this mode, the pipeline starts with a folder containing PDBs of interest and 
         - `output`: directory where all pipeline outputs are placed.
         - `analysis_name`: nickname for the analysis, appended to important output files.
         - `features_file`: path to features file (described below).
-        - (Optional) `keyids`: a list of one or more key `protid` corresponding to the proteins to highlight in the output plots (similar to how the input proteins are highlighted in 'search' mode). Note: if not provided, the output directory `key_protid_tmscore_results` will be empty, as will the `protein_features/key_protid_tmscore_features.tsv` file.
+        - (Optional) `keyids`: a list of one or more key `protid` corresponding to the proteins to highlight in the output plots (similar to how the input proteins are highlighted in 'search' mode). Note: if not provided, the output directory `key_protid_tmscore_results` will be empty, as will the `protein_features/key_protid_tmscore_features.tsv` file. If `keyids` is provided, the pipeline will make Foldseek API calls for each key protein, so an internet connection is still required even in cluster mode.
         - See [`config.yml`](config.yml) for additional parameters.
 - Features file with protein metadata.
     - Usually, we call this file `uniprot_features.tsv` but you can use any name.
