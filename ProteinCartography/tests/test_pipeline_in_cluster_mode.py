@@ -1,3 +1,4 @@
+import os
 import pathlib
 import shutil
 
@@ -45,7 +46,18 @@ def stage_inputs(integration_test_artifacts_dirpath, config_filepath):
     )
 
 
+@pytest.fixture
+def set_env_variables(pytestconfig):
+    """Mock TED (and other HTTP) so domain_map auto does not call live APIs."""
+    should_use_mocks = "PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS"
+    if not pytestconfig.getoption("no_mocks"):
+        os.environ[should_use_mocks] = "true"
+    yield
+    os.environ.pop(should_use_mocks, None)
+
+
 @pytest.mark.usefixtures("stage_inputs")
+@pytest.mark.usefixtures("set_env_variables")
 def test_pipeline_in_cluster_mode(repo_dirpath, config_filepath):
     """
     Run the pipeline in "cluster" mode with the test config file.
@@ -87,3 +99,8 @@ def test_pipeline_in_cluster_mode(repo_dirpath, config_filepath):
 
     # The matrix should have one row and one column per structure (plus one column for the index).
     assert similarity_matrix.shape == (num_structures, num_structures + 1)
+
+    # Actin cluster inputs are single-domain under the TED mock; the domain DAG is a no-op.
+    domain_html_name = f"{config['analysis_name']}_leiden_similarity_domain.html"
+    domain_html = output_dirpath / "final_results" / domain_html_name
+    assert not domain_html.exists()

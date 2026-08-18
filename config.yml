@@ -83,6 +83,16 @@ max_structures: 5000
 min_length: 0
 max_length: 0
 
+# Parallel domain map. The protein search and map always run unchanged.
+#   auto - if a query has two or more TED/user domains, also search each query domain
+#          and emit *_domain HTML maps. Single-domain queries skip this path entirely.
+#   off  - never run the domain DAG.
+domain_map: "auto"
+# Spans shorter than this (residues) are dropped before the multi-domain count.
+min_domain_length: 30
+# Optional TSV in input_dir: parent_protid and chopping (or start and end). Overrides TED.
+user_domains_file: ""
+
 
 # ------------------------------------------------------------------------------------------------
 # Cluster-mode settings

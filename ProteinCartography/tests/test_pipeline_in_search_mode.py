@@ -127,3 +127,9 @@ def test_pipeline_in_search_mode_with_mocked_api_calls(repo_dirpath, config_file
     )
     similarity_matrix = pd.read_csv(similarity_matrix_filepath, sep="\t")
     assert similarity_matrix.shape == (11, 12)
+
+    domain_html_name = f"{config['analysis_name']}_leiden_similarity_domain.html"
+    domain_html = output_dirpath / "final_results" / domain_html_name
+    assert not domain_html.exists()
+    domain_structs = output_dirpath / "domain_path" / "domain_structures"
+    assert not domain_structs.exists() or not any(domain_structs.glob("*.pdb"))

@@ -107,6 +107,10 @@ def mock_response(method, url, **_):
     elif url.startswith("https://alphafold.ebi.ac.uk/files"):
         return mock_alphafold_files_api_responses(url)
 
+    # TED domain summaries (query gate and domain-path hit assignment).
+    elif "ted.cathdb.info" in url:
+        return mock_ted_api_responses(url)
+
     else:
         raise ValueError(f"Unexpected url: {url}")
 
@@ -195,6 +199,51 @@ def mock_foldseek_api_responses(method, url):
     else:
         raise ValueError(f"Unexpected url: {url}")
 
+    return mock_response
+
+
+def mock_ted_api_responses(url):
+    """TED summary API. Default: one domain (gate off). P99999: two domains (gate on)."""
+    mock_response = mock.Mock(spec=requests.Response)
+    accession = url.rstrip("/").split("/")[-1].split("?")[0]
+    if accession == "P99999":
+        mock_response.status_code = 200
+        mock_response.ok = True
+        mock_response.json.return_value = {
+            "data": [
+                {
+                    "ted_id": "AF-P99999-F1-model_v4_TED01",
+                    "uniprot_acc": "P99999",
+                    "chopping": "1-80",
+                    "nres_domain": 80,
+                    "cath_label": "3.40.50.300",
+                },
+                {
+                    "ted_id": "AF-P99999-F1-model_v4_TED02",
+                    "uniprot_acc": "P99999",
+                    "chopping": "81-160",
+                    "nres_domain": 80,
+                    "cath_label": "1.10.10.10",
+                },
+            ],
+            "count": 2,
+        }
+        return mock_response
+
+    mock_response.status_code = 200
+    mock_response.ok = True
+    mock_response.json.return_value = {
+        "data": [
+            {
+                "ted_id": f"AF-{accession}-F1-model_v4_TED01",
+                "uniprot_acc": accession,
+                "chopping": "1-100",
+                "nres_domain": 100,
+                "cath_label": "1.10.10.10",
+            }
+        ],
+        "count": 1,
+    }
     return mock_response
 
 

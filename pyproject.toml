@@ -69,3 +69,7 @@ exclude = 'dev'
 # Scripts live in ProteinCartography/ and import as top-level modules
 # (import blast_utils, not ProteinCartography.blast_utils).
 pythonpath = ["ProteinCartography"]
+addopts = ["-m", "not live_ted"]
+markers = [
+    "live_ted: hits the live TED HTTP API (not run in default CI)",
+]

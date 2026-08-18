@@ -81,6 +81,24 @@ MIN_LENGTH = int(config["min_length"])
 MAX_LENGTH = int(config["max_length"])
 UNIPROT_ADDITIONAL_FIELDS = config["uniprot_additional_fields"]
 
+# Parallel domain map (gated). Protein-path directories and rules above are unchanged.
+DOMAIN_MAP = config_utils._get_domain_map(config)
+MIN_DOMAIN_LENGTH = config_utils._get_min_domain_length(config)
+USER_DOMAINS_FILE = config_utils._get_user_domains_file(config)
+DOMAIN_DIR = OUTPUT_DIR / "domain_path"
+DOMAIN_BLAST_DIR = DOMAIN_DIR / "blast_results"
+DOMAIN_FOLDSEEK_DIR = DOMAIN_DIR / "foldseek_results"
+DOMAIN_HIT_STRUCTURES_DIR = DOMAIN_DIR / "hit_structures"
+DOMAIN_STRUCTURES_DIR = DOMAIN_DIR / "domain_structures"
+DOMAIN_CLUSTERING_DIR = OUTPUT_DIR / "foldseek_clustering_results_domain"
+DOMAIN_TMSCORES_DIR = OUTPUT_DIR / "key_domain_tmscores_results"
+DOMAIN_FEATURES_DIR = DOMAIN_DIR / "features"
+DOMAIN_GATE_PROTIDS = (
+    SEARCH_MODE_INPUT_PROTIDS
+    if MODE == config_utils.Mode.SEARCH
+    else [path.stem for path in sorted(INPUT_DIR.glob("*.pdb"))]
+)
+
 
 wildcard_constraints:
     plotting_mode="|".join(PLOTTING_MODES),
@@ -278,6 +296,8 @@ rule aggregate_hits:
         aggregated_hits=PROTEIN_FEATURES_DIR / "aggregated_hits.txt",
     benchmark:
         BENCHMARKS_DIR / "aggregate_hits.txt"
+    conda:
+        "envs/pandas.yml"
     shell:
         """
         python ProteinCartography/aggregate_hits.py --input {input} --output {output}
@@ -770,6 +790,9 @@ rule plot_cluster_distributions:
         """
 
 
+include: "Snakefile_domain"
+
+
 rule all:
     """
     This is a pseudo-rule that defines the final outputs of the pipeline
@@ -778,6 +801,7 @@ rule all:
     in order to allow the definition of its inputs in terms of the outputs of other rules
     (whose definitions must appear before this rule)
     """
+
     # we use `default_target` to tell snakemake that this is the first rule to run
     # (it otherwise defaults to running the first rule in the snakefile)
     default_target: True
@@ -788,3 +812,4 @@ rule all:
         rules.plot_semantic_analysis.output.pdf,
         expand(rules.plot_interactive.output.html, plotting_mode=PLOTTING_MODES),
         expand(rules.plot_cluster_distributions.output.svg, protid=KEY_PROTIDS),
+        domain_final_outputs,

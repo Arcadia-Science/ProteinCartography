@@ -70,7 +70,7 @@ def aggregate_features(
             agg_df = agg_df.merge(df, on="protid", how="outer")
 
     # If there's a features override file, use it
-    if features_override_file is not None:
+    if features_override_file:
         # Read the file
         features_override_df = pd.read_csv(features_override_file, sep="\t")
 
