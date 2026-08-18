@@ -210,9 +210,9 @@ def map_refseqids_rest(input_file: str, output_file: str, query_dbs: list, retur
 def main():
     args = parse_args()
     if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
-        from tests import mocks
+        from tests.mock_domain_hits import maybe_write_per_domain_hits
 
-        if mocks.maybe_write_per_domain_hits(args.output):
+        if maybe_write_per_domain_hits(args.output):
             return
     service = UniProtService(args.service)
     if service == UniProtService.BIOSERVICES:

@@ -114,9 +114,9 @@ def main():
     max_num_hits = args.max_num_hits
 
     if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
-        from tests import mocks
+        from tests.mock_domain_hits import maybe_write_per_domain_hits
 
-        if mocks.maybe_write_per_domain_hits(output_file):
+        if maybe_write_per_domain_hits(output_file):
             return
 
     extract_foldseekhits(input_files, output_file, evalue=evalue, max_num_hits=max_num_hits)

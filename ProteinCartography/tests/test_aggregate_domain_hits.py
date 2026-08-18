@@ -70,14 +70,14 @@ def test_domain_id_from_hit_filename():
 
 
 def test_maybe_write_per_domain_hits_partitions_neighborhoods(tmp_path: Path):
-    from tests import mocks
+    from tests.mock_domain_hits import maybe_write_per_domain_hits
 
     d01 = tmp_path / "P99999__d01.foldseek_hits.txt"
     d02 = tmp_path / "P99999__d02.blast_hits.uniprot.txt"
     parent = tmp_path / "P99999.foldseek_hits.txt"
-    assert mocks.maybe_write_per_domain_hits(str(d01))
+    assert maybe_write_per_domain_hits(str(d01))
     assert d01.read_text() == "A0A286Q506\n"
-    assert mocks.maybe_write_per_domain_hits(str(d02))
+    assert maybe_write_per_domain_hits(str(d02))
     assert d02.read_text() == "Q6QAQ1\n"
-    assert not mocks.maybe_write_per_domain_hits(str(parent))
+    assert not maybe_write_per_domain_hits(str(parent))
     assert not parent.exists()
