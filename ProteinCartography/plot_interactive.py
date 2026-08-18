@@ -247,6 +247,38 @@ def generate_plotting_rules(
             "fillna": "",
             "textlabel": "Protein name",
         },
+        "parent_protid": {
+            "type": "hovertext",
+            "fillna": "",
+            "textlabel": "Parent protein",
+        },
+        "chopping": {
+            "type": "hovertext",
+            "fillna": "",
+            "textlabel": "Domain residues",
+        },
+        "ted_id": {
+            "type": "hovertext",
+            "fillna": "",
+            "textlabel": "TED id",
+        },
+        "cath_label": {
+            "type": "categorical",
+            "fillna": "None",
+            "color_order": apc.Palettes["arcadia:AccentAllOrdered"].colors,
+            "textlabel": "CATH / TED superfamily",
+        },
+        "assignment_source": {
+            "type": "categorical",
+            "fillna": "None",
+            "color_order": apc.Palettes["arcadia:AccentAllOrdered"].colors,
+            "textlabel": "Domain assignment",
+        },
+        "found_by": {
+            "type": "hovertext",
+            "fillna": "",
+            "textlabel": "Retrieved by query domain",
+        },
         "Gene Names (primary)": {
             "type": "hovertext",  # this data only shows up in hovertext
             "fillna": "",
@@ -328,24 +360,26 @@ def generate_plotting_rules(
                 "cmin": 0,
                 "cmax": 1,
             }
-            plotting_rules[f"fident_v_{keyid}"] = {
-                "type": "continuous",
-                "apply": lambda x: round(x, num_decimals),
-                "fillna": -0.01,
-                "textlabel": f"Fraction seq identity vs. {keyid}",
-                "color_scale": arcadia_magma,
-                "cmin": 0,
-                "cmax": 1,
-            }
-            plotting_rules[f"concordance_v_{keyid}"] = {
-                "type": "continuous",
-                "apply": lambda x: round(x, num_decimals),
-                "fillna": -1.01,
-                "textlabel": f"Concordance vs. {keyid}",
-                "color_scale": arcadia_poppies_r,
-                "cmin": -1,
-                "cmax": 1,
-            }
+            # Domain maps only color by TM-score vs query domains (no fident/concordance layers).
+            if "__d" not in str(keyid):
+                plotting_rules[f"fident_v_{keyid}"] = {
+                    "type": "continuous",
+                    "apply": lambda x: round(x, num_decimals),
+                    "fillna": -0.01,
+                    "textlabel": f"Fraction seq identity vs. {keyid}",
+                    "color_scale": arcadia_magma,
+                    "cmin": 0,
+                    "cmax": 1,
+                }
+                plotting_rules[f"concordance_v_{keyid}"] = {
+                    "type": "continuous",
+                    "apply": lambda x: round(x, num_decimals),
+                    "fillna": -1.01,
+                    "textlabel": f"Concordance vs. {keyid}",
+                    "color_scale": arcadia_poppies_r,
+                    "cmin": -1,
+                    "cmax": 1,
+                }
             # Add hovertext for whether or not a given protein was a hit via blast or foldseek
             # to the input protein
             plotting_rules[f"{keyid}.hit"] = {

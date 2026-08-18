@@ -37,6 +37,34 @@ def mock_run_blast():
     patch.start()
 
 
+# Distinct domain-path neighborhoods used by the two-domain Snakemake test.
+# These accessions have AlphaFold artifacts. Protein-path mocks still return the
+# full actin hit list, so a parent-PDB search that only relabels outputs cannot
+# produce this partitioned union.
+DOMAIN_SEARCH_HITS = {
+    "d01": ["A0A286Q506"],
+    "d02": ["Q6QAQ1"],
+}
+
+
+def maybe_write_per_domain_hits(output_file: str) -> bool:
+    """If ``output_file`` is a domain-path hit list, write that domain's neighborhood.
+
+    Returns True when the caller should skip normal extraction.
+    """
+    name = output_file.replace("\\", "/")
+    for suffix, hits in DOMAIN_SEARCH_HITS.items():
+        token = f"__{suffix}."
+        if token in name or name.endswith(f"__{suffix}"):
+            from pathlib import Path
+
+            path = Path(output_file)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("".join(hit + "\n" for hit in hits))
+            return True
+    return False
+
+
 def mock_requests_session_request():
     """
     Mock the `request` method of `requests.Session` to return mock responses
@@ -106,6 +134,10 @@ def mock_response(method, url, **_):
     # Requests to the alphafold files API.
     elif url.startswith("https://alphafold.ebi.ac.uk/files"):
         return mock_alphafold_files_api_responses(url)
+
+    # TED domain summaries (query gate and domain-path hit assignment).
+    elif "ted.cathdb.info" in url:
+        return mock_ted_api_responses(url)
 
     else:
         raise ValueError(f"Unexpected url: {url}")
@@ -195,6 +227,51 @@ def mock_foldseek_api_responses(method, url):
     else:
         raise ValueError(f"Unexpected url: {url}")
 
+    return mock_response
+
+
+def mock_ted_api_responses(url):
+    """TED summary API. Default: one domain (gate off). P99999: two domains (gate on)."""
+    mock_response = mock.Mock(spec=requests.Response)
+    accession = url.rstrip("/").split("/")[-1].split("?")[0]
+    if accession == "P99999":
+        mock_response.status_code = 200
+        mock_response.ok = True
+        mock_response.json.return_value = {
+            "data": [
+                {
+                    "ted_id": "AF-P99999-F1-model_v4_TED01",
+                    "uniprot_acc": "P99999",
+                    "chopping": "1-80",
+                    "nres_domain": 80,
+                    "cath_label": "3.40.50.300",
+                },
+                {
+                    "ted_id": "AF-P99999-F1-model_v4_TED02",
+                    "uniprot_acc": "P99999",
+                    "chopping": "81-160",
+                    "nres_domain": 80,
+                    "cath_label": "1.10.10.10",
+                },
+            ],
+            "count": 2,
+        }
+        return mock_response
+
+    mock_response.status_code = 200
+    mock_response.ok = True
+    mock_response.json.return_value = {
+        "data": [
+            {
+                "ted_id": f"AF-{accession}-F1-model_v4_TED01",
+                "uniprot_acc": accession,
+                "chopping": "1-100",
+                "nres_domain": 100,
+                "cath_label": "1.10.10.10",
+            }
+        ],
+        "count": 1,
+    }
     return mock_response
 
 

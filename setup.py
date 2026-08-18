@@ -10,8 +10,10 @@ setup(
     license="MIT",
     description="Builds maps of protein space from structures.",
     scripts=[
+        "ProteinCartography/aggregate_domain_hits.py",
         "ProteinCartography/aggregate_features.py",
         "ProteinCartography/aggregate_hits.py",
+        "ProteinCartography/assign_domains.py",
         "ProteinCartography/dim_reduction.py",
         "ProteinCartography/esmfold_apiquery.py",
         "ProteinCartography/extract_blast_hits.py",
@@ -20,6 +22,7 @@ setup(
         "ProteinCartography/foldseek_apiquery.py",
         "ProteinCartography/foldseek_clustering.py",
         "ProteinCartography/get_source_of_hits.py",
+        "ProteinCartography/join_domain_features.py",
         "ProteinCartography/leiden_clustering.py",
         "ProteinCartography/map_refseq_ids.py",
         "ProteinCartography/plot_interactive.py",

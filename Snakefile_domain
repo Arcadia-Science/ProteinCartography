@@ -1,0 +1,550 @@
+# Parallel domain-map DAG. Included by the main Snakefile.
+# Protein-path rules are not redefined here. This DAG is requested only when
+# domain_final_outputs() sees the query-gate checkpoint flip to "on".
+
+
+wildcard_constraints:
+    domain_id=".+" + "__d" + "[0-9]+",
+
+
+def _domain_gate_pdb_inputs(_wildcards=None):
+    return expand(INPUT_DIR / "{protid}.pdb", protid=DOMAIN_GATE_PROTIDS)
+
+
+checkpoint domain_query_gate:
+    """TED/user TSV on query proteins. Writes gate.txt (on/off) and cropped query domains."""
+    input:
+        _domain_gate_pdb_inputs,
+    output:
+        gate=DOMAIN_DIR / "gate.txt",
+        query_ids=DOMAIN_DIR / "query_domain_ids.txt",
+        query_domains=DOMAIN_DIR / "query_domains.tsv",
+        query_structures=directory(DOMAIN_DIR / "query_structures"),
+    params:
+        protids=" ".join(DOMAIN_GATE_PROTIDS),
+        user_file=USER_DOMAINS_FILE,
+    conda:
+        "envs/web_apis.yml"
+    shell:
+        """
+        python ProteinCartography/assign_domains.py query-gate \
+            --protids {params.protids} \
+            --input-dir {INPUT_DIR} \
+            --output-dir {DOMAIN_DIR} \
+            --user-domains-file "{params.user_file}" \
+            --min-domain-length {MIN_DOMAIN_LENGTH} \
+            --domain-map {DOMAIN_MAP}
+        """
+
+
+def domain_gate_is_on(wildcards):
+    if DOMAIN_MAP == "off":
+        return False
+    if not DOMAIN_GATE_PROTIDS:
+        return False
+    gate_file = checkpoints.domain_query_gate.get(**wildcards).output.gate
+    return Path(gate_file).read_text().strip() == "on"
+
+
+def get_query_domain_ids(wildcards):
+    if not domain_gate_is_on(wildcards):
+        return []
+    ids_file = checkpoints.domain_query_gate.get(**wildcards).output.query_ids
+    return [line for line in Path(ids_file).read_text().splitlines() if line]
+
+
+def domain_final_outputs(wildcards):
+    if not domain_gate_is_on(wildcards):
+        return []
+    outputs = [
+        FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_leiden_similarity_domain.html",
+        FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_strucluster_similarity_domain.html",
+        FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis_domain.html",
+        FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis_domain.pdf",
+    ]
+    outputs += expand(
+        FINAL_RESULTS_DIR / (ANALYSIS_NAME + "_aggregated_features_{plotting_mode}_domain.html"),
+        plotting_mode=PLOTTING_MODES,
+    )
+    outputs += expand(
+        FINAL_RESULTS_DIR / (ANALYSIS_NAME + "_{domain_id}_distribution_analysis_domain.svg"),
+        domain_id=get_query_domain_ids(wildcards),
+    )
+    return outputs
+
+
+if MODE == config_utils.Mode.SEARCH:
+
+    rule domain_run_blast:
+        input:
+            fasta_file=DOMAIN_DIR / "query_structures" / "{domain_id}.fasta",
+        output:
+            blast_results=DOMAIN_BLAST_DIR / "{domain_id}.blast_results.tsv",
+        conda:
+            "envs/blast.yml"
+        shell:
+            """
+            python ProteinCartography/run_blast.py \
+              --query {input.fasta_file} \
+              --out {output.blast_results} \
+              --max_target_seqs {MAX_BLAST_HITS} \
+              --word_size {BLAST_WORD_SIZE} \
+              --word_size_backoff {BLAST_WORD_SIZE_BACKOFF} \
+              --num_attempts {BLAST_NUM_ATTEMPTS} \
+              --evalue {BLAST_EVALUE} \
+              --timeout_seconds {BLAST_TIMEOUT_SECONDS} \
+              --database {BLAST_DATABASE}
+            """
+
+    rule domain_extract_blast_hits:
+        input:
+            blast_results=rules.domain_run_blast.output.blast_results,
+        output:
+            blast_hits=DOMAIN_BLAST_DIR / "{domain_id}.blast_hits.refseq.txt",
+        conda:
+            "envs/pandas.yml"
+        shell:
+            """
+            python ProteinCartography/extract_blast_hits.py \
+                --input {input.blast_results} \
+                --output {output.blast_hits}
+            """
+
+    rule domain_map_refseq_ids:
+        input:
+            blast_hits=rules.domain_extract_blast_hits.output.blast_hits,
+        output:
+            blast_hits_uniprot_ids=DOMAIN_BLAST_DIR / "{domain_id}.blast_hits.uniprot.txt",
+        conda:
+            "envs/web_apis.yml"
+        shell:
+            """
+            python ProteinCartography/map_refseq_ids.py \
+                --input {input.blast_hits} \
+                --output {output.blast_hits_uniprot_ids}
+            """
+
+    rule domain_run_foldseek:
+        input:
+            pdb_file=DOMAIN_DIR / "query_structures" / "{domain_id}.pdb",
+        output:
+            foldseek_output=DOMAIN_FOLDSEEK_DIR / "{domain_id}.fsresults.tar.gz",
+            m8_files_dir=directory(DOMAIN_FOLDSEEK_DIR / "{domain_id}"),
+            m8_files=expand(
+                DOMAIN_FOLDSEEK_DIR / "{{domain_id}}" / "alis_{db}.m8",
+                db=FOLDSEEK_DATABASES,
+            ),
+        conda:
+            "envs/web_apis.yml"
+        shell:
+            """
+            python ProteinCartography/foldseek_apiquery.py \
+                --input {input.pdb_file} \
+                --output {output.foldseek_output} \
+                --server {FOLDSEEK_SERVER_URL} \
+                --database {FOLDSEEK_DATABASES}
+            tar -xvf {output.foldseek_output} -C {output.m8_files_dir}
+            """
+
+    rule domain_extract_foldseek_hits:
+        input:
+            m8_files=rules.domain_run_foldseek.output.m8_files,
+        output:
+            foldseek_hits=DOMAIN_FOLDSEEK_DIR / "{domain_id}.foldseek_hits.txt",
+        conda:
+            "envs/pandas.yml"
+        shell:
+            """
+            python ProteinCartography/extract_foldseek_hits.py \
+                --input {input.m8_files} \
+                --output {output.foldseek_hits} \
+                --max-num-hits {MAX_FOLDSEEK_HITS}
+            """
+
+    rule domain_aggregate_hits:
+        input:
+            lambda wildcards: expand(
+                rules.domain_map_refseq_ids.output.blast_hits_uniprot_ids,
+                domain_id=get_query_domain_ids(wildcards),
+            )
+            + expand(
+                rules.domain_extract_foldseek_hits.output.foldseek_hits,
+                domain_id=get_query_domain_ids(wildcards),
+            ),
+        output:
+            aggregated_hits=DOMAIN_FEATURES_DIR / "aggregated_hits.txt",
+            found_by=DOMAIN_FEATURES_DIR / "found_by.tsv",
+        conda:
+            "envs/pandas.yml"
+        shell:
+            """
+            python ProteinCartography/aggregate_domain_hits.py \
+                --input {input} \
+                --output {output.aggregated_hits} \
+                --found-by {output.found_by}
+            """
+
+    rule domain_fetch_uniprot_metadata:
+        input:
+            rules.domain_aggregate_hits.output.aggregated_hits,
+        output:
+            uniprot_features=DOMAIN_FEATURES_DIR / "uniprot_features.tsv",
+        conda:
+            "envs/web_apis.yml"
+        shell:
+            """
+            python ProteinCartography/fetch_uniprot_metadata.py \
+                --input {input} \
+                --output {output.uniprot_features} \
+                --additional-fields {UNIPROT_ADDITIONAL_FIELDS}
+            """
+
+    rule domain_filter_hits:
+        input:
+            rules.domain_fetch_uniprot_metadata.output.uniprot_features,
+        output:
+            filtered_hits=DOMAIN_FEATURES_DIR / "filtered_hits.txt",
+        conda:
+            "envs/pandas.yml"
+        shell:
+            """
+            python ProteinCartography/filter_aggregated_hits.py \
+                --input {input} \
+                --output {output.filtered_hits} \
+                --min-length 0 \
+                --max-length 0 \
+                --excluded-protids {DOMAIN_GATE_PROTIDS}
+            """
+
+    rule domain_download_pdbs:
+        input:
+            rules.domain_filter_hits.output.filtered_hits,
+        output:
+            hit_structures=directory(DOMAIN_HIT_STRUCTURES_DIR),
+        conda:
+            "envs/web_apis.yml"
+        shell:
+            """
+            python ProteinCartography/download_pdbs.py \
+                --input {input} \
+                --output {output.hit_structures} \
+                --max-structures {MAX_STRUCTURES}
+            """
+
+    checkpoint domain_prepare_structures:
+        input:
+            hits=rules.domain_filter_hits.output.filtered_hits,
+            hit_structures=rules.domain_download_pdbs.output.hit_structures,
+            query_domains=DOMAIN_DIR / "query_domains.tsv",
+            query_structures=DOMAIN_DIR / "query_structures",
+        output:
+            structures=directory(DOMAIN_STRUCTURES_DIR),
+            features=DOMAIN_FEATURES_DIR / "domain_features.tsv",
+        conda:
+            "envs/web_apis.yml"
+        shell:
+            """
+            python ProteinCartography/assign_domains.py assign-hits \
+                --accessions-file {input.hits} \
+                --pdb-dir {input.hit_structures} \
+                --output-dir {output.structures} \
+                --output-tsv {output.features} \
+                --cache-dir {DOMAIN_DIR}/ted_cache \
+                --min-domain-length {MIN_DOMAIN_LENGTH} \
+                --query-domains-tsv {input.query_domains} \
+                --query-structures-dir {input.query_structures} \
+                --user-domains-file "{USER_DOMAINS_FILE}"
+            """
+
+else:
+
+    rule domain_cluster_accessions:
+        input:
+            DOMAIN_DIR / "gate.txt",
+        output:
+            accessions=DOMAIN_FEATURES_DIR / "cluster_accessions.txt",
+            found_by=DOMAIN_FEATURES_DIR / "found_by.tsv",
+        shell:
+            """
+            mkdir -p {DOMAIN_FEATURES_DIR}
+            printf "%s\\n" {DOMAIN_GATE_PROTIDS} > {output.accessions}
+            printf "accession\\tfound_by\\n" > {output.found_by}
+            """
+
+    checkpoint domain_prepare_structures:
+        input:
+            accessions=rules.domain_cluster_accessions.output.accessions,
+            query_domains=DOMAIN_DIR / "query_domains.tsv",
+            query_structures=DOMAIN_DIR / "query_structures",
+        output:
+            structures=directory(DOMAIN_STRUCTURES_DIR),
+            features=DOMAIN_FEATURES_DIR / "domain_features.tsv",
+        conda:
+            "envs/web_apis.yml"
+        shell:
+            """
+            python ProteinCartography/assign_domains.py assign-hits \
+                --accessions-file {input.accessions} \
+                --pdb-dir {INPUT_DIR} \
+                --output-dir {output.structures} \
+                --output-tsv {output.features} \
+                --cache-dir {DOMAIN_DIR}/ted_cache \
+                --min-domain-length {MIN_DOMAIN_LENGTH} \
+                --query-domains-tsv {input.query_domains} \
+                --query-structures-dir {input.query_structures} \
+                --user-domains-file "{USER_DOMAINS_FILE}"
+            """
+
+
+def get_domain_pdb_filepaths(wildcards):
+    ckpt = checkpoints.domain_prepare_structures.get(**wildcards)
+    return sorted(Path(ckpt.output.structures).glob("*.pdb"))
+
+
+rule domain_assess_pdbs:
+    input:
+        get_domain_pdb_filepaths,
+    output:
+        pdb_features=DOMAIN_FEATURES_DIR / "pdb_features.tsv",
+    conda:
+        "envs/plotting.yml"
+    shell:
+        """
+        python ProteinCartography/assess_pdbs.py \
+            --input {DOMAIN_STRUCTURES_DIR} \
+            --output {output.pdb_features}
+        """
+
+
+rule domain_foldseek_clustering:
+    input:
+        get_domain_pdb_filepaths,
+    output:
+        all_by_all_tmscores=DOMAIN_CLUSTERING_DIR / "all_by_all_tmscore_pivoted.tsv",
+        struclusters_features=DOMAIN_CLUSTERING_DIR / "struclusters_features.tsv",
+        foldseek_database=DOMAIN_CLUSTERING_DIR / "temp" / "temp_db",
+    conda:
+        "envs/foldseek.yml"
+    resources:
+        mem_mb=32 * 1000,
+    threads: 16
+    shell:
+        """
+        python ProteinCartography/foldseek_clustering.py \
+            --query-folder {DOMAIN_STRUCTURES_DIR} \
+            --results-folder {DOMAIN_CLUSTERING_DIR}
+        """
+
+
+rule domain_copy_key_pdbs:
+    input:
+        get_domain_pdb_filepaths,
+    output:
+        dirpath=directory(DOMAIN_TMSCORES_DIR),
+    params:
+        domain_ids=lambda wildcards: " ".join(get_query_domain_ids(wildcards)),
+    shell:
+        """
+        mkdir -p "{output.dirpath}"
+        for domain_id in {params.domain_ids}; do
+        cp "{DOMAIN_STRUCTURES_DIR}/${{domain_id}}.pdb" "{output.dirpath}"
+        done
+        """
+
+
+rule domain_calculate_key_tmscores:
+    input:
+        pdb_dirpath=rules.domain_copy_key_pdbs.output.dirpath,
+        foldseek_database=rules.domain_foldseek_clustering.output.foldseek_database,
+    output:
+        key_tmscores=DOMAIN_FEATURES_DIR / "key_protid_tmscore_features.tsv",
+    conda:
+        "envs/foldseek.yml"
+    shell:
+        """
+        python ProteinCartography/calculate_key_protid_tmscores.py \
+            --query-database {input.foldseek_database} \
+            --target-folder {input.pdb_dirpath} \
+            --results-folder {input.pdb_dirpath} \
+            --features-file {output.key_tmscores}
+        """
+
+
+rule domain_dim_reduction:
+    input:
+        rules.domain_foldseek_clustering.output.all_by_all_tmscores,
+    output:
+        all_by_all_tmscores=DOMAIN_CLUSTERING_DIR / "all_by_all_tmscore_pivoted_{plotting_mode}.tsv",
+    conda:
+        "envs/analysis.yml"
+    shell:
+        """
+        python ProteinCartography/dim_reduction.py --input {input} --mode {wildcards.plotting_mode}
+        """
+
+
+rule domain_leiden_clustering:
+    input:
+        rules.domain_foldseek_clustering.output.all_by_all_tmscores,
+    output:
+        leiden_features=DOMAIN_CLUSTERING_DIR / "leiden_features.tsv",
+    conda:
+        "envs/analysis.yml"
+    shell:
+        """
+        python ProteinCartography/leiden_clustering.py \
+            --input {input} \
+            --output {output.leiden_features}
+        """
+
+
+def get_domain_uniprot_features(wildcards):
+    if MODE == config_utils.Mode.SEARCH:
+        return rules.domain_fetch_uniprot_metadata.output.uniprot_features
+    return FEATURES_FILE
+
+
+def get_domain_found_by(wildcards):
+    if MODE == config_utils.Mode.SEARCH:
+        return rules.domain_aggregate_hits.output.found_by
+    return rules.domain_cluster_accessions.output.found_by
+
+
+rule domain_join_features:
+    input:
+        domain_features=lambda wildcards: checkpoints.domain_prepare_structures.get(
+            **wildcards
+        ).output.features,
+        uniprot=get_domain_uniprot_features,
+        found_by=get_domain_found_by,
+    output:
+        joined=DOMAIN_FEATURES_DIR / "domain_uniprot_features.tsv",
+    conda:
+        "envs/pandas.yml"
+    shell:
+        """
+        python ProteinCartography/join_domain_features.py \
+            --domain-features {input.domain_features} \
+            --uniprot-features {input.uniprot} \
+            --found-by {input.found_by} \
+            --output {output.joined}
+        """
+
+
+rule domain_aggregate_features:
+    input:
+        rules.domain_assess_pdbs.output.pdb_features,
+        rules.domain_foldseek_clustering.output.struclusters_features,
+        rules.domain_leiden_clustering.output.leiden_features,
+        rules.domain_calculate_key_tmscores.output.key_tmscores,
+        rules.domain_join_features.output.joined,
+    output:
+        aggregated_features=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_aggregated_features_domain.tsv",
+    conda:
+        "envs/pandas.yml"
+    shell:
+        """
+        python ProteinCartography/aggregate_features.py \
+            --input {input} \
+            --output {output.aggregated_features} \
+            --features-override-file {FEATURES_OVERRIDE_FILE}
+        """
+
+
+rule domain_plot_interactive:
+    input:
+        tm_scores=rules.domain_dim_reduction.output.all_by_all_tmscores,
+        features=rules.domain_aggregate_features.output.aggregated_features,
+    output:
+        html=FINAL_RESULTS_DIR
+        / (ANALYSIS_NAME + "_aggregated_features_{plotting_mode}_domain.html"),
+    conda:
+        "envs/plotting.yml"
+    params:
+        keyids=lambda wildcards: " ".join(get_query_domain_ids(wildcards)),
+    shell:
+        """
+        python ProteinCartography/plot_interactive.py \
+            --dimensions {input.tm_scores} \
+            --features {input.features} \
+            --output {output.html} \
+            --dimensions-type {wildcards.plotting_mode} \
+            --keyids {params.keyids} \
+            --taxon-focus {TAXON_FOCUS}
+        """
+
+
+rule domain_plot_similarity_leiden:
+    input:
+        tm_scores=rules.domain_foldseek_clustering.output.all_by_all_tmscores,
+        features=rules.domain_leiden_clustering.output.leiden_features,
+    output:
+        tsv=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_leiden_similarity_domain.tsv",
+        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_leiden_similarity_domain.html",
+    conda:
+        "envs/plotting.yml"
+    shell:
+        """
+        python ProteinCartography/plot_cluster_similarity.py \
+            --matrix-file {input.tm_scores} \
+            --features-file {input.features} \
+            --features-column LeidenCluster \
+            --output-tsv {output.tsv} \
+            --output-html {output.html}
+        """
+
+
+rule domain_plot_similarity_strucluster:
+    input:
+        tm_scores=rules.domain_foldseek_clustering.output.all_by_all_tmscores,
+        features=rules.domain_foldseek_clustering.output.struclusters_features,
+    output:
+        tsv=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_strucluster_similarity_domain.tsv",
+        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_strucluster_similarity_domain.html",
+    conda:
+        "envs/plotting.yml"
+    shell:
+        """
+        python ProteinCartography/plot_cluster_similarity.py \
+            --matrix-file {input.tm_scores} \
+            --features-file {input.features} \
+            --features-column StruCluster \
+            --output-tsv {output.tsv} \
+            --output-html {output.html}
+        """
+
+
+rule domain_plot_semantic_analysis:
+    input:
+        features=rules.domain_aggregate_features.output.aggregated_features,
+    output:
+        pdf=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis_domain.pdf",
+        html=FINAL_RESULTS_DIR / f"{ANALYSIS_NAME}_semantic_analysis_domain.html",
+    conda:
+        "envs/plotting.yml"
+    shell:
+        """
+        python ProteinCartography/semantic_analysis.py \
+            --features-file {input.features} \
+            --agg-column LeidenCluster \
+            --annot-column 'Protein names' \
+            --output {output.pdf} \
+            --interactive {output.html} \
+            --analysis-name {ANALYSIS_NAME}_domain
+        """
+
+
+rule domain_plot_cluster_distributions:
+    input:
+        features=rules.domain_aggregate_features.output.aggregated_features,
+    output:
+        svg=FINAL_RESULTS_DIR / (ANALYSIS_NAME + "_{domain_id}_distribution_analysis_domain.svg"),
+    conda:
+        "envs/plotting.yml"
+    shell:
+        """
+        python ProteinCartography/plot_cluster_distributions.py \
+            --input {input.features} \
+            --output {output.svg} \
+            --keyid {wildcards.domain_id}
+        """

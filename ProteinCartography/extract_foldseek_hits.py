@@ -113,7 +113,12 @@ def main():
     evalue = args.evalue
     max_num_hits = args.max_num_hits
 
-    # send to map_refseqids
+    if os.environ.get("PROTEINCARTOGRAPHY_SHOULD_USE_MOCKS") == "true":
+        from tests import mocks
+
+        if mocks.maybe_write_per_domain_hits(output_file):
+            return
+
     extract_foldseekhits(input_files, output_file, evalue=evalue, max_num_hits=max_num_hits)
 
 

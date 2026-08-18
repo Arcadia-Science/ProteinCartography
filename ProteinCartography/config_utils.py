@@ -119,3 +119,31 @@ def _get_features_override_file(config):
     if not features_override_file.is_file():
         features_override_file = ""
     return features_override_file
+
+
+def _get_domain_map(config) -> str:
+    """``auto`` (default) runs the domain DAG only for multi-domain queries; ``off`` never does."""
+    value = str(config.get("domain_map", "auto")).strip().lower()
+    if value not in {"auto", "off"}:
+        raise ProteinCartographyInputError("domain_map must be 'auto' or 'off'.")
+    return value
+
+
+def _get_user_domains_file(config) -> str:
+    """Optional TSV of parent_protid + chopping (or start/end). Empty string if unset."""
+    name = config.get("user_domains_file") or ""
+    if not name:
+        return ""
+    path = pathlib.Path(config["input_dir"]) / name
+    if not path.is_file():
+        raise ProteinCartographyInputError(
+            f"user_domains_file {path} does not exist. The file is resolved relative to input_dir."
+        )
+    return str(path)
+
+
+def _get_min_domain_length(config) -> int:
+    try:
+        return int(config.get("min_domain_length", 30))
+    except (TypeError, ValueError):
+        return 30

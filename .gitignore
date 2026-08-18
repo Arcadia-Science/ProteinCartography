@@ -1,6 +1,12 @@
 # packages installed in editable mode
 envs/src/**
 
+# Local git worktrees (never commit)
+.worktrees/
+
+# Local live-run fixtures (not part of the repo)
+/testdata/
+
 # Snakemake-related folders and files
 .snakemake/
 /input/
